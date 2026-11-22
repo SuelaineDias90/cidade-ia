@@ -4249,7 +4249,7 @@ function entrarSair() {
   const p = veiculoPerto(); if (!p) return;
   let v = p.v;
   if (p.c) {   // roubando um carro do trânsito
-    transito.splice(transito.indexOf(p.c), 1);
+    transito.splice(transito.indexOf(p.c), 1); tirarMotorista(p.c.g);
     p.c.g.userData.ang = p.c.g.rotation.y;
     v = novoVeiculo(p.c.g, { vel: 0, ang: p.c.g.rotation.y });
     crime(1, 'roubo de carro');
@@ -5481,7 +5481,7 @@ addEventListener('keydown', e => {
   aviso(`📍 GPS: ${ICONE_LUGAR[P.tipo]} ${P.nome} a ${Math.round(d * .58)} m — siga a linha roxa`, '#c77dff', 3.5);
 });
 setTimeout(function dicaLugar() { if (estado !== 'jogando') return setTimeout(dicaLugar, 3000); if (G.branco) return; const [P, d] = lugarMaisPerto(); aviso(`${ICONE_LUGAR[P.tipo]} ${P.nome}: aperte K`, '#ffd166', 5); }, 12000);
-window.__dbg.vida = () => VIDA;
+window.__dbg.vida = () => VIDA; window.__dbg.transito = () => transito;
 window.__dbg.raro = nome => { const g = carroVariante(m => m.raro && (!nome || m.nome.includes(nome))); g.position.set(jog.pos.x + 4, alturaChao(jog.pos.x + 4, jog.pos.z), jog.pos.z); cena.add(g); const v = novoVeiculo(g, { vel: 0, ang: 0 }); return g.userData.nomeModelo; };
 window.__dbg.lojas = { get pos() { return jog.pos.clone(); }, PORTAS, entrarLugar, sairLugar, iniciarAssalto, get assalto() { return G.assalto; } };
 // ---------------------------------------------------- MENU DE ANIMAÇÕES (J)
@@ -5523,9 +5523,53 @@ function reposicionarPedestre(P) {
   const pt = pontoDeRua(true); if (!pt) return false;
   P.pos.set(pt.x, alturaChao(pt.x, pt.z), pt.z); P.eixo = pt.eixo; P.sent = Math.random() < .5 ? 1 : -1; P.voo = null; P.b.g.rotation.set(0, 0, 0); P.emote = null; return true;
 }
+// ---- MOTORISTAS: todo carro do trânsito tem alguém dirigindo (e quando você rouba, ele sai e foge)
+const PELES_MOT = ['#f1c27d', '#c68642', '#8d5524', '#ffdbac', '#e0ac69', '#6b3e1f'];
+const MAT_MOT = {};
+const matMot = c => MAT_MOT[c] || (MAT_MOT[c] = new THREE.MeshStandardMaterial({ color: c, roughness: .8 }));
+const GEO_MOT = { tronco: new THREE.BoxGeometry(.42, .5, .26), cabeca: new THREE.SphereGeometry(.13, 12, 10), cabelo: new THREE.SphereGeometry(.135, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), braco: new THREE.BoxGeometry(.1, .1, .42) };
+function motoristaNoCarro(g) {
+  const tipo = g.userData.tipo, T = TIPOS_CARRO[tipo] || {}; if (!T.L) return;
+  const pele = pega(PELES_MOT), roupa = pega(CORES_ROUPA), cab = pega(['#16100d', '#2b1b0e', '#9b2f22', '#d9b26f', '#777777']);
+  const m = new THREE.Group(); m.userData.motorista = { pele, roupa, cab };
+  const tr = new THREE.Mesh(GEO_MOT.tronco, matMot(roupa)); tr.position.y = .25; m.add(tr);
+  const ca = new THREE.Mesh(GEO_MOT.cabeca, matMot(pele)); ca.position.y = .65; m.add(ca);
+  const cb = new THREE.Mesh(GEO_MOT.cabelo, matMot(cab)); cb.position.y = .67; m.add(cb);
+  for (const s of [-1, 1]) { const b = new THREE.Mesh(GEO_MOT.braco, matMot(roupa)); b.position.set(s * .17, .38, .2); b.rotation.x = -.35; m.add(b); }   // mãos no volante
+  const alto = T.onibus || T.caminhao, van = T.caixa && !T.onibus;
+  const y = T.cin != null ? T.cin - .45 : alto ? 1.55 : van ? 1.0 : .6;
+  const z = T.tf != null ? (T.tf + T.tt) / 2 + .15 : (T.L / 2) - (alto ? 1.3 : 1.25);
+  m.position.set((T.W || 1.8) * .22, y, z);
+  g.add(m); g.userData.motorista = m;
+}
+function tirarMotorista(g) {
+  const m = g.userData.motorista; if (!m) return; g.userData.motorista = null;
+  const d = m.userData.motorista; g.remove(m);
+  const ang = g.rotation.y, lado = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang)), W = g.userData.W || 1.8;
+  const pos = g.position.clone().addScaledVector(lado, W * .5 + .9); pos.y = alturaChao(pos.x, pos.z);
+  const b = boneco({ roupa: d.roupa, pele: d.pele, cabelo: d.cab, calca: pega(['#1d3557', '#2b2d42', '#111111', '#6b4f2a']) });
+  b.g.position.copy(pos); cena.add(b.g);
+  const fuga = pos.clone().sub(jog.pos); fuga.y = 0; if (fuga.lengthSq() < .01) fuga.copy(lado); fuga.normalize();
+  const fala = pega(['Ei! Meu carro!', 'Socorro! Ladrão!', 'Não me machuca!', 'Leva, leva! Só me deixa ir!', 'Polícia! Roubaram meu carro!']);
+  narrar('🏃 Motorista: "' + fala + '"');
+  let t = 0;
+  quadros.push(dt => {
+    t += dt;
+    if (t < .5) { animarBoneco(b, relogio, 0, ''); return true; }        // sai do carro
+    const vel = t < 1 ? 2.5 : 6.5;                                      // assustado: corre pra longe
+    const nx = b.g.position.x + fuga.x * vel * dt, nz = b.g.position.z + fuga.z * vel * dt;
+    if (colide(new THREE.Vector3(nx, b.g.position.y, nz), .4)) fuga.applyAxisAngle(new THREE.Vector3(0, 1, 0), (Math.random() < .5 ? 1 : -1) * 1.2);
+    else { b.g.position.x = nx; b.g.position.z = nz; b.g.position.y = alturaChao(nx, nz); }
+    virarSuave(b.g, Math.atan2(fuga.x, fuga.z), dt * 10);
+    animarBoneco(b, relogio, vel, '');
+    if (t > 9 || b.g.position.distanceTo(jog.pos) > 70) { cena.remove(b.g); return false; }
+    return true;
+  });
+}
+setInterval(() => { for (const c of transito) if (c.g && c.g.userData.motorista === undefined) motoristaNoCarro(c.g); }, 1000);   // todo carro do trânsito ganha motorista
 function novoCarroVida() {
   const pt = pontoDeRua(false); if (!pt) return null;
-  const g = carroVariante(); cena.add(g);
+  const g = carroVariante(); cena.add(g); motoristaNoCarro(g);
   if (g.userData.raro && !G.interior) aviso('🌟 Carro RARO por perto: ' + g.userData.nomeModelo + '!', '#ffd166', 3.5);
   // mão direita: lado da pista define o sentido
   const sentido = pt.eixo === 'z' ? -pt.lado : pt.lado;
