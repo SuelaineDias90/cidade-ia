@@ -142,6 +142,7 @@ footer { padding-block: 34px; padding-left: max(16px, env(safe-area-inset-left, 
       <a class="btn prin" id="btnBaixar" href="#como">⬇ Baixar pra Windows <small id="tamZip">CidadeIA.zip · 57 MB</small></a>
       <a class="btn sec" href="#como">Como instalar</a>
     </div>
+    <p id="avisoCel" style="display:none;margin:14px 0 0;max-width:46ch;background:#160b22cc;padding:12px 14px;border-radius:12px;font-size:14px">📱 Você está no celular. O jogo é instalado no <b>PC</b> e o celular joga por ele, no mesmo Wi-Fi, sem baixar nada. Veja "Como jogo no celular?" nas dúvidas.</p>
     <div class="selos"><span>● grátis</span><span>● roda no seu PC</span><span>● código aberto</span><span>● joga no celular</span></div>
   </div>
 </header>
@@ -251,6 +252,7 @@ footer { padding-block: 34px; padding-left: max(16px, env(safe-area-inset-left, 
 <script>
 // prédios do herói (silhueta varia de largura e altura)
 (() => { const p = document.querySelector('.predios'); const alturas = [38, 60, 30, 72, 48, 84, 40, 66, 92, 52, 70, 44, 80, 34, 58, 76, 46, 62]; for (const a of alturas) { const i = document.createElement('i'); i.style.height = a + '%'; p.appendChild(i); } })();
+if (matchMedia('(pointer:coarse)').matches) document.getElementById('avisoCel').style.display = 'block';
 // link oficial do download (preenchido quando o arquivo estiver publicado)
 const LINK_DOWNLOAD = 'https://github.com/SuelaineDias90/cidade-ia/releases/download/v1.0/CidadeIA.zip';
 if (LINK_DOWNLOAD) {
