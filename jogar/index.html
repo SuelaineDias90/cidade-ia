@@ -6254,7 +6254,20 @@ if (CELULAR) {
   $('#tqChat').addEventListener('touchstart', e => { e.preventDefault(); document.body.classList.toggle('verChat'); document.body.classList.remove('verPoder'); }, { passive: false });
   // câmera: arrastar o dedo no resto da tela (e mexer a roda de armas quando aberta)
   let idCam = null, ux = 0, uy = 0;
-  renderer.domElement.addEventListener('touchstart', e => { e.preventDefault(); const t = e.changedTouches[0]; if (idCam === null) { idCam = t.identifier; ux = t.clientX; uy = t.clientY; } }, { passive: false });
+  renderer.domElement.addEventListener('touchstart', e => { e.preventDefault(); if (estado === 'intro') fimIntro(); const t = e.changedTouches[0]; if (idCam === null) { idCam = t.identifier; ux = t.clientX; uy = t.clientY; } }, { passive: false });
+  // nada de campo de texto "preso" com foco (trava os comandos): tocou fora dele, solta
+  addEventListener('touchstart', e => { const a = document.activeElement; if (a && ['INPUT', 'TEXTAREA'].includes(a.tagName) && e.target !== a && (!a.offsetParent || e.target === renderer.domElement || e.target.closest?.('#toque'))) a.blur(); }, { capture: true, passive: true });
+  // APP ANDROID: registro temporário dos toques (pra achar o problema dos botões); some sozinho depois de 3 min
+  if (navigator.userAgent.includes('CidadeIAApp') && window.CIA_REDE) {
+    const dq = new CIA_REDE.MQ(); dq.ligar(); const t0 = performance.now(); let ult = 0;
+    const desc = el => el ? (el.tagName + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : '')) : '-';
+    const log = (tipo, e) => { const agora = performance.now(); if (agora - t0 > 180000 || agora - ult < 150) return; ult = agora; const t = e.changedTouches?.[0];
+      dq.pub('dbg/app', { tipo, alvo: desc(e.target), x: t && Math.round(t.clientX), y: t && Math.round(t.clientY), n: e.touches?.length, estado, dig: digitando(), ativo: desc(document.activeElement), w: innerWidth, h: innerHeight, cel: CELULAR, cam: idCam, yaw: +yaw.toFixed(2), modo: MODO, prev: e.defaultPrevented, ua: navigator.userAgent.slice(-60) }); };
+    addEventListener('touchstart', e => log('start', e), { capture: true, passive: true });
+    addEventListener('touchend', e => setTimeout(() => log('end', e), 0), { capture: true, passive: true });
+    addEventListener('keydown', e => log('key:' + e.code, e), { capture: true });
+    addEventListener('error', e => dq.pub('dbg/app', { erro: String(e.message), arq: e.filename, linha: e.lineno }));
+  }
   addEventListener('touchmove', e => {
     for (const t of e.changedTouches) if (t.identifier === idCam) {
       const dx = t.clientX - ux, dy = t.clientY - uy; ux = t.clientX; uy = t.clientY;
