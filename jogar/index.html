@@ -325,6 +325,11 @@ window.SEM_PC = true;
   body.celular #tqTopo{left:50%;right:auto;transform:translateX(-50%);top:auto;bottom:8px}
   body.celular #armaHud{display:none!important}
   .miCelular{font:600 12px 'Segoe UI';background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 10px;color:#cfd3ff}
+  #foco{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;align-items:center;gap:10px;z-index:6;background:rgba(10,12,24,.7);border:1px solid rgba(255,209,102,.4);border-radius:999px;padding:6px 14px;color:#ffd166;font:800 13px 'Segoe UI';pointer-events:none}
+  #foco span{width:160px;height:8px;border-radius:9px;background:rgba(255,255,255,.15);overflow:hidden}#foco i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff6f91)}
+  #foco small{opacity:.7}body.celular #foco small{display:none}body.celular #foco{bottom:auto;top:8px}
+  #focoTela{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,transparent 45%,rgba(20,30,70,.55) 100%);box-shadow:inset 0 0 120px rgba(80,140,255,.35)}
+  body.emFoco #focoTela{opacity:1}body.emFoco #foco{border-color:#ff6f91;box-shadow:0 0 18px rgba(255,111,145,.6)}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
   #mapaG canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;border:0;border-radius:0}
@@ -3632,6 +3637,7 @@ function comecarModo(m) {
   $('#mBranco').style.display = m === 'livre' ? '' : 'none';
   aviso({ livre: '🌍 Modo Livre', normal: '🎮 Modo Normal', multi: '👥 Multiplayer' }[m] + (DONO && m !== 'livre' ? ' · 👑 IA de dono ligada' : ''), '#ffd166', 3);
 }
+{ const v = comecarModo; comecarModo = m => { const ant = MODO; v(m); if ((ant === 'normal') !== (m === 'normal')) { aplicarAvatarJogador().catch(() => {}); if (m === 'normal') aviso('🧢 Você é o DAVI, motorista de fuga · dirigindo, aperte X (ou ⏱) pro FOCO', '#ffd166', 5); } }; }
 $('#mNormal').onclick = () => comecarModo('normal');
 
 // ==================================================================== MULTIPLAYER ONLINE (internet, 24h, sem servidor próprio)
@@ -5854,9 +5860,12 @@ async function montarAvatar(av) {
   aplicarAcessorios(b, av.acessorios);
   return b;
 }
+// PROTAGONISTA do Modo Normal (personagem original do Cidade IA): Davi, motorista de fuga
+const PROTAGONISTA = { fem: false, estilo: 'realista', corpo: null, pele: '#8d5524', roupa: '#2b2d42', calca: '#3d5a80', sapato: '#f4f4f4', cabelo: '#16100d', cabeloEstilo: 'curto', estiloRoupa: 'casual', jaqueta: '#c1121f', acessorios: [{ tipo: 'bone', cor: '#111111' }] };
+const avatarAtual = () => MODO === 'normal' ? PROTAGONISTA : AVATAR;
 async function aplicarAvatarJogador() {
   if (jog.forma !== 'pessoa') return;
-  const b = await montarAvatar(AVATAR);
+  const b = await montarAvatar(avatarAtual());
   b.g.position.copy(bonecoJog.g.position); b.g.rotation.copy(bonecoJog.g.rotation); b.g.scale.multiplyScalar(jog.tam); b.g.visible = bonecoJog.g.visible;
   cena.remove(bonecoJog.g); cena.add(b.g); bonecoJog = b;
 }
@@ -6218,6 +6227,7 @@ if (CELULAR) {
       <button data-k="KeyE">💬<small>usar</small></button>
       <button data-k="ShiftLeft" data-trava="1">🏃<small>correr</small></button>
       <button data-k="Tab">🎯<small>armas</small></button>
+      <button data-k="KeyX">⏱<small>foco</small></button>
     </div>
     <div id="tqTopo"><button data-k="KeyM">🗺️</button><button data-k="KeyJ">🎭</button><button id="tqPoder">⚡</button><button id="tqChat">💬</button><button data-k="Escape">⏸</button></div>`;
   document.body.appendChild(T);
@@ -6337,10 +6347,31 @@ desenharRadar = function () {
   }
 };
 
+// ==================================================================== FOCO DO DAVI: câmera lenta dirigindo (Modo Normal)
+const FOCO = { on: false, carga: 1 };
+const barraFoco = document.createElement('div'); barraFoco.id = 'foco'; barraFoco.innerHTML = '<b>⏱ FOCO</b><span><i></i></span><small>X</small>'; document.body.appendChild(barraFoco);
+const telaFoco = document.createElement('div'); telaFoco.id = 'focoTela'; document.body.appendChild(telaFoco);
+function alternarFoco() {
+  if (FOCO.on) return pararFoco();
+  if (MODO !== 'normal') return aviso('⏱ O Foco é a habilidade do Davi (Modo Normal)', '#ffd166', 2);
+  if (!dirigindo) return aviso('⏱ O Foco só funciona dirigindo', '#ffd166', 2);
+  if (FOCO.carga < .15) return aviso('⏱ Foco recarregando…', '#ffd166', 1.5);
+  FOCO.on = true; document.body.classList.add('emFoco');
+}
+function pararFoco() { FOCO.on = false; document.body.classList.remove('emFoco'); }
+function atualizarFoco(s) {
+  if (FOCO.on) { FOCO.carga -= s / 8; if (FOCO.carga <= 0 || !dirigindo || MODO !== 'normal' || estado !== 'jogando') { FOCO.carga = Math.max(0, FOCO.carga); pararFoco(); } }
+  else FOCO.carga = Math.min(1, FOCO.carga + s / 25);
+  barraFoco.style.display = MODO === 'normal' && dirigindo && estado === 'jogando' ? 'flex' : 'none';
+  barraFoco.querySelector('i').style.width = (FOCO.carga * 100).toFixed(1) + '%';
+}
+addEventListener('keydown', e => { if (e.code === 'KeyX' && estado === 'jogando' && !digitando() && !e.repeat) alternarFoco(); });
+
 let relogio = 0, ultimo = performance.now(), hudT = 0;
 function loop(agora) {
   medirFps((agora - ultimo) / 1000);
-  const dt = estado === 'pausa' ? 0 : Math.min(.05, (agora - ultimo) / 1000) * (G.roda ? .2 : 1); ultimo = agora; relogio += dt;
+  const dtReal = estado === 'pausa' ? 0 : Math.min(.05, (agora - ultimo) / 1000);
+  const dt = dtReal * (G.roda ? .2 : 1) * (FOCO.on ? .35 : 1); ultimo = agora; relogio += dt; atualizarFoco(dtReal);
   hora = (hora + dt / SEG_POR_HORA) % 24;
   atualizarJogador(dt); atualizarNPCs(dt); atualizarMonstros(dt); atualizarTiros(dt); atualizarObjetos(dt);
   for (let i = efeitos.length - 1; i >= 0; i--) { let vivo = false; try { vivo = efeitos[i].atualizar(dt); } catch (e) { console.warn(e); } if (!vivo) { efeitos[i].remover(); efeitos.splice(i, 1); } }
