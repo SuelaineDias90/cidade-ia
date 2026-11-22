@@ -340,6 +340,7 @@ window.SEM_PC = true;
   .mmItem{text-align:left;border:1px solid #ffffff18;border-radius:12px;background:#ffffff0c;color:#fff;padding:10px 12px;cursor:pointer;display:grid;gap:3px;font-family:'Segoe UI'}
   .mmItem:hover{background:#ffffff1a;border-color:#ffd16688}.mmItem b{font-size:14px}.mmItem small{color:#b9aed0;font-size:12px}.mmItem i{color:#7CFC8a;font-style:normal;font-weight:800;font-size:12px}
   .mmItem.ok{opacity:.7}
+  #telaSangue{position:fixed;inset:0;pointer-events:none;z-index:5;display:none}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
   #mapaG canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;border:0;border-radius:0}
@@ -2940,7 +2941,7 @@ function criarMonstro(a) {
 function atualizarMonstros(dt) {
   for (let i = monstros.length - 1; i >= 0; i--) {
     const m = monstros[i]; m.t += dt;
-    if (m.vida <= 0) { explosao(m.pos.x, m.pos.z, m.S); cena.remove(m.g, m.tag); monstros.splice(i, 1); narrar(`${m.nome} foi derrotado! 💥`); continue; }
+    if (m.vida <= 0) { if (m.forma === 'gorila' || m.forma === 'king kong') sangue('chuva_de_sangue', m.pos); explosao(m.pos.x, m.pos.z, m.S); cena.remove(m.g, m.tag); monstros.splice(i, 1); narrar(`${m.nome} foi derrotado! 💥`); continue; }
     let alvo = null;
     if (m.comp === 'agressivo') { const cand = [...npcs.filter(n => !n.dentro), ...MULTIDAO.filter(p => !p.voo && !p.caido)]; alvo = cand.reduce((b, n) => !b || n.pos.distanceTo(m.pos) < b.pos.distanceTo(m.pos) ? n : b, null)?.pos; if (!alvo || jog.pos.distanceTo(m.pos) < 40) alvo = jog.pos; }
     else if (m.comp === 'amigavel') alvo = jog.pos.distanceTo(m.pos) > 10 + m.S ? jog.pos : null;
@@ -3004,8 +3005,8 @@ function acertar(orig, dir, alcance, r) {
 }
 function efeitoArma(hit, A, dir) {
   const est = A.estilo || 'projetil', o = hit.o;
-  if (hit.tipo === 'alvo') { ferirAlvo(o, (A.dano || 20) * (est === 'explosivo' ? 4 : 1.4), dir); if (est === 'explosivo') explosao(hit.pos.x, hit.pos.z, A.raio || 8); return; }
-  if (hit.tipo === 'monstro') o.vida -= (A.dano || 20) * (est === 'explosivo' ? 2 : 1);
+  if (hit.tipo === 'alvo') { ferirAlvo(o, (A.dano || 20) * (est === 'explosivo' ? 4 : 1.4), dir, est === 'explosivo' ? 'explosao' : 'tiro'); if (est === 'explosivo') explosao(hit.pos.x, hit.pos.z, A.raio || 8); return; }
+  if (hit.tipo === 'monstro') { o.vida -= (A.dano || 20) * (est === 'explosivo' ? 2 : 1); sangue(o.forma === 'cubo' || o.forma === 'dragao' ? 'monstro_roxo' : o.forma === 'gorila' || o.forma === 'macaco' || o.forma === 'king kong' ? 'monstro_escuro' : 'monstro_verde', hit.pos.clone().setY(o.S * .3), dir, Math.min(2, o.S / 8)); }
   if (est === 'explosivo') return explosao(hit.pos.x, hit.pos.z, A.raio || 8);
   if (hit.tipo !== 'npc') return;
   if (typeof crime === 'function') crime(.8, 'tiro');
@@ -3016,7 +3017,7 @@ function efeitoArma(hit, A, dir) {
     case 'encolher': o.b.g.scale.multiplyScalar(.6); break;
     case 'aumentar': o.b.g.scale.multiplyScalar(1.5); break;
     case 'dança': o.modo = 'dancar'; o.tempoModo = 15; o.medo = 0; break;
-    default: o.voo = dir.clone().setY(0).normalize().multiplyScalar(10).setY(8); o.fugir(12);
+    default: o.voo = dir.clone().setY(0).normalize().multiplyScalar(10).setY(8); o.fugir(12); sangue(pega(['tiro_raspao', 'espirro_lateral', 'tiro_entrada']), o.pos, dir, .8);
       falarNPC(o, ['Ai!', 'Ei, para!', 'Vou chamar a polícia!', 'Isso dói, sabia?'][(Math.random() * 4) | 0], 2.5);
   }
   o.humor = Math.max(-1, o.humor - .3); o.memoria.push(`o jogador me atingiu com ${A.nome}`);
@@ -4562,13 +4563,13 @@ function soco() {
   const agora = performance.now() / 1000; if (agora - G.ultimoSoco < .38 || dirigindo) return;
   G.combo = agora - G.ultimoSoco < 1 ? G.combo + 1 : 0; G.socoTipo = ['soco_d', 'soco_e', 'chute'][G.combo % 3]; G.ultimoSoco = agora; G.socoT = G.socoTipo === 'chute' ? .4 : .25;
   const f = new THREE.Vector3(Math.sin(jog.rot), 0, Math.cos(jog.rot));
-  for (const a of ALVOS) { if (a.morto) continue; const d = a.pos.clone().sub(jog.pos); d.y = 0; if (d.length() < 2.6 && d.normalize().dot(f) > .3) { ferirAlvo(a, G.socoTipo === 'chute' ? 22 : 15, f); tremor.forca = .15; return; } }
+  for (const a of ALVOS) { if (a.morto) continue; const d = a.pos.clone().sub(jog.pos); d.y = 0; if (d.length() < 2.6 && d.normalize().dot(f) > .3) { ferirAlvo(a, G.socoTipo === 'chute' ? 22 : 15, f, G.socoTipo === 'chute' ? 'chute' : 'soco'); tremor.forca = .15; return; } }
   for (const n of npcs) {
     if (n.dentro) continue;
     const d = n.pos.clone().sub(jog.pos); d.y = 0;
     if (d.length() < 2.6 && d.normalize().dot(f) > .3) {
       n.voo = f.clone().multiplyScalar(G.socoTipo === 'chute' ? 12 : 7).setY(G.socoTipo === 'chute' ? 6 : 4); n.fugir?.(8); n.humor = Math.max(-1, (n.humor || 0) - .4); n.memoria?.push('o jogador me deu um soco');
-      falarNPC(n, pega(['Ai!!', 'Tá louco?!', 'Socorro!', 'Vou chamar a polícia!', 'Isso vai ter volta!']), 2.5);
+      falarNPC(n, pega(['Ai!!', 'Tá louco?!', 'Socorro!', 'Vou chamar a polícia!', 'Isso vai ter volta!']), 2.5); sangue(G.socoTipo === 'chute' ? 'chute' : pega(['soco_nariz', 'soco_boca']), n.pos, f, .7);
       if (Math.random() < .6) soltarDinheiro(n.pos, 5 + (Math.random() * 45 | 0));
       crime(.55, 'agressão'); tremor.forca = .15; return;
     }
@@ -4976,25 +4977,211 @@ function atualizarMissao(dt) {
 }
 
 // ==================================================================== CONTRATOS: 95 missões (matar, espionar, fotografar, roubar, fugir, absurdas...)
-// ---- sangue (dá pra desligar no menu de pausa)
+// ---- SANGUE: motor de partículas (gotas com gravidade, arrasto, gruda em parede e escorre, mancha o chão, poças que crescem e
+//      escorrem ladeira abaixo, pegadas, marca de pneu, chuva lava, carro fica manchado). 43 tipos de física. Dá pra desligar.
 const SANGUE = { on: (() => { try { return localStorage.getItem('cidadeia_sangue') !== '0'; } catch (e) { return true; } })() };
-const GEO_GOTA = new THREE.SphereGeometry(.07, 6, 5), MAT_GOTA = new THREE.MeshStandardMaterial({ color: 0x7a0008, roughness: .35 });
-const GEO_POCA = new THREE.CircleGeometry(1, 20), MAT_POCA = new THREE.MeshStandardMaterial({ color: 0x4a0005, roughness: .2, transparent: true, opacity: .92, depthWrite: false });
-const POCAS = [];
-function sangrar(pos, forca = 1, poca = false) {
+const SG = { MAX: 900, MAXD: 420, n: 0, gotas: [], decais: [], pocas: [], emissores: [], pegadas: 0, pneu: 0, ultPeg: null, ultPneu: null, ladoPeg: 1 };
+const CORES_SG = { vermelho: 0x7a0008, escuro: 0x4a0005, vivo: 0xa3000f, verde: 0x3fa82a, roxo: 0x6a1b9a, rosado: 0xc0485a, gorila: 0x3a0004 };
+{
+  const geo = new THREE.SphereGeometry(.06, 6, 5), mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .25, metalness: .05 });
+  SG.mesh = new THREE.InstancedMesh(geo, mat, SG.MAX); SG.mesh.count = 0; SG.mesh.frustumCulled = false; SG.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  SG.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(SG.MAX * 3), 3); cena.add(SG.mesh);
+  const gd = new THREE.CircleGeometry(1, 14), md = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .3, transparent: true, opacity: .9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  SG.dmesh = new THREE.InstancedMesh(gd, md, SG.MAXD); SG.dmesh.count = 0; SG.dmesh.frustumCulled = false; SG.dmesh.renderOrder = 1;
+  SG.dmesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(SG.MAXD * 3), 3); cena.add(SG.dmesh);
+}
+const _o3 = new THREE.Object3D(), _cor = new THREE.Color(), _v = new THREE.Vector3();
+// cada tipo: n gotas · vel · cone (abertura) · tam · arrasto · grav · pulsos · névoa · poça · cor · extra
+const TIPOS_SANGUE = {
+  tiro_entrada:     { n: 8,  vel: 3,   cone: .5, tam: .8, arr: 1.5 },
+  tiro_saida:       { n: 22, vel: 9,   cone: .35, tam: 1.1, arr: .8, atras: true },
+  tiro_cabeca:      { n: 30, vel: 7,   cone: .6, tam: .6, arr: 2.5, alto: .35, nevoa: 25 },
+  tiro_raspao:      { n: 6,  vel: 5,   cone: .25, tam: .6, arr: 1.2, lateral: true },
+  rajada:           { n: 6,  vel: 6,   cone: .4, tam: .7, arr: 1, repete: 5, interv: .09 },
+  escopeta:         { n: 45, vel: 8,   cone: 1.1, tam: .9, arr: 1.4, atras: true },
+  soco_nariz:       { n: 7,  vel: 3.5, cone: .5, tam: .55, arr: 2, alto: .3, depois: 'sangramento_nariz' },
+  soco_boca:        { n: 9,  vel: 4,   cone: .7, tam: .6, arr: 2, alto: .2 },
+  chute:            { n: 12, vel: 5,   cone: .8, tam: .7, arr: 1.5, alto: -.1 },
+  combo:            { n: 5,  vel: 4,   cone: .6, tam: .6, arr: 1.8, repete: 3, interv: .15 },
+  atropelamento_leve: { n: 18, vel: 7, cone: .9, tam: 1, arr: 1, baixo: true },
+  atropelamento_forte: { n: 40, vel: 12, cone: 1, tam: 1.3, arr: .7, baixo: true, rastro: 6, poca: 1.2 },
+  explosao_nevoa:   { n: 70, vel: 14, cone: 3.2, tam: .5, arr: 3.5, nevoa: 60, poca: .8 },
+  queda_alta:       { n: 35, vel: 5,   cone: 3.2, tam: 1.1, arr: 1, baixo: true, poca: 1.4 },
+  arterial:         { n: 14, vel: 6.5, cone: .2, tam: 1, arr: .6, repete: 7, interv: .55, cima: .9 },
+  jorro_continuo:   { n: 4,  vel: 5,   cone: .25, tam: .9, arr: .7, repete: 25, interv: .08, cima: .6 },
+  gotejar:          { emissor: 'gotejar' },
+  rastro_arrastar:  { emissor: 'rastro' },
+  poca_lenta:       { poca: 1.5, cresce: .18 },
+  poca_rapida:      { poca: 1.9, cresce: .7 },
+  poca_ladeira:     { poca: 1.4, cresce: .3, escorre: true },
+  respingo_parede:  { n: 26, vel: 11, cone: .3, tam: 1, arr: .5, gruda: true },
+  escorrer_parede:  { n: 14, vel: 9, cone: .2, tam: 1.3, arr: .4, gruda: true, escorreParede: true },
+  nevoa_fina:       { n: 0, nevoa: 45 },
+  gotas_grossas:    { n: 10, vel: 3, cone: 1, tam: 2, arr: .4 },
+  coagulo:          { n: 5,  vel: 2, cone: 1, tam: 2.6, arr: .2, cor: 'escuro', grav: .7 },
+  respingo_tela:    { tela: 'respingo' },
+  tela_escorrendo:  { tela: 'escorre' },
+  pegadas:          { sistema: 'pegadas' },
+  marcas_pneu:      { sistema: 'pneu' },
+  lavado_chuva:     { sistema: 'chuva' },
+  lataria:          { sistema: 'lataria' },
+  para_brisa:       { tela: 'parabrisa' },
+  na_agua:          { n: 0, nevoa: 40, cor: 'rosado', agua: true },
+  monstro_verde:    { n: 40, vel: 9, cone: 2.5, tam: 1.6, arr: .8, cor: 'verde', poca: 2, corPoca: 'verde' },
+  monstro_roxo:     { n: 40, vel: 9, cone: 2.5, tam: 1.6, arr: .8, cor: 'roxo', poca: 2, corPoca: 'roxo' },
+  monstro_escuro:   { n: 45, vel: 10, cone: 2.5, tam: 1.8, arr: .8, cor: 'gorila', poca: 2.4, corPoca: 'gorila' },
+  tosse:            { emissor: 'tosse' },
+  sangramento_nariz: { emissor: 'nariz' },
+  corte:            { n: 16, vel: 6, cone: .08, tam: .5, arr: 1.2, leque: true },
+  espirro_lateral:  { n: 18, vel: 7, cone: .3, tam: .8, arr: 1, lateral: true },
+  chuva_de_sangue:  { n: 0, chuva: true },
+  rodopio:          { n: 24, vel: 6, cone: .3, tam: .8, arr: 1, espiral: true },
+};
+function corSg(k) { return CORES_SG[k] ?? CORES_SG.vermelho; }
+function gota(p, v, tam, cor, o = {}) {
+  if (SG.gotas.length >= SG.MAX) SG.gotas.shift();
+  SG.gotas.push({ p: p.clone(), v, tam, cor, arr: o.arr ?? 1, grav: o.grav ?? 1, gruda: !!o.gruda, escorre: !!o.escorreParede, vida: 0, parada: false, nevoa: !!o.nevoa });
+}
+function decal(x, y, z, r, cor, o = {}) {
+  if (SG.decais.length >= SG.MAXD) SG.decais.shift();
+  SG.decais.push({ x, y, z, r, cor, rx: o.parede ? 0 : -Math.PI / 2, ry: o.ry || 0, sx: o.sx || 1, idade: 0, max: o.max || 90, parede: !!o.parede });
+}
+function sangue(tipo, pos, dir, mult = 1) {
   if (!SANGUE.on) return;
-  const n = Math.round(10 * forca), gotas = [];
-  for (let i = 0; i < n; i++) {
-    const m = new THREE.Mesh(GEO_GOTA, MAT_GOTA); m.position.set(pos.x, pos.y + 1.3, pos.z); m.scale.setScalar(rnd(.6, 1.6)); cena.add(m);
-    gotas.push({ m, v: new THREE.Vector3(rnd(-3, 3), rnd(1.5, 5), rnd(-3, 3)).multiplyScalar(.6 + forca * .3) });
+  const T = TIPOS_SANGUE[tipo]; if (!T) return;
+  const cor = corSg(T.cor), d = (dir ? dir.clone() : new THREE.Vector3(Math.random() - .5, 0, Math.random() - .5)).setY(0); if (d.lengthSq() < .001) d.set(1, 0, 0); d.normalize();
+  if (T.atras === false) d.negate();
+  const base = pos.clone(); base.y += 1.25 + (T.alto || 0) + (T.baixo ? -.8 : 0);
+  if (T.agua || (typeof AGUA_Y !== 'undefined' && pos.y < AGUA_Y)) { for (let i = 0; i < 30; i++) gota(base, new THREE.Vector3(rnd(-1, 1), rnd(0, .6), rnd(-1, 1)), 1.4, corSg('rosado'), { arr: 6, grav: -.05, nevoa: true }); return; }
+  const lado = new THREE.Vector3(-d.z, 0, d.x);
+  const disparo = () => {
+    for (let i = 0; i < Math.round((T.n || 0) * mult); i++) {
+      let v = d.clone();
+      if (T.lateral) v.copy(lado).multiplyScalar(Math.random() < .5 ? 1 : -1).addScaledVector(d, .3);
+      if (T.leque) v.applyAxisAngle(Y_, (i / Math.max(1, T.n - 1) - .5) * 1.4);
+      if (T.espiral) v.applyAxisAngle(Y_, i * .55);
+      v.x += rnd(-T.cone, T.cone); v.z += rnd(-T.cone, T.cone); v.y = (T.cima || .25) + rnd(-T.cone * .6, T.cone * .8);
+      v.normalize().multiplyScalar((T.vel || 4) * rnd(.55, 1.25) * (.8 + mult * .2));
+      gota(base, v, (T.tam || 1) * rnd(.6, 1.4), cor, T);
+    }
+    for (let i = 0; i < (T.nevoa || 0) * mult; i++) gota(base, new THREE.Vector3(rnd(-2, 2), rnd(-.2, 2), rnd(-2, 2)).addScaledVector(d, 1.5), rnd(.3, .6), cor, { arr: 5, grav: .15, nevoa: true });
+  };
+  if (T.repete) { let k = 0; const f = () => { if (!SANGUE.on) return; disparo(); if (++k < T.repete) setTimeout(f, T.interv * 1000); }; f(); } else disparo();
+  if (T.poca) pocaSg(pos, T.poca * mult, corSg(T.corPoca || 'escuro'), T.cresce || .35, T.escorre);
+  if (T.rastro) emissor('rastro', () => pos, T.rastro);
+  if (T.depois) sangue(T.depois, pos, dir, mult);
+  if (T.emissor) emissor(T.emissor, () => pos, 8);
+  if (T.tela) telaSangue(T.tela);
+  if (T.chuva) for (let i = 0; i < 160; i++) gota(new THREE.Vector3(pos.x + rnd(-25, 25), pos.y + rnd(14, 30), pos.z + rnd(-25, 25)), new THREE.Vector3(0, -rnd(2, 6), 0), rnd(.8, 1.6), cor, { arr: .2 });
+  if (T.sistema === 'lataria' && dirigindo) manchaCarro(dirigindo);
+}
+function pocaSg(pos, tam, cor, cresce = .35, escorre = false) {
+  const m = new THREE.Mesh(new THREE.CircleGeometry(1, 22), new THREE.MeshStandardMaterial({ color: cor, roughness: .12, metalness: .1, transparent: true, opacity: .93, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }));
+  m.rotation.x = -Math.PI / 2; m.position.set(pos.x + rnd(-.25, .25), alturaChao(pos.x, pos.z) + .025, pos.z + rnd(-.25, .25)); m.scale.set(.05, .05 * rnd(.75, 1), 1); m.renderOrder = 2; cena.add(m);
+  SG.pocas.push({ m, alvo: tam * rnd(.85, 1.15), cresce, escorre, idade: 0 }); if (SG.pocas.length > 40) { const v = SG.pocas.shift(); cena.remove(v.m); v.m.geometry.dispose(); v.m.material.dispose(); }
+}
+function emissor(tipo, posFn, dur) { SG.emissores.push({ tipo, posFn, dur, t: 0, ult: null }); if (SG.emissores.length > 30) SG.emissores.shift(); }
+function manchaCarro(v) {
+  if (!v?.g || (v.g.userData.manchas || 0) > 8) return;
+  const W = v.g.userData.W || 1.8, L = v.g.userData.L || 4.2, m = new THREE.Mesh(new THREE.CircleGeometry(rnd(.15, .35), 12), new THREE.MeshStandardMaterial({ color: CORES_SG.vermelho, roughness: .2, transparent: true, opacity: .85 }));
+  m.position.set(rnd(-W * .3, W * .3), 1.02 + rnd(0, .15), L * rnd(.2, .45)); m.rotation.x = -Math.PI / 2 + .25; v.g.add(m); v.g.userData.manchas = (v.g.userData.manchas || 0) + 1;
+}
+const telaSg = document.createElement('canvas'); telaSg.id = 'telaSangue'; document.body.appendChild(telaSg);
+const TSG = { gotas: [], t: 0 };
+function telaSangue(tipo) {
+  if (!SANGUE.on) return;
+  telaSg.width = innerWidth; telaSg.height = innerHeight;
+  const n = tipo === 'parabrisa' ? 14 : tipo === 'escorre' ? 6 : 9;
+  for (let i = 0; i < n; i++) TSG.gotas.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight * (tipo === 'escorre' ? .4 : 1), r: rnd(12, tipo === 'parabrisa' ? 30 : 55), vy: tipo === 'escorre' ? rnd(30, 70) : rnd(4, 14), vida: 0, max: rnd(2.5, 4.5) });
+}
+function atualizarTelaSangue(dt) {
+  if (!TSG.gotas.length) { if (telaSg.style.display !== 'none') telaSg.style.display = 'none'; return; }
+  telaSg.style.display = 'block'; const g = telaSg.getContext('2d'); g.clearRect(0, 0, telaSg.width, telaSg.height);
+  for (let i = TSG.gotas.length - 1; i >= 0; i--) {
+    const q = TSG.gotas[i]; q.vida += dt; q.y += q.vy * dt; const a = Math.max(0, 1 - q.vida / q.max);
+    const gr = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, q.r); gr.addColorStop(0, `rgba(110,0,8,${.8 * a})`); gr.addColorStop(.7, `rgba(80,0,5,${.55 * a})`); gr.addColorStop(1, 'rgba(60,0,0,0)');
+    g.fillStyle = gr; g.beginPath(); g.ellipse(q.x, q.y, q.r, q.r * 1.15, 0, 0, 7); g.fill();
+    g.fillStyle = `rgba(90,0,6,${.5 * a})`; g.fillRect(q.x - 2, q.y, 4, q.vy * q.vida * .6);   // escorrendo
+    if (q.vida > q.max) TSG.gotas.splice(i, 1);
   }
-  let t = 0;
-  efeitos.push({ atualizar(dt) { t += dt; for (const g of gotas) { g.v.y -= 14 * dt; g.m.position.addScaledVector(g.v, dt); const ch = alturaChao(g.m.position.x, g.m.position.z) + .02; if (g.m.position.y < ch) { g.m.position.y = ch; g.v.set(0, 0, 0); g.m.scale.y = .15; } } return t < 2.5; }, remover() { for (const g of gotas) cena.remove(g.m); } });
-  if (poca) {
-    const p = new THREE.Mesh(GEO_POCA, MAT_POCA); p.rotation.x = -Math.PI / 2; p.position.set(pos.x + rnd(-.3, .3), alturaChao(pos.x, pos.z) + .03, pos.z + rnd(-.3, .3)); p.scale.setScalar(.1); p.renderOrder = 1; cena.add(p);
-    const alvo = rnd(.9, 1.6) * forca; POCAS.push(p); if (POCAS.length > 25) cena.remove(POCAS.shift());
-    let tp = 0; efeitos.push({ atualizar(dt) { tp += dt; p.scale.setScalar(Math.min(alvo, .1 + tp * .5)); return tp < 4; }, remover() {} });
+}
+function atualizarSangue(dt) {
+  atualizarTelaSangue(dt);
+  const chovendo = !!chuva;
+  // gotas
+  let k = 0;
+  for (let i = SG.gotas.length - 1; i >= 0; i--) {
+    const q = SG.gotas[i]; q.vida += dt;
+    if (!q.parada) {
+      q.v.y -= 9.8 * q.grav * dt; q.v.multiplyScalar(Math.max(0, 1 - q.arr * dt * .5)); _v.copy(q.p).addScaledVector(q.v, dt);
+      const ch = alturaChao(_v.x, _v.z) + .02;
+      if (q.gruda && colide(_v, .05)) { q.parada = 'parede'; q.v.set(0, 0, 0); decal(q.p.x, q.p.y, q.p.z, .12 * q.tam, q.cor, { parede: true, ry: Math.atan2(q.v.x, q.v.z) + Math.random(), max: 60 }); }
+      else if (_v.y <= ch) { if (q.nevoa) { SG.gotas.splice(i, 1); continue; } q.p.set(_v.x, ch, _v.z); q.parada = 'chao'; decal(_v.x, ch, _v.z, .09 * q.tam * rnd(.8, 1.5), q.cor, { sx: 1 + Math.min(2, Math.hypot(q.v.x, q.v.z) * .15), ry: Math.atan2(q.v.x, q.v.z) }); }
+      else q.p.copy(_v);
+    } else if (q.parada === 'parede' && q.escorre && q.vida < 3) { q.p.y = Math.max(alturaChao(q.p.x, q.p.z) + .02, q.p.y - .35 * dt); if (Math.random() < dt * 4) decal(q.p.x, q.p.y, q.p.z, .05 * q.tam, q.cor, { parede: true, max: 50 }); }
+    const vidaMax = q.nevoa ? 1.6 : q.parada ? 1.2 : 4;
+    if (q.vida > vidaMax + (q.parada ? 0 : 3)) { SG.gotas.splice(i, 1); continue; }
   }
+  for (const q of SG.gotas) {
+    if (k >= SG.MAX) break;
+    const s = q.tam * (q.nevoa ? 1.6 + q.vida * 2 : q.parada === 'chao' ? .5 : 1);
+    _o3.position.copy(q.p); _o3.rotation.set(0, 0, 0);
+    if (!q.parada && !q.nevoa) { _o3.lookAt(_v.copy(q.p).add(q.v)); _o3.scale.set(s, s, s * (1 + Math.min(2.5, q.v.length() * .12))); } else _o3.scale.set(s, q.parada === 'chao' ? s * .25 : s, s);
+    _o3.updateMatrix(); SG.mesh.setMatrixAt(k, _o3.matrix);
+    _cor.setHex(q.cor); if (q.nevoa) _cor.lerp(new THREE.Color(0x996666), Math.min(.6, q.vida * .4)); SG.mesh.setColorAt(k, _cor); k++;
+  }
+  SG.mesh.count = k; SG.mesh.instanceMatrix.needsUpdate = true; if (SG.mesh.instanceColor) SG.mesh.instanceColor.needsUpdate = true;
+  // manchas
+  let j = 0;
+  for (let i = SG.decais.length - 1; i >= 0; i--) { const d = SG.decais[i]; d.idade += dt * (chovendo ? 6 : 1); if (d.idade > d.max) SG.decais.splice(i, 1); }
+  for (const d of SG.decais) {
+    if (j >= SG.MAXD) break;
+    _o3.position.set(d.x, d.y + (d.parede ? 0 : .015), d.z); _o3.rotation.set(d.rx, d.ry, 0, 'YXZ'); _o3.scale.set(d.r * d.sx, d.r, 1); _o3.updateMatrix(); SG.dmesh.setMatrixAt(j, _o3.matrix);
+    _cor.setHex(d.cor).multiplyScalar(Math.max(.35, 1 - d.idade / d.max * .7)); SG.dmesh.setColorAt(j, _cor); j++;
+  }
+  SG.dmesh.count = j; SG.dmesh.instanceMatrix.needsUpdate = true; if (SG.dmesh.instanceColor) SG.dmesh.instanceColor.needsUpdate = true;
+  // poças: crescem, escorrem ladeira abaixo, a chuva lava
+  for (let i = SG.pocas.length - 1; i >= 0; i--) {
+    const P = SG.pocas[i], m = P.m; P.idade += dt;
+    if (m.scale.x < P.alvo) { const c = P.cresce * dt * (1 - m.scale.x / P.alvo + .15); m.scale.x += c; m.scale.y += c * rnd(.8, 1.1); }
+    if (P.escorre && P.idade < 12) { const hx = alturaChao(m.position.x + .5, m.position.z) - alturaChao(m.position.x - .5, m.position.z), hz = alturaChao(m.position.x, m.position.z + .5) - alturaChao(m.position.x, m.position.z - .5); m.position.x -= hx * dt * 2; m.position.z -= hz * dt * 2; m.position.y = alturaChao(m.position.x, m.position.z) + .025; if (Math.random() < dt * 3) decal(m.position.x, m.position.y, m.position.z, .2, CORES_SG.escuro, { max: 80 }); }
+    if (chovendo) { m.material.opacity -= dt * .04; m.material.color.lerp(_cor.setHex(0xa05a5a), dt * .05); m.scale.x += dt * .05; m.scale.y += dt * .05; }
+    if (P.idade > 150 || m.material.opacity <= .05) { cena.remove(m); m.geometry.dispose(); m.material.dispose(); SG.pocas.splice(i, 1); continue; }
+    // pisou na poça: pegadas / passou de carro: marca de pneu
+    const r = m.scale.x;
+    if (!dirigindo && Math.hypot(jog.pos.x - m.position.x, jog.pos.z - m.position.z) < r) SG.pegadas = 14;
+    if (dirigindo && Math.hypot(dirigindo.g.position.x - m.position.x, dirigindo.g.position.z - m.position.z) < r + 1) SG.pneu = 7;
+  }
+  if (SG.pegadas > 0 && !dirigindo) {
+    if (!SG.ultPeg || SG.ultPeg.distanceTo(jog.pos) > .7) {
+      SG.ladoPeg *= -1; const lado = new THREE.Vector3(Math.cos(jog.rot), 0, -Math.sin(jog.rot)).multiplyScalar(.13 * SG.ladoPeg);
+      decal(jog.pos.x + lado.x, alturaChao(jog.pos.x, jog.pos.z), jog.pos.z + lado.z, .1, CORES_SG.escuro, { sx: .45, ry: jog.rot, max: 70 + SG.pegadas * 4 });
+      SG.ultPeg = jog.pos.clone(); SG.pegadas--;
+    }
+  }
+  if (SG.pneu > 0 && dirigindo) {
+    const v = dirigindo, p = v.g.position;
+    if (!SG.ultPneu || SG.ultPneu.distanceTo(p) > .45) {
+      const lado = new THREE.Vector3(Math.cos(v.ang), 0, -Math.sin(v.ang)), W = (v.g.userData.W || 1.8) * .42, tras = new THREE.Vector3(Math.sin(v.ang), 0, Math.cos(v.ang)).multiplyScalar(-(v.g.userData.L || 4) * .3);
+      for (const s of [-1, 1]) decal(p.x + lado.x * W * s + tras.x, alturaChao(p.x, p.z), p.z + lado.z * W * s + tras.z, .13, CORES_SG.escuro, { sx: .5, ry: v.ang, max: 40 + SG.pneu * 6 });
+      SG.ultPneu = p.clone(); SG.pneu -= .45 / Math.max(1, Math.abs(v.vel)) * 3;
+    }
+  }
+  // emissores: gotejando, rastro de arrastar, tosse, nariz
+  for (let i = SG.emissores.length - 1; i >= 0; i--) {
+    const E = SG.emissores[i]; E.t += dt; const p = E.posFn(); if (!p || E.t > E.dur) { SG.emissores.splice(i, 1); continue; }
+    if (E.tipo === 'gotejar' && Math.random() < dt * 5) gota(p.clone().setY(p.y + .9 + rnd(0, .3)), new THREE.Vector3(rnd(-.2, .2), -.5, rnd(-.2, .2)), rnd(.5, .9), CORES_SG.vermelho, { arr: .5 });
+    if (E.tipo === 'nariz' && Math.random() < dt * 4) gota(p.clone().setY(p.y + 1.6), new THREE.Vector3(rnd(-.1, .1), -.2, rnd(-.1, .1)), .4, CORES_SG.vivo, { arr: .5 });
+    if (E.tipo === 'tosse' && Math.random() < dt * .8) for (let k2 = 0; k2 < 6; k2++) gota(p.clone().setY(p.y + 1.55), new THREE.Vector3(rnd(-1, 1), rnd(.5, 1.5), rnd(-1, 1)), .45, CORES_SG.vivo, { arr: 2 });
+    if (E.tipo === 'rastro' && (!E.ult || E.ult.distanceTo(p) > .35)) { decal(p.x, alturaChao(p.x, p.z), p.z, rnd(.2, .35), CORES_SG.escuro, { sx: 2.2, ry: E.ult ? Math.atan2(p.x - E.ult.x, p.z - E.ult.z) : 0, max: 90 }); E.ult = p.clone(); }
+  }
+}
+quadros.push(dt => { atualizarSangue(dt); return true; });
+window.__dbg.sangue = { TIPOS_SANGUE, SG, ver: t => sangue(t, jog.pos.clone().add(new THREE.Vector3(3, 0, 0)), new THREE.Vector3(1, 0, 0)) };
+// compatível com o jeito antigo
+function sangrar(pos, forca = 1, poca = false, tipo) {
+  sangue(tipo || (forca > 1.8 ? 'tiro_saida' : forca > 1 ? 'chute' : 'tiro_entrada'), pos, null, Math.min(2, forca));
+  if (poca) { sangue(pega(['poca_lenta', 'poca_rapida', 'poca_ladeira']), pos, null, forca * .6); }
 }
 // ---- alvos de missão (gente que dá pra matar)
 const ALVOS = [];
@@ -5010,15 +5197,27 @@ function novoAlvo(x, z, o = {}) {
   if (a.papel !== 'guarda') { a.tag = textoSprite((a.papel === 'espiao' ? '👁 ' : '🎯 ') + a.nome, a.papel === 'espiao' ? 'rgba(20,60,160,.75)' : 'rgba(170,0,0,.78)'); cena.add(a.tag); }
   ALVOS.push(a); return a;
 }
-function ferirAlvo(a, q, dir) {
+function ferirAlvo(a, q, dir, causa = 'tiro') {
   if (a.morto) return;
-  a.vida -= q; a.alerta = true; sangrar(a.pos, Math.min(2.2, .6 + q / 40));
+  a.vida -= q; a.alerta = true;
+  const perto = a.pos.distanceTo(jog.pos), arma = (jog.arma?.nome || '').toLowerCase(), parede = dir && colide(a.pos.clone().addScaledVector(new THREE.Vector3(dir.x, 0, dir.z).normalize(), 1.6).setY(a.pos.y + 1.2), .3);
+  if (causa === 'tiro') {
+    sangue('tiro_entrada', a.pos, dir);
+    sangue(arma.includes('escopeta') ? 'escopeta' : arma.includes('metralhadora') || arma.includes('fuzil') ? 'rajada' : q > 45 || Math.random() < .15 ? 'tiro_cabeca' : Math.random() < .25 ? 'tiro_raspao' : 'tiro_saida', a.pos, dir);
+    if (parede) sangue(Math.random() < .5 ? 'respingo_parede' : 'escorrer_parede', a.pos, dir);
+  } else if (causa === 'soco') sangue(pega(['soco_nariz', 'soco_boca', 'combo', 'espirro_lateral']), a.pos, dir);
+  else if (causa === 'chute') sangue(pega(['chute', 'corte']), a.pos, dir);
+  else if (causa === 'carro') { sangue(q > 70 ? 'atropelamento_forte' : 'atropelamento_leve', a.pos, dir); if (q > 70) sangue('rodopio', a.pos, dir); sangue('lataria', a.pos, dir); if (perto < 6) sangue('para_brisa', a.pos); }
+  else if (causa === 'explosao') { sangue('explosao_nevoa', a.pos, dir); sangue('queda_alta', a.pos, dir); }
+  if (perto < 3.2 && causa !== 'carro') sangue(Math.random() < .5 ? 'respingo_tela' : 'tela_escorrendo', a.pos);
+  if (!a.sangrando && a.vida < 65 && a.vida > 0) { a.sangrando = true; emissor('gotejar', () => a.morto || !ALVOS.includes(a) ? null : a.pos, 40); if (a.vida < 35) emissor('tosse', () => a.morto ? null : a.pos, 25); }
   for (const o of ALVOS) if (!o.morto && o.pos.distanceTo(a.pos) < 40) o.alerta = true;
   if (dir) a.pos.addScaledVector(new THREE.Vector3(dir.x, 0, dir.z).normalize(), .4);
   if (a.vida <= 0) {
     a.morto = true; a.tMorto = 0; if (a.tag) { cena.remove(a.tag); a.tag = null; }
-    sangrar(a.pos, 2.4, true); crime(a.papel === 'guarda' ? .6 : 1, 'homicídio');
-    if (SANGUE.on && a.pos.distanceTo(jog.pos) < 7) criarEfeito2d({ estilo: 'tinta', cores: ['#6b0006', '#8a000b'], duracao: 1.4, intensidade: .5 });
+    if (causa === 'tiro' || causa === 'chute') sangue(Math.random() < .5 ? 'arterial' : 'jorro_continuo', a.pos, dir);
+    sangue(pega(['poca_lenta', 'poca_rapida', 'poca_ladeira']), a.pos); sangue(pega(['gotas_grossas', 'coagulo', 'nevoa_fina']), a.pos, dir); crime(a.papel === 'guarda' ? .6 : 1, 'homicídio');
+    
     narrar(a.papel === 'guarda' ? '💀 Segurança abatido' : `💀 ${a.nome} foi eliminado`);
   } else if (a.papel !== 'guarda' && Math.random() < .5) falarAlvo(a, pega(['Aaah!', 'Tão atirando!', 'Socorro!', 'Não me mata!', 'Seguranças!']));
 }
@@ -5049,7 +5248,7 @@ function atualizarAlvos(dt) {
     if (a.solto && a.pos.distanceTo(jog.pos) > 160) { cena.remove(a.b.g); if (a.tag) cena.remove(a.tag); ALVOS.splice(i, 1); continue; }
     const dj = a.pos.distanceTo(jog.pos);
     // atropelado
-    if (dirigindo && Math.abs(dirigindo.vel) > 7 && dirigindo.g.position.distanceTo(a.pos) < 2.6) { ferirAlvo(a, 40 + Math.abs(dirigindo.vel) * 4, new THREE.Vector3(Math.sin(dirigindo.ang), 0, Math.cos(dirigindo.ang))); continue; }
+    if (dirigindo && Math.abs(dirigindo.vel) > 7 && dirigindo.g.position.distanceTo(a.pos) < 2.6) { ferirAlvo(a, 40 + Math.abs(dirigindo.vel) * 4, new THREE.Vector3(Math.sin(dirigindo.ang), 0, Math.cos(dirigindo.ang)), 'carro'); continue; }
     if (!a.alerta && dj < (a.papel === 'guarda' ? 16 : 9) && a.papel !== 'espiao') a.alerta = true;
     let vel = 0, modo = a.pose;
     const dJog = new THREE.Vector3(jog.pos.x - a.pos.x, 0, jog.pos.z - a.pos.z);
@@ -5061,7 +5260,7 @@ function atualizarAlvos(dt) {
         a.tiroT = rnd(.9, 1.6);
         const linha = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.pos.clone().setY(a.pos.y + 1.5), jog.pos.clone().setY(jog.pos.y + 1.2 + rnd(-.6, .6)).add(new THREE.Vector3(rnd(-1, 1), 0, rnd(-1, 1)))]), new THREE.LineBasicMaterial({ color: 0xffe08a }));
         cena.add(linha); setTimeout(() => cena.remove(linha), 70);
-        if (Math.random() < (dirigindo ? .3 : .45)) { if (dirigindo) danoVeiculo(dirigindo, 4); else { danoJogador(6, 'tiro de segurança'); sangrar(jog.pos, .5); } }
+        if (Math.random() < (dirigindo ? .3 : .45)) { if (dirigindo) danoVeiculo(dirigindo, 4); else { danoJogador(6, 'tiro de segurança'); sangue(pega(['tiro_entrada', 'tiro_raspao']), jog.pos, linha.geometry ? new THREE.Vector3(jog.pos.x - a.pos.x, 0, jog.pos.z - a.pos.z) : null); if (Math.random() < .35) sangue('respingo_tela', jog.pos); } }
       }
     } else if (a.alerta && (a.comp === 'fuga' || a.papel === 'alvo')) {
       if (a.comp === 'valente' && dj < 30) {   // alvo que revida
