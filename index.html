@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cidade IA – jogo de mundo aberto com IA (grátis pra PC)</title>
+<meta name="description" content="Cidade IA: jogo grátis de mundo aberto onde você pede qualquer coisa e a inteligência artificial faz acontecer. Carros, poderes, multiplayer e celular. Baixe pra Windows.">
+<meta property="og:title" content="Cidade IA – jogo de mundo aberto com IA">
+<meta property="og:description" content="Peça qualquer coisa e a IA faz acontecer. Grátis pra Windows.">
+<meta property="og:image" content="https://suelainedias90.github.io/cidade-ia/img/menu.jpg">
+<link rel="icon" href="img/icone.png">
+</head><body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: noite neon numa ilha — herói em pôr do sol, depois faixas escuras alternadas; um único mundo escuro de propósito */
+:root {
+  color-scheme: dark;
+  --ceu: #12081f;        /* fundo: noite roxa */
+  --ceu2: #1b0f2e;       /* faixas alternadas */
+  --vidro: #ffffff0d;    /* cartões */
+  --linha: #ffffff1f;
+  --texto: #f4eefc;
+  --suave: #b9aed0;
+  --sol: #ffd166;        /* destaque principal: sol do pôr do sol */
+  --neon: #ff6f91;       /* rosa neon */
+  --ceuNeon: #c77dff;
+  --info: #3ad7ff;
+  --ok: #3ddc8a;
+  --aviso: #ffb347;
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-texto: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, monospace;
+}
+* { box-sizing: border-box }
+body { margin: 0; background: var(--ceu); color: var(--texto); font-family: var(--f-texto); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased }
+a { color: var(--sol) }
+.faixa { padding-block: clamp(56px, 8vw, 104px); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.faixa.alt { background: var(--ceu2) }
+.dentro { max-width: 1120px; margin: 0 auto }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0 }
+h2 { font-size: clamp(26px, 4vw, 42px); font-weight: 800; letter-spacing: -.5px; line-height: 1.1 }
+.olho { font-family: var(--f-mono); font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--neon); margin-bottom: 12px; display: block }
+.lead { color: var(--suave); font-size: 18px; max-width: 62ch; margin: 14px 0 0 }
+
+/* ---------- herói: pôr do sol sobre a cidade ---------- */
+.heroi { position: relative; overflow: hidden; margin-top: calc(-1 * env(safe-area-inset-top, 0px)); padding-top: calc(env(safe-area-inset-top, 0px) + 28px); padding-bottom: 0; background: linear-gradient(#2b1055 0%, #7b2d8e 38%, #ff6f61 70%, #ffb86b 86%, #ffd89b 100%) }
+.heroi .sol { position: absolute; left: 62%; top: 36%; width: min(34vw, 360px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #fff6c9 0, #ffcf6b 45%, #ff7b54 70%, transparent 72%); box-shadow: 0 0 140px 50px #ff965070; animation: brilha 6s ease-in-out infinite alternate }
+@keyframes brilha { to { transform: translateY(-10px) scale(1.03) } }
+.heroi .predios { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; display: flex; align-items: flex-end; gap: 6px; padding: 0 8px; opacity: .95 }
+.heroi .predios i { flex: 1; background: linear-gradient(#1a0b2e, #0c0614); border-radius: 3px 3px 0 0; position: relative }
+.heroi .predios i::after { content: ""; position: absolute; inset: 10% 20%; background: repeating-linear-gradient(0deg, transparent 0 9px, #ffd28c38 9px 12px), repeating-linear-gradient(90deg, transparent 0 7px, #0008 7px 10px) }
+.heroi nav { position: relative; z-index: 2; display: flex; align-items: center; gap: 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1180px; margin: 0 auto }
+.heroi nav img { width: 44px; height: 44px; border-radius: 12px; box-shadow: 0 6px 18px #0006 }
+.heroi nav b { font-family: var(--f-display); font-weight: 800; font-size: 18px }
+.heroi nav .links { margin-left: auto; display: flex; gap: 18px; flex-wrap: wrap }
+.heroi nav .links a { color: var(--texto); text-decoration: none; font-weight: 700; font-size: 14px; opacity: .9 }
+.heroi nav .links a:hover, .heroi nav .links a:focus-visible { opacity: 1; text-decoration: underline }
+.heroi .miolo { position: relative; z-index: 2; max-width: 1180px; margin: 0 auto; padding: clamp(36px, 7vw, 90px) max(16px, env(safe-area-inset-right, 0px)) clamp(200px, 30vw, 330px) max(16px, env(safe-area-inset-left, 0px)) }
+.titulo { font-family: var(--f-display); font-weight: 900; font-style: italic; font-size: clamp(54px, 11vw, 132px); line-height: .86; letter-spacing: -3px; transform: rotate(-3deg); transform-origin: left; text-shadow: 0 6px 0 #0005 }
+.titulo span { display: inline-block; font-size: .62em; background: var(--sol); color: #160b22; padding: 0 .18em; margin-left: .12em; transform: skewX(-10deg); box-shadow: 6px 6px 0 #0006; text-shadow: none }
+.heroi .frase { font-size: clamp(18px, 2.2vw, 24px); font-weight: 700; max-width: 30ch; margin: 30px 0 26px; text-shadow: 0 2px 10px #0006 }
+.botoes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 24px; border-radius: 14px; font-weight: 800; font-size: 16px; text-decoration: none; border: 0; cursor: pointer; font-family: var(--f-texto); transition: transform .15s, box-shadow .15s }
+.btn.prin { background: #160b22; color: var(--sol); box-shadow: 0 10px 30px #0006, inset 0 0 0 2px var(--sol) }
+.btn.prin:hover, .btn.prin:focus-visible { transform: translateY(-2px); box-shadow: 0 14px 34px #0008, inset 0 0 0 2px var(--sol) }
+.btn.sec { background: #ffffff26; color: var(--texto); backdrop-filter: blur(6px) }
+.btn small { display: block; font-weight: 600; font-size: 12px; opacity: .75 }
+.selos { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 18px; font-family: var(--f-mono); font-size: 12px; opacity: .9 }
+
+/* ---------- galeria ---------- */
+.galeria { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-top: 36px }
+.galeria figure { margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--linha); background: #000; position: relative }
+.galeria img { display: block; width: 100%; height: 100%; object-fit: cover }
+.galeria figcaption { position: absolute; left: 10px; bottom: 10px; font-size: 12px; font-weight: 700; background: #000a; padding: 4px 10px; border-radius: 999px }
+.galeria .grande { grid-row: span 2 }
+@media (max-width: 760px) { .galeria { grid-template-columns: 1fr } .galeria .grande { grid-row: auto } }
+
+/* ---------- o que tem ---------- */
+.recursos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 34px }
+.rec { padding: 20px; border-radius: 16px; background: var(--vidro); border: 1px solid var(--linha); min-width: 0 }
+.rec .n { font-family: var(--f-display); font-weight: 900; font-size: 30px; color: var(--sol); line-height: 1; font-variant-numeric: tabular-nums }
+.rec h3 { font-size: 16px; font-weight: 800; margin: 8px 0 6px; font-family: var(--f-texto) }
+.rec p { margin: 0; color: var(--suave); font-size: 14.5px }
+
+/* ---------- passos (sequência real) ---------- */
+.passos { list-style: none; padding: 0; margin: 34px 0 0; display: grid; gap: 14px; counter-reset: p }
+.passos li { display: grid; grid-template-columns: 56px 1fr; gap: 16px; align-items: start; padding: 18px; border-radius: 16px; background: var(--vidro); border: 1px solid var(--linha) }
+.passos li::before { counter-increment: p; content: counter(p); font-family: var(--f-display); font-weight: 900; font-size: 26px; width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, var(--neon), var(--sol)); color: #160b22 }
+.passos h3 { font-size: 17px; font-family: var(--f-texto); font-weight: 800; margin: 2px 0 4px }
+.passos p { margin: 0; color: var(--suave); min-width: 0 }
+code, .cod { font-family: var(--f-mono); font-size: 13px; background: #ffffff14; padding: 2px 7px; border-radius: 6px; color: var(--texto); word-break: break-word }
+
+/* ---------- IA: caminho da chave ---------- */
+.caminho { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin-top: 30px }
+.caixa { flex: 1 1 180px; padding: 16px; border-radius: 14px; border: 1px solid var(--linha); background: var(--vidro); min-width: 0 }
+.caixa b { display: block; font-size: 15px }
+.caixa small { color: var(--suave) }
+.seta { align-self: center; font-family: var(--f-mono); color: var(--neon); font-weight: 700 }
+@media (max-width: 640px) { .seta { transform: rotate(90deg); width: 100%; text-align: center } }
+.ias { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px }
+.ias span { font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--linha); background: #ffffff0a }
+.duas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px }
+@media (max-width: 760px) { .duas { grid-template-columns: 1fr } }
+
+/* ---------- segurança ---------- */
+.seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-top: 30px }
+.seg article { padding: 20px; border-radius: 16px; background: var(--vidro); border: 1px solid var(--linha); min-width: 0 }
+.seg .tag { display: inline-block; font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 3px 9px; border-radius: 999px; margin-bottom: 10px }
+.tag.ok { background: #3ddc8a24; color: var(--ok) } .tag.at { background: #ffb34724; color: var(--aviso) }
+.seg h3 { font-family: var(--f-texto); font-size: 17px; font-weight: 800; margin-bottom: 6px }
+.seg p, .seg li { color: var(--suave); font-size: 14.5px } .seg ul { margin: 6px 0 0; padding-left: 18px }
+
+/* ---------- requisitos + faq ---------- */
+.req { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 26px }
+.req div { padding: 16px; border-radius: 14px; border: 1px dashed var(--linha) }
+.req b { font-family: var(--f-mono); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--info); display: block }
+details { border-bottom: 1px solid var(--linha); padding: 16px 0 }
+summary { cursor: pointer; font-weight: 800; font-size: 16px; list-style: none; display: flex; justify-content: space-between; gap: 12px }
+summary::after { content: "+"; font-family: var(--f-display); color: var(--sol) } details[open] summary::after { content: "–" }
+details p { color: var(--suave); margin: 10px 0 0 }
+.baixar { text-align: center }
+.baixar .btn { margin-top: 24px }
+.nota { font-size: 13px; color: var(--suave); margin-top: 14px }
+footer { padding-block: 34px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); text-align: center; color: var(--suave); font-size: 13px; border-top: 1px solid var(--linha) }
+:focus-visible { outline: 3px solid var(--sol); outline-offset: 3px }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important } }
+</style>
+
+<header class="faixa heroi">
+  <div class="sol" aria-hidden="true"></div>
+  <div class="predios" aria-hidden="true"></div>
+  <nav>
+    <img src="img/icone.png" alt="">
+    <b>Cidade IA</b>
+    <div class="links"><a href="#recursos">O jogo</a><a href="#ia">A IA</a><a href="#seguranca">Segurança</a><a href="#como">Instalar</a></div>
+  </nav>
+  <div class="miolo">
+    <h1 class="titulo">CIDADE<br><span>IA</span></h1>
+    <p class="frase">Uma ilha inteira de mundo aberto onde você pede qualquer coisa e a IA faz acontecer.</p>
+    <div class="botoes">
+      <a class="btn prin" id="btnBaixar" href="#como">⬇ Baixar pra Windows <small id="tamZip">CidadeIA.zip · 57 MB</small></a>
+      <a class="btn sec" href="#como">Como instalar</a>
+    </div>
+    <div class="selos"><span>● grátis</span><span>● roda no seu PC</span><span>● código aberto</span><span>● joga no celular</span></div>
+  </div>
+</header>
+
+<section class="faixa" id="recursos">
+  <div class="dentro">
+    <span class="olho">O jogo</span>
+    <h2>Uma cidade viva que obedece você</h2>
+    <p class="lead">Dirija, explore, assalte um banco, crie seu personagem ou peça pra IA um furacão de vacas. Tudo dentro de uma ilha em forma de bota com cinco cidades ligadas por pontes.</p>
+    <div class="galeria">
+      <figure class="grande"><img src="img/rua.jpg" alt="Personagem numa rua da cidade com faixa amarela dupla"><figcaption>Ruas da Metrópole</figcaption></figure>
+      <figure><img src="img/menu.jpg" alt="Menu inicial do jogo com a cidade ao fundo"><figcaption>Menu inicial</figcaption></figure>
+      <figure><img src="img/boate.jpg" alt="Boate com globo espelhado e pessoas dançando"><figcaption>Boate Neon</figcaption></figure>
+    </div>
+    <div class="recursos">
+      <div class="rec"><div class="n">∞</div><h3>Poderes da IA</h3><p>Peça qualquer coisa em português: monstros, chuva de carros, armas malucas, construções. Vira até item na sua roda de poderes.</p></div>
+      <div class="rec"><div class="n">115</div><h3>Poderes prontos</h3><p>Pra quem não tem chave de IA: armas, clima, transformações, monstros, caos e coisas úteis, de graça.</p></div>
+      <div class="rec"><div class="n">32</div><h3>Carros</h3><p>Modelados no Blender, com física de batida, drift e suspensão. Seis são raros e aparecem com 🌟 no radar.</p></div>
+      <div class="rec"><div class="n">31</div><h3>Lugares pra entrar</h3><p>Lojas, bancos, boate, cinema, museu, academia. Quase todos dá pra assaltar, se você tiver coragem.</p></div>
+      <div class="rec"><div class="n">40+</div><h3>Animações</h3><p>Dança, samba, caratê, yoga, sentar, dormir. E um editor com linha do tempo pra criar as suas.</p></div>
+      <div class="rec"><div class="n">👤</div><h3>Seu personagem</h3><p>Boneco realista ou clássico, pele, roupa e acessórios. Ou envie seu próprio modelo 3D (.glb, .fbx, .obj).</p></div>
+      <div class="rec"><div class="n">👥</div><h3>Multiplayer</h3><p>Seus amigos no mesmo Wi-Fi entram pelo navegador, sem instalar nada.</p></div>
+      <div class="rec"><div class="n">📱</div><h3>Celular</h3><p>Joystick e botões de toque. Abra no celular pelo endereço que aparece no menu e adicione à tela inicial.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="faixa alt" id="ia">
+  <div class="dentro">
+    <span class="olho">A IA</span>
+    <h2>Use a IA que você já tem. Ou nenhuma.</h2>
+    <p class="lead">O jogo funciona sem IA. Se quiser os poderes infinitos e conversar de verdade com os moradores, cole a chave de API da IA que você preferir.</p>
+    <div class="caminho" aria-label="Caminho que a sua chave percorre">
+      <div class="caixa"><b>Seu navegador</b><small>a chave fica guardada só aqui</small></div>
+      <div class="seta">→</div>
+      <div class="caixa"><b>Servidor do jogo, no seu PC</b><small>usa a chave naquele pedido e esquece</small></div>
+      <div class="seta">→</div>
+      <div class="caixa"><b>A IA que você escolheu</b><small>responde com as ações do poder</small></div>
+    </div>
+    <div class="ias"><span>Claude</span><span>ChatGPT</span><span>Gemini</span><span>Groq (tem plano grátis)</span><span>OpenRouter</span><span>DeepSeek</span><span>Mistral</span><span>Grok</span><span>qualquer API compatível com OpenAI</span></div>
+    <div class="duas">
+      <div class="rec"><h3>Sem chave</h3><p>115 poderes prontos, editor pra programar seus próprios poderes em JavaScript, e moradores com falas gravadas e rotina de casa, trabalho e lazer.</p></div>
+      <div class="rec"><h3>Com chave</h3><p>Poderes inventados na hora, mundo em branco pra criar do zero no Modo Livre, chat com o "mestre do jogo" e moradores que conversam com você.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="faixa" id="seguranca">
+  <div class="dentro">
+    <span class="olho">Segurança</span>
+    <h2>O que o jogo faz no seu computador</h2>
+    <p class="lead">Explicado sem enrolação: o que é seguro e o que merece atenção.</p>
+    <div class="seg">
+      <article><span class="tag ok">SEGURO</span><h3>Não instala nada no Windows</h3><p>É uma pasta com arquivos. Não pede permissão de administrador, não mexe no registro e não roda nada escondido quando você não está jogando. Pra remover, apague a pasta.</p></article>
+      <article><span class="tag ok">SEGURO</span><h3>Código aberto pra conferir</h3><p>O jogo inteiro está em arquivos de texto que dá pra abrir e ler: <span class="cod">index.html</span> (o jogo) e <span class="cod">servidor.py</span> (o servidor). Nada é compactado ou escondido.</p></article>
+      <article><span class="tag ok">SEGURO</span><h3>Sua chave de IA fica com você</h3><p>A chave fica só no seu navegador. O servidor do jogo usa a chave no pedido e não grava em arquivo nem no registro de atividade. Ela vai direto do seu PC pra empresa da IA.</p></article>
+      <article><span class="tag ok">SEGURO</span><h3>O que a IA cria fica dentro do jogo</h3><p>Poderes, monstros e construções existem só dentro da página do jogo. A página roda no navegador, que não deixa ela abrir seus arquivos nem seus programas.</p></article>
+      <article><span class="tag at">ATENÇÃO</span><h3>Ele aparece na sua rede de casa</h3><p>Pra multiplayer e celular funcionarem, o servidor fica visível pra quem está no seu Wi-Fi. Quem entra por lá joga, mas não usa a sua IA.</p><ul><li>Se o Windows perguntar, permita só em <b>redes privadas</b>.</li><li>Não abra a porta 8777 no roteador.</li></ul></article>
+      <article><span class="tag at">ATENÇÃO</span><h3>Jogando no PC de outra pessoa</h3><p>Se você colocar sua chave jogando pelo servidor de um amigo, ela passa pelo computador dele. Só faça isso com quem você confia.</p></article>
+      <article><span class="tag at">ATENÇÃO</span><h3>Avisos do Windows e do antivírus</h3><p>O <span class="cod">Jogar.bat</span> não tem assinatura digital, então o Windows pode mostrar "o Windows protegeu o computador". Isso é normal pra programas pequenos sem assinatura. Abra o arquivo no Bloco de Notas pra ver que ele só inicia o jogo.</p></article>
+      <article><span class="tag at">ATENÇÃO</span><h3>Não é auditado por empresa</h3><p>É um projeto pessoal, feito com cuidado, mas ninguém de fora revisou o código. Baixe só do link oficial desta página.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="faixa alt" id="como">
+  <div class="dentro">
+    <span class="olho">Instalar</span>
+    <h2>Do download ao jogo em 3 minutos</h2>
+    <ol class="passos">
+      <li><div><h3>Instale o Python</h3><p>Baixe em <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org/downloads</a> (versão 3.10 ou mais nova). Na instalação, marque <b>"Add python.exe to PATH"</b>.</p></div></li>
+      <li><div><h3>Baixe e extraia o jogo</h3><p>Baixe o <span class="cod">CidadeIA.zip</span>, clique com o botão direito e escolha <b>Extrair tudo</b>. Coloque a pasta onde quiser.</p></div></li>
+      <li><div><h3>Clique em Jogar</h3><p>Abra a pasta e clique duas vezes em <span class="cod">Jogar.bat</span>. O jogo abre numa janela própria, em tela cheia. Se quiser, rode <span class="cod">Criar atalho na area de trabalho.bat</span>.</p></div></li>
+      <li><div><h3>(Opcional) Coloque sua chave de IA</h3><p>No jogo, abra o painel <b>⚡ Poderes</b> e toque em <b>🔑 Minha chave</b>. Cole a chave da IA que você usa. Sem chave, tudo funciona com os poderes prontos.</p></div></li>
+    </ol>
+    <div class="req">
+      <div><b>Sistema</b>Windows 10 ou 11</div>
+      <div><b>Precisa</b>Python 3.10+ e Edge ou Chrome</div>
+      <div><b>Espaço</b>cerca de 200 MB depois de extrair</div>
+      <div><b>Opcional</b>Blender 5, pra enviar skins próprias</div>
+    </div>
+  </div>
+</section>
+
+<section class="faixa" id="duvidas">
+  <div class="dentro">
+    <span class="olho">Dúvidas</span>
+    <h2>Perguntas comuns</h2>
+    <details><summary>Precisa pagar alguma coisa?</summary><p>Não. O jogo é grátis. Só a IA pode ter custo, e é cobrada pela empresa da IA na sua própria conta. O Groq e alguns planos do Gemini têm uso gratuito com limite.</p></details>
+    <details><summary>Funciona no Mac ou Linux?</summary><p>O jogo roda em qualquer sistema com Python, mas os atalhos (.bat) são de Windows. No Mac ou Linux, rode <code>python3 servidor.py</code> dentro da pasta e abra o endereço que aparecer.</p></details>
+    <details><summary>Como jogo no celular?</summary><p>O celular joga pelo seu PC. Deixe o jogo aberto no PC, conecte o celular no mesmo Wi-Fi e abra o endereço que aparece no menu inicial (algo como <code>http://192.168.1.10:8777</code>). Depois use "Adicionar à tela inicial".</p></details>
+    <details><summary>Meus amigos precisam baixar?</summary><p>Não, se estiverem no mesmo Wi-Fi: eles entram pelo navegador no endereço do seu PC e escolhem Multiplayer. Pra jogar de casas diferentes, cada um precisa da própria cópia.</p></details>
+    <details><summary>Fica lento no meu PC. E agora?</summary><p>No jogo, aperte Esc e diminua "Gráficos" e "Distância de visão". No celular isso já é feito sozinho.</p></details>
+  </div>
+</section>
+
+<section class="faixa alt baixar">
+  <div class="dentro">
+    <h2>Pronto pra entrar na cidade?</h2>
+    <a class="btn prin" id="btnBaixar2" href="#como">⬇ Baixar Cidade IA <small>Windows · 57 MB</small></a>
+    <p class="nota" id="notaLink">O link de download vai aparecer aqui assim que o arquivo for publicado.</p>
+  </div>
+</section>
+
+<footer>Cidade IA · feito por Lord Krex · personagens e cidades originais</footer>
+
+<script>
+// prédios do herói (silhueta varia de largura e altura)
+(() => { const p = document.querySelector('.predios'); const alturas = [38, 60, 30, 72, 48, 84, 40, 66, 92, 52, 70, 44, 80, 34, 58, 76, 46, 62]; for (const a of alturas) { const i = document.createElement('i'); i.style.height = a + '%'; p.appendChild(i); } })();
+// link oficial do download (preenchido quando o arquivo estiver publicado)
+const LINK_DOWNLOAD = 'https://github.com/SuelaineDias90/cidade-ia/releases/download/v1.0/CidadeIA.zip';
+if (LINK_DOWNLOAD) {
+  for (const id of ['btnBaixar', 'btnBaixar2']) { const a = document.getElementById(id); a.href = LINK_DOWNLOAD; a.target = '_blank'; a.rel = 'noopener'; }
+  document.getElementById('notaLink').textContent = 'Baixe só por este link oficial.';
+}
+</script>
+
+</body></html>
