@@ -330,6 +330,16 @@ window.SEM_PC = true;
   #foco small{opacity:.7}body.celular #foco small{display:none}body.celular #foco{bottom:auto;top:8px}
   #focoTela{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,transparent 45%,rgba(20,30,70,.55) 100%);box-shadow:inset 0 0 120px rgba(80,140,255,.35)}
   body.emFoco #focoTela{opacity:1}body.emFoco #foco{border-color:#ff6f91;box-shadow:0 0 18px rgba(255,111,145,.6)}
+  #menuMissoes{position:fixed;inset:0;z-index:30;display:none;background:rgba(6,4,14,.82);backdrop-filter:blur(6px);color:#fff;font-family:'Segoe UI'}
+  #menuMissoes.on{display:flex;align-items:center;justify-content:center}
+  .mmCaixa{width:min(980px,96vw);height:min(86vh,860px);display:flex;flex-direction:column;background:#140d22;border:1px solid #ffffff22;border-radius:18px;overflow:hidden}
+  .mmTopo{display:flex;gap:10px;align-items:center;padding:14px 16px;background:#1f1433;flex-wrap:wrap}.mmTopo b{font-size:20px;letter-spacing:1px}.mmTopo span{color:#b9aed0;margin-right:auto}
+  .mmTopo button{border:0;border-radius:10px;padding:8px 12px;background:#ffffff1c;color:#fff;font:700 13px 'Segoe UI';cursor:pointer}
+  .mmLista{overflow-y:auto;padding:6px 16px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;align-content:start}
+  .mmLista h4{grid-column:1/-1;margin:14px 0 2px;color:#ffd166;font-size:15px}
+  .mmItem{text-align:left;border:1px solid #ffffff18;border-radius:12px;background:#ffffff0c;color:#fff;padding:10px 12px;cursor:pointer;display:grid;gap:3px;font-family:'Segoe UI'}
+  .mmItem:hover{background:#ffffff1a;border-color:#ffd16688}.mmItem b{font-size:14px}.mmItem small{color:#b9aed0;font-size:12px}.mmItem i{color:#7CFC8a;font-style:normal;font-weight:800;font-size:12px}
+  .mmItem.ok{opacity:.7}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
   #mapaG canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;border:0;border-radius:0}
@@ -2984,7 +2994,7 @@ function atirar() {
 function assustarPerto(p, raio, seg) { for (const n of npcs) if (n.pos.distanceTo(p) < raio) { n.fugir(seg, p); if (Math.random() < .25) falarNPC(n, ['SOCORRO!', 'Aaaah!', 'Corre gente!', 'Tá maluco?!', 'Mãe!!'][(Math.random() * 5) | 0], 2.5); } }
 function acertar(orig, dir, alcance, r) {
   let melhor = null;
-  const alvos = [...npcs.filter(n => !n.dentro).map(n => ({ tipo: 'npc', o: n, pos: n.pos, r: 1.2 })), ...monstros.map(m => ({ tipo: 'monstro', o: m, pos: m.pos, r: m.S * .7 }))];
+  const alvos = [...npcs.filter(n => !n.dentro).map(n => ({ tipo: 'npc', o: n, pos: n.pos, r: 1.2 })), ...monstros.map(m => ({ tipo: 'monstro', o: m, pos: m.pos, r: m.S * .7 })), ...ALVOS.filter(a => !a.morto).map(a => ({ tipo: 'alvo', o: a, pos: a.pos, r: 1.1 }))];
   for (const a of alvos) {
     const c = a.pos.clone().setY(a.tipo === 'monstro' ? a.o.S * .5 : 1.5); const v = c.clone().sub(orig); const t = v.dot(dir);
     if (t < 0 || t > alcance) continue; const dist = v.addScaledVector(dir, -t).length();
@@ -2994,6 +3004,7 @@ function acertar(orig, dir, alcance, r) {
 }
 function efeitoArma(hit, A, dir) {
   const est = A.estilo || 'projetil', o = hit.o;
+  if (hit.tipo === 'alvo') { ferirAlvo(o, (A.dano || 20) * (est === 'explosivo' ? 4 : 1.4), dir); if (est === 'explosivo') explosao(hit.pos.x, hit.pos.z, A.raio || 8); return; }
   if (hit.tipo === 'monstro') o.vida -= (A.dano || 20) * (est === 'explosivo' ? 2 : 1);
   if (est === 'explosivo') return explosao(hit.pos.x, hit.pos.z, A.raio || 8);
   if (hit.tipo !== 'npc') return;
@@ -4143,7 +4154,7 @@ function atualizarHud() {
   const perto = npcMaisPerto();
   $('#hud').innerHTML = `🕐 <b>${hh}:${mm}</b> · ${clima} · 👥 ${npcs.length} moradores (🏠 ${npcs.filter(n => n.dentro).length} em casa · 💼 ${npcs.filter(n => !n.dentro && n.item?.atv === 'trabalhar' && !n.rota.length).length} trabalhando · 🚶 ${npcs.filter(n => !n.dentro && n.rota.length).length} na rua)${monstros.length ? ' · 👹 ' + monstros.length : ''}<br>
   🧍 ${jog.nome}${jog.arma ? ' · 🔫 ' + jog.arma.nome : ''}${resumo3d()}${ocupado ? ' · <span style="color:#c9b8ff">🤖 Claude pensando...</span>' : ''}<br>
-  <span style="opacity:.65;font-size:12px">WASD andar · Shift correr/nitro · clique soco · F carro · Q arma · M mapa · V câmera · R rádio · E falar/entrar · K GPS loja/banco · J animações · TAB armas · T chat</span>`;
+  <span style="opacity:.65;font-size:12px">WASD andar · Shift correr/nitro · clique soco · F carro · Q arma · M mapa · V câmera · R rádio · E falar/entrar · K GPS loja/banco · J animações · TAB armas · N missões · T chat</span>`;
   const dica = $('#dica'); if (perto && !digitando()) { dica.style.display = 'block'; dica.textContent = `[E] falar com ${perto.nome} — ${perto.fazendo}`; } else dica.style.display = 'none';
 }
 
@@ -4551,6 +4562,7 @@ function soco() {
   const agora = performance.now() / 1000; if (agora - G.ultimoSoco < .38 || dirigindo) return;
   G.combo = agora - G.ultimoSoco < 1 ? G.combo + 1 : 0; G.socoTipo = ['soco_d', 'soco_e', 'chute'][G.combo % 3]; G.ultimoSoco = agora; G.socoT = G.socoTipo === 'chute' ? .4 : .25;
   const f = new THREE.Vector3(Math.sin(jog.rot), 0, Math.cos(jog.rot));
+  for (const a of ALVOS) { if (a.morto) continue; const d = a.pos.clone().sub(jog.pos); d.y = 0; if (d.length() < 2.6 && d.normalize().dot(f) > .3) { ferirAlvo(a, G.socoTipo === 'chute' ? 22 : 15, f); tremor.forca = .15; return; } }
   for (const n of npcs) {
     if (n.dentro) continue;
     const d = n.pos.clone().sub(jog.pos); d.y = 0;
@@ -4930,6 +4942,7 @@ function atualizarMissao(dt) {
   if (!M) { if (dirigindo?.tipo === 'taxi' && Math.random() < dt * .3) iniciarTaxi(); painelMissao.style.display = 'none'; marcadorMissao.visible = false; return; }
   M.t += dt; painelMissao.style.display = 'block';
   const alvoMarcador = p => { marcadorMissao.visible = true; marcadorMissao.position.set(p.x, alturaChao(p.x, p.z) + 45, p.z); G.alvoMissao = p; };
+  if (M.tipo === 'contrato') { atualizarContrato(M, dt, alvoMarcador); return; }
   if (M.tipo === 'corrida') {
     if (!dirigindo) { painelMissao.textContent = '🏁 Volte pro carro!'; if (M.t > 300) G.missao = null; return; }
     const cp = M.cps[M.i]; alvoMarcador(cp);
@@ -4961,6 +4974,306 @@ function atualizarMissao(dt) {
     }
   }
 }
+
+// ==================================================================== CONTRATOS: 95 missões (matar, espionar, fotografar, roubar, fugir, absurdas...)
+// ---- sangue (dá pra desligar no menu de pausa)
+const SANGUE = { on: (() => { try { return localStorage.getItem('cidadeia_sangue') !== '0'; } catch (e) { return true; } })() };
+const GEO_GOTA = new THREE.SphereGeometry(.07, 6, 5), MAT_GOTA = new THREE.MeshStandardMaterial({ color: 0x7a0008, roughness: .35 });
+const GEO_POCA = new THREE.CircleGeometry(1, 20), MAT_POCA = new THREE.MeshStandardMaterial({ color: 0x4a0005, roughness: .2, transparent: true, opacity: .92, depthWrite: false });
+const POCAS = [];
+function sangrar(pos, forca = 1, poca = false) {
+  if (!SANGUE.on) return;
+  const n = Math.round(10 * forca), gotas = [];
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(GEO_GOTA, MAT_GOTA); m.position.set(pos.x, pos.y + 1.3, pos.z); m.scale.setScalar(rnd(.6, 1.6)); cena.add(m);
+    gotas.push({ m, v: new THREE.Vector3(rnd(-3, 3), rnd(1.5, 5), rnd(-3, 3)).multiplyScalar(.6 + forca * .3) });
+  }
+  let t = 0;
+  efeitos.push({ atualizar(dt) { t += dt; for (const g of gotas) { g.v.y -= 14 * dt; g.m.position.addScaledVector(g.v, dt); const ch = alturaChao(g.m.position.x, g.m.position.z) + .02; if (g.m.position.y < ch) { g.m.position.y = ch; g.v.set(0, 0, 0); g.m.scale.y = .15; } } return t < 2.5; }, remover() { for (const g of gotas) cena.remove(g.m); } });
+  if (poca) {
+    const p = new THREE.Mesh(GEO_POCA, MAT_POCA); p.rotation.x = -Math.PI / 2; p.position.set(pos.x + rnd(-.3, .3), alturaChao(pos.x, pos.z) + .03, pos.z + rnd(-.3, .3)); p.scale.setScalar(.1); p.renderOrder = 1; cena.add(p);
+    const alvo = rnd(.9, 1.6) * forca; POCAS.push(p); if (POCAS.length > 25) cena.remove(POCAS.shift());
+    let tp = 0; efeitos.push({ atualizar(dt) { tp += dt; p.scale.setScalar(Math.min(alvo, .1 + tp * .5)); return tp < 4; }, remover() {} });
+  }
+}
+// ---- alvos de missão (gente que dá pra matar)
+const ALVOS = [];
+const ROUPAS_ALVO = { chefe: ['#111111', '#2b2d42', '#e8e8e8'], guarda: ['#1b1b1b', '#26323a'], comum: ['#c0392b', '#3a86ff', '#6b705c', '#f4a261', '#2a9d8f'], palhaco: ['#ff006e', '#ffd166'] };
+function novoAlvo(x, z, o = {}) {
+  const r = ROUPAS_ALVO[o.visual] || ROUPAS_ALVO.comum;
+  const b = boneco({ roupa: pega(r), calca: o.visual === 'chefe' || o.visual === 'guarda' ? '#111111' : pega(['#1d3557', '#2b2d42', '#6b4f2a']), pele: pega(PELES_MOT), cabelo: pega(['#16100d', '#2b1b0e', '#777777', '#d9b26f']), jaqueta: o.visual === 'chefe' ? '#111111' : null });
+  if (o.visual === 'palhaco') aplicarAcessorios(b, [{ tipo: 'chapeu', cor: '#ff006e' }]);
+  if (o.visual === 'chefe') aplicarAcessorios(b, [{ tipo: 'oculos' }]);
+  if (o.escala) b.g.scale.multiplyScalar(o.escala);
+  const pos = new THREE.Vector3(x, alturaChao(x, z), z); b.g.position.copy(pos); cena.add(b.g);
+  const a = { b, pos, pos0: pos.clone(), vida: o.vida || (o.papel === 'guarda' ? 70 : 100), nome: o.nome || 'Alvo', papel: o.papel || 'alvo', comp: o.comp || 'parado', pose: o.pose || pega(['celular', 'pensar', '', 'cansado', 'beber']), alerta: false, morto: false, t: 0, tiroT: rnd(.5, 1.5), rota: null, dir: new THREE.Vector3(1, 0, 0), velAnd: o.vel || 1.6 };
+  if (a.papel !== 'guarda') { a.tag = textoSprite((a.papel === 'espiao' ? '👁 ' : '🎯 ') + a.nome, a.papel === 'espiao' ? 'rgba(20,60,160,.75)' : 'rgba(170,0,0,.78)'); cena.add(a.tag); }
+  ALVOS.push(a); return a;
+}
+function ferirAlvo(a, q, dir) {
+  if (a.morto) return;
+  a.vida -= q; a.alerta = true; sangrar(a.pos, Math.min(2.2, .6 + q / 40));
+  for (const o of ALVOS) if (!o.morto && o.pos.distanceTo(a.pos) < 40) o.alerta = true;
+  if (dir) a.pos.addScaledVector(new THREE.Vector3(dir.x, 0, dir.z).normalize(), .4);
+  if (a.vida <= 0) {
+    a.morto = true; a.tMorto = 0; if (a.tag) { cena.remove(a.tag); a.tag = null; }
+    sangrar(a.pos, 2.4, true); crime(a.papel === 'guarda' ? .6 : 1, 'homicídio');
+    if (SANGUE.on && a.pos.distanceTo(jog.pos) < 7) criarEfeito2d({ estilo: 'tinta', cores: ['#6b0006', '#8a000b'], duracao: 1.4, intensidade: .5 });
+    narrar(a.papel === 'guarda' ? '💀 Segurança abatido' : `💀 ${a.nome} foi eliminado`);
+  } else if (a.papel !== 'guarda' && Math.random() < .5) falarAlvo(a, pega(['Aaah!', 'Tão atirando!', 'Socorro!', 'Não me mata!', 'Seguranças!']));
+}
+function falarAlvo(a, txt) { if (a.bolha) cena.remove(a.bolha); a.bolha = bolhaSprite(txt); a.bolhaT = 2.6; cena.add(a.bolha); }
+function calcadaPerto(px, pz, dmin = 25, dmax = 70) {
+  for (let t = 0; t < 25; t++) {
+    const ang = Math.random() * 6.283, dd = rnd(dmin, dmax), bx = px + Math.cos(ang) * dd, bz = pz + Math.sin(ang) * dd;
+    const eixo = Math.random() < .5 ? 'x' : 'z', k = Math.round((eixo === 'x' ? bx : bz) / 60) * 60, off = (Math.random() < .5 ? 1 : -1) * rnd(7.6, 9.6);
+    const x = eixo === 'x' ? k + off : bx, z = eixo === 'x' ? bz : k + off;
+    if (cidadeEm(x, z) && !colide(new THREE.Vector3(x, 0, z), .5)) return new THREE.Vector3(x, 0, z);
+  }
+  return new THREE.Vector3(px + rnd(-20, 20), 0, pz + rnd(-20, 20));
+}
+function moverAlvo(a, d, vel, dt) {
+  const nx = a.pos.x + d.x * vel * dt, nz = a.pos.z + d.z * vel * dt;
+  if (colide(new THREE.Vector3(nx, a.pos.y, nz), .4)) { d.applyAxisAngle(Y_, (Math.random() < .5 ? 1 : -1) * 1.3); return false; }
+  a.pos.x = nx; a.pos.z = nz; a.pos.y = alturaChao(nx, nz); virarSuave(a.b.g, Math.atan2(d.x, d.z), dt * 8); return true;
+}
+function atualizarAlvos(dt) {
+  for (let i = ALVOS.length - 1; i >= 0; i--) {
+    const a = ALVOS[i]; a.t += dt;
+    if (a.bolha) { a.bolhaT -= dt; a.bolha.position.set(a.pos.x, a.pos.y + 2.4, a.pos.z); if (a.bolhaT <= 0) { cena.remove(a.bolha); a.bolha = null; } }
+    if (a.morto) {
+      a.tMorto += dt; a.b.g.position.copy(a.pos); animarBoneco(a.b, relogio, 0, 'deitar');
+      if (a.tMorto > 90 || (a.tMorto > 20 && a.pos.distanceTo(jog.pos) > 150)) { cena.remove(a.b.g); if (a.bolha) cena.remove(a.bolha); ALVOS.splice(i, 1); }
+      continue;
+    }
+    if (a.solto && a.pos.distanceTo(jog.pos) > 160) { cena.remove(a.b.g); if (a.tag) cena.remove(a.tag); ALVOS.splice(i, 1); continue; }
+    const dj = a.pos.distanceTo(jog.pos);
+    // atropelado
+    if (dirigindo && Math.abs(dirigindo.vel) > 7 && dirigindo.g.position.distanceTo(a.pos) < 2.6) { ferirAlvo(a, 40 + Math.abs(dirigindo.vel) * 4, new THREE.Vector3(Math.sin(dirigindo.ang), 0, Math.cos(dirigindo.ang))); continue; }
+    if (!a.alerta && dj < (a.papel === 'guarda' ? 16 : 9) && a.papel !== 'espiao') a.alerta = true;
+    let vel = 0, modo = a.pose;
+    const dJog = new THREE.Vector3(jog.pos.x - a.pos.x, 0, jog.pos.z - a.pos.z);
+    if (a.papel === 'guarda' && a.alerta) {
+      modo = 'mirar'; virarSuave(a.b.g, Math.atan2(dJog.x, dJog.z), dt * 8);
+      if (dj > 14) { moverAlvo(a, dJog.clone().normalize(), 4.5, dt); vel = 4.5; modo = ''; }
+      a.tiroT -= dt;
+      if (a.tiroT <= 0 && dj < 32 && !G.interior) {
+        a.tiroT = rnd(.9, 1.6);
+        const linha = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.pos.clone().setY(a.pos.y + 1.5), jog.pos.clone().setY(jog.pos.y + 1.2 + rnd(-.6, .6)).add(new THREE.Vector3(rnd(-1, 1), 0, rnd(-1, 1)))]), new THREE.LineBasicMaterial({ color: 0xffe08a }));
+        cena.add(linha); setTimeout(() => cena.remove(linha), 70);
+        if (Math.random() < (dirigindo ? .3 : .45)) { if (dirigindo) danoVeiculo(dirigindo, 4); else { danoJogador(6, 'tiro de segurança'); sangrar(jog.pos, .5); } }
+      }
+    } else if (a.alerta && (a.comp === 'fuga' || a.papel === 'alvo')) {
+      if (a.comp === 'valente' && dj < 30) {   // alvo que revida
+        modo = 'mirar'; virarSuave(a.b.g, Math.atan2(dJog.x, dJog.z), dt * 8); a.tiroT -= dt;
+        if (a.tiroT <= 0) { a.tiroT = rnd(1, 1.8); if (Math.random() < .35) { if (dirigindo) danoVeiculo(dirigindo, 4); else danoJogador(7, 'o alvo revidou'); } }
+      } else { const d = dJog.clone().normalize().negate(); if (!moverAlvo(a, a.dir.lengthSq() ? a.dir : d, 5.6, dt)) a.dir.copy(d); else if (Math.random() < dt) a.dir.copy(d); vel = 5.6; modo = ''; if (a.t % 4 < dt) falarAlvo(a, pega(['Socorro!', 'Me deixa!', 'Sai daqui!', 'Alguém me ajuda!'])); }
+    } else if (a.comp === 'andar' || a.comp === 'corredor') {
+      if (!a.rota || a.pos.distanceTo(a.rota) < 2.5) a.rota = calcadaPerto(a.pos.x, a.pos.z, 30, 80);
+      const d = new THREE.Vector3(a.rota.x - a.pos.x, 0, a.rota.z - a.pos.z).normalize();
+      vel = a.comp === 'corredor' ? 5 : a.velAnd; if (!moverAlvo(a, d, vel, dt)) a.rota = null; modo = '';
+    } else if (a.comp === 'patrulha') {
+      if (!a.rota || a.pos.distanceTo(a.rota) < 2) a.rota = a.pos0.clone().add(new THREE.Vector3(rnd(-14, 14), 0, rnd(-14, 14)));
+      const d = new THREE.Vector3(a.rota.x - a.pos.x, 0, a.rota.z - a.pos.z).normalize(); if (!moverAlvo(a, d, 1.3, dt)) a.rota = null; vel = 1.3; modo = '';
+    }
+    a.b.g.position.copy(a.pos); animarBoneco(a.b, relogio, vel, modo || '');
+    if (a.tag) a.tag.position.set(a.pos.x, a.pos.y + 2.7, a.pos.z);
+  }
+}
+quadros.push(dt => { atualizarAlvos(dt); return true; });
+
+// ---- lista das missões
+const CAT_MISSAO = { matar: '🔪 Eliminar', espionar: '🕵️ Espionagem', foto: '📸 Fotos', coletar: '📦 Coleta', roubar: '🚗 Roubo de carro', fugir: '🚨 Fuga', corrida: '🏁 Corrida', destruir: '💥 Destruição', monstro: '👹 Absurdas', sobreviver: '🌪️ Sobrevivência' };
+const MISSOES = [];
+{
+  const M = (tipo, nome, desc, o = {}) => MISSOES.push({ id: 'm' + MISSOES.length, tipo, nome, desc, premio: o.premio || 800, ...o });
+  // ELIMINAR (30): [nome, história, alvo, nº alvos, nº seguranças, comportamento, visual, prêmio]
+  for (const [n, d, alvo, qa, qg, comp, vis, pr] of [
+    ['Dívida de Sangue', 'O agiota Bigode cobrou juros demais da pessoa errada. Elimine ele.', 'Bigode', 1, 2, 'parado', 'chefe', 1200],
+    ['O Delator', 'Um informante vai abrir o bico pra polícia. Ele foge se te vir.', 'Delator', 1, 0, 'fuga', 'comum', 900],
+    ['Reunião Cancelada', 'Três chefões estão reunidos com seguranças. Acabe com a reunião.', 'Chefão', 3, 4, 'parado', 'chefe', 3500],
+    ['Herança Maldita', 'O sobrinho quer a herança do tio rico. O tio anda pela calçada.', 'Tio Rico', 1, 1, 'andar', 'chefe', 1500],
+    ['Contrato do Porto', 'Um contrabandista do porto está te atrapalhando.', 'Contrabandista', 1, 3, 'patrulha', 'comum', 1800],
+    ['O Palhaço Assassino', 'Um palhaço está aterrorizando o bairro. Pare ele.', 'Palhaço Risada', 1, 0, 'valente', 'palhaco', 1400],
+    ['Concorrência Desleal', 'Dois vendedores de churrasquinho invadiram o ponto do seu cliente.', 'Churrasqueiro', 2, 0, 'patrulha', 'comum', 900],
+    ['Traidor da Gangue', 'Ele vendeu a gangue. Vai tentar fugir correndo.', 'Traidor', 1, 2, 'fuga', 'comum', 1300],
+    ['Advogado Corrupto', 'Ele apaga provas pra quem pagar mais. Ninguém mais vai pagar.', 'Dr. Propina', 1, 2, 'andar', 'chefe', 1700],
+    ['Gangue Rival', 'Cinco membros da gangue rival estão na sua área.', 'Rival', 5, 0, 'valente', 'comum', 2600],
+    ['Testemunha Chave', 'Ela viu tudo. Não pode chegar no tribunal.', 'Testemunha', 1, 2, 'fuga', 'comum', 1400],
+    ['O Chef Envenenador', 'O chef envenenou um cliente importante. Vingança.', 'Chef Veneno', 1, 1, 'parado', 'comum', 1100],
+    ['Guarda-Costas Duplo', 'O alvo tem dois guarda-costas armados. Elimine os três.', 'Magnata', 1, 2, 'parado', 'chefe', 1600],
+    ['Corredor Fugitivo', 'Ele corre todo dia no calçadão. Hoje é a última corrida.', 'Maratonista', 1, 0, 'corredor', 'comum', 1000],
+    ['Caçada no Shopping', 'O golpista está passeando com a grana roubada.', 'Golpista', 1, 1, 'andar', 'comum', 1200],
+    ['Cartel do Açaí', 'Os chefes do cartel do açaí dominam a praia.', 'Barão do Açaí', 2, 3, 'patrulha', 'chefe', 2400],
+    ['Sem Testemunhas', 'Elimine o alvo e os dois seguranças sem deixar ninguém vivo.', 'Contador', 1, 2, 'parado', 'chefe', 1500],
+    ['O Hacker', 'Ele invadiu as contas do seu cliente. Desconecte ele.', 'Hacker', 1, 0, 'fuga', 'comum', 1000],
+    ['Encontro Marcado', 'Dois traficantes vão trocar uma maleta. Pegue os dois.', 'Traficante', 2, 2, 'parado', 'chefe', 2000],
+    ['O Ex-Sócio', 'Ele levou metade da empresa. Leve a vida dele.', 'Ex-Sócio', 1, 1, 'andar', 'chefe', 1300],
+    ['Assalto Frustrado', 'Quatro assaltantes vão roubar o banco do seu cliente. Pare eles antes.', 'Assaltante', 4, 0, 'valente', 'comum', 2200],
+    ['O Vereador', 'Promessas demais, entregas de menos. E muitos seguranças.', 'Vereador', 1, 4, 'parado', 'chefe', 2800],
+    ['Fantasma do Bairro', 'Um assassino que ninguém conhece. Só a tag dele.', 'Fantasma', 1, 0, 'valente', 'chefe', 1600],
+    ['Chantagista', 'Ele tem fotos comprometedoras. Pegue ele antes que poste.', 'Chantagista', 1, 0, 'fuga', 'comum', 1100],
+    ['Briga de Família', 'Três primos querem a mesma pizzaria. Só pode sobrar um: nenhum.', 'Primo', 3, 0, 'patrulha', 'comum', 1700],
+    ['Boss da Noite', 'O dono da boate cobra proteção de todo mundo.', 'Dono da Boate', 1, 3, 'parado', 'chefe', 2100],
+    ['O Agente Duplo', 'Trabalha pros dois lados. Agora não trabalha mais.', 'Agente Duplo', 1, 2, 'andar', 'chefe', 1800],
+    ['Caçador de Recompensa', 'Ele está caçando VOCÊ. Inverta o jogo.', 'Caçador', 1, 2, 'valente', 'chefe', 1900],
+    ['Limpeza Total', 'Seis capangas tomaram a praça. Limpe a área.', 'Capanga', 6, 0, 'valente', 'comum', 3000],
+    ['O Último Contrato', 'O chefe da máfia, cercado de seguranças. O maior pagamento da ilha.', 'Don Carmine', 1, 6, 'parado', 'chefe', 6000],
+  ]) M('matar', n, d, { alvo, qa, qg, comp, vis, premio: pr });
+  // ESPIONAGEM (12): seguir sem ser visto
+  for (const [n, d, alvo, seg, pr] of [
+    ['Sombra', 'Siga o alvo sem chegar perto demais (fique entre 8 e 40 m).', 'Suspeito', 45, 900],
+    ['Marido Desconfiado', 'Uma esposa quer saber pra onde o marido vai depois do trabalho.', 'Marido', 50, 800],
+    ['Rastro do Dinheiro', 'Siga o contador até ele largar a pasta.', 'Contador', 60, 1100],
+    ['Espião contra Espião', 'Um espião estrangeiro anda pela cidade. Não deixe ele te ver.', 'Espião', 70, 1400],
+    ['Informante Nervoso', 'Ele olha pra trás o tempo todo. Mantenha distância.', 'Informante', 55, 1200],
+    ['Visita Secreta', 'O prefeito sai escondido toda noite. Descubra pra onde.', 'Prefeito', 60, 1500],
+    ['Caminho da Droga', 'Siga o aviãozinho até o esconderijo.', 'Aviãozinho', 50, 1000],
+    ['O Policial Corrupto', 'Siga o policial de folga. Ele tem algo a esconder.', 'Sargento', 65, 1300],
+    ['Golpe do Amor', 'Uma golpista vai encontrar a próxima vítima. Siga ela.', 'Golpista', 50, 900],
+    ['Celebridade', 'Um paparazzi pagou pra você seguir um famoso disfarçado.', 'Famoso', 45, 1000],
+    ['Agente Infiltrado', 'Seu agente pode ter sido descoberto. Siga quem está atrás dele.', 'Perseguidor', 70, 1500],
+    ['A Longa Caminhada', 'O alvo anda pela cidade inteira. Paciência.', 'Andarilho', 100, 2000],
+  ]) M('espionar', n, d, { alvo, seg, premio: pr });
+  // FOTOS (8): ir a lugares e ficar parado tirando foto
+  for (const [n, d, q, pr] of [['Paparazzi', 'Tire 3 fotos em lugares diferentes da cidade.', 3, 700], ['Cenas do Crime', 'A polícia esconde provas. Fotografe 4 locais.', 4, 1000], ['Book da Cidade', 'Uma revista quer 5 fotos da cidade.', 5, 1200], ['Prova de Traição', 'Fotografe os 2 lugares onde o casal se encontra.', 2, 600], ['Reconhecimento', 'Fotografe 3 pontos antes de um grande assalto.', 3, 900], ['Turista Perdido', 'Um turista perdeu as fotos da viagem. Refaça 4.', 4, 800], ['Obra Irregular', 'Fotografe 3 obras irregulares pra denúncia.', 3, 750], ['Mapa do Tesouro', 'Fotografe 6 marcos da cidade pra um caçador de tesouro.', 6, 1600]]) M('foto', n, d, { q, premio: pr });
+  // COLETA (8)
+  for (const [n, d, q, tempo, pr] of [['Malote Perdido', 'Pacotes de dinheiro caíram de um carro-forte. Pegue antes da polícia.', 5, 120, 1200], ['Encomendas', 'Pegue 6 encomendas espalhadas no bairro.', 6, 150, 900], ['Provas', 'Recolha 4 provas antes da perícia chegar.', 4, 90, 1000], ['Lixo Tóxico', 'Recolha 5 barris vazando antes que alguém se machuque.', 5, 140, 1100], ['Caça aos Ovos', 'Um maluco espalhou 8 caixas douradas pela cidade.', 8, 200, 1500], ['Contrabando', 'Recolha 5 caixas de contrabando escondidas.', 5, 130, 1300], ['Correria', 'Pegue 7 pacotes em 2 minutos.', 7, 120, 1600], ['Tesouro Pirata', 'Recolha 6 baús de um pirata do porto.', 6, 180, 1700]]) M('coletar', n, d, { q, tempo, premio: pr });
+  // ROUBO DE CARRO (8): roubar o carro marcado e levar até a garagem
+  for (const [n, d, filtro, pr] of [['Encomenda Especial', 'Um colecionador quer um carro esportivo.', 'esportivo', 1200], ['Carro do Chefe', 'Roube o SUV do chefe rival.', 'suv', 1000], ['Joia Rara', 'Roube um carro RARO.', 'raro', 2500], ['Picape do Fazendeiro', 'Um fazendeiro quer a picape de volta (não é dele).', 'pickup', 800], ['Van do Sequestro', 'Pegue a van que vai ser usada num crime.', 'van', 900], ['Táxi Pirata', 'Roube um táxi pra uma fuga.', 'taxi', 900], ['Carro Blindado', 'Roube o SUV do banqueiro.', 'suv', 1300], ['Hatch Turbinado', 'Um corredor quer um hatch pra preparar.', 'hatch', 800]]) M('roubar', n, d, { filtro, premio: pr });
+  // FUGA (6): sobreviver procurado
+  for (const [n, d, nivel, seg, pr] of [['Fuga Rápida', 'Aguente 40 s com 2 estrelas.', 2, 40, 700], ['Inimigo Público', 'Aguente 60 s com 3 estrelas.', 3, 60, 1200], ['Caçada Total', 'Aguente 90 s com 4 estrelas.', 4, 90, 2000], ['Lenda da Fuga', 'Aguente 2 minutos com 5 estrelas.', 5, 120, 3500], ['Despiste', 'Pegue 3 estrelas e depois despiste a polícia.', 3, 0, 1500], ['Despiste Impossível', 'Pegue 5 estrelas e depois despiste a polícia.', 5, 0, 3000]]) M('fugir', n, d, { nivel, seg, premio: pr });
+  // CORRIDA (6)
+  for (const [n, d, q, tempo, pr] of [['Entrega Expressa', 'Passe por 4 pontos em 90 s.', 4, 90, 800], ['Volta na Cidade', 'Passe por 6 pontos em 150 s.', 6, 150, 1200], ['Rali Urbano', 'Passe por 8 pontos em 200 s.', 8, 200, 1700], ['Contra o Relógio', '3 pontos em 50 s.', 3, 50, 900], ['Maratona de Carro', '10 pontos em 260 s.', 10, 260, 2400], ['Racha Proibido', '5 pontos em 100 s.', 5, 100, 1300]]) M('corrida', n, d, { q, tempo, premio: pr });
+  // DESTRUIÇÃO (5)
+  for (const [n, d, q, pr] of [['Ferro-Velho', 'Destrua 3 carros marcados.', 3, 900], ['Recado Explosivo', 'Destrua os 2 carros da gangue rival.', 2, 800], ['Frota Inimiga', 'Destrua 5 carros da frota inimiga.', 5, 1600], ['Seguro Fraudado', 'O dono quer o seguro: destrua o carro dele.', 1, 500], ['Demolição', 'Destrua 4 carros antes que o comprador chegue.', 4, 1300]]) M('destruir', n, d, { q, premio: pr });
+  // ABSURDAS: monstros (6)
+  for (const [n, d, mo, pr] of [
+    ['O Pombo Mutante', 'Um pombo do tamanho de um prédio está sujando a cidade inteira.', { forma: 'dragao', cor: '#c9c9d6', tamanho: 14, nome: 'Pombo Mutante', forca: 25 }, 2500],
+    ['Gorila do Mal', 'Um gorila gigante fugiu do zoológico. E está bravo.', { forma: 'gorila', tamanho: 12, nome: 'Gorila do Mal', forca: 40 }, 3000],
+    ['Slime de Pudim', 'Um pudim gigante ganhou vida e come carros.', { forma: 'slime', cor: '#ffcf6b', tamanho: 10, nome: 'Pudim Assassino', forca: 20 }, 2000],
+    ['Aranha da Padaria', 'Uma aranha enorme saiu do forno da padaria.', { forma: 'aranha', cor: '#2b2b2b', tamanho: 9, nome: 'Aranha Padeira', forca: 25 }, 2200],
+    ['Cobra do Esgoto', 'Uma serpente gigante saiu do bueiro.', { forma: 'serpente', cor: '#2a9d8f', tamanho: 16, nome: 'Cobra do Esgoto', forca: 30 }, 2600],
+    ['Cubo Infinito', 'Um cubo misterioso caiu do céu e ataca tudo.', { forma: 'cubo', cor: '#8338ec', tamanho: 11, nome: 'Cubo Infinito', forca: 35 }, 2400],
+  ]) M('monstro', n, d, { mo, premio: pr });
+  // ABSURDAS: sobreviver ao caos (6)
+  for (const [n, d, acoes, seg, pr] of [
+    ['Chuva de Vacas', 'Sobreviva 45 s enquanto chove vaca na cidade.', [{ tipo: 'chuva_de_objetos', objeto: 'vaca', quantidade: 60, area: 90 }], 45, 1200],
+    ['Fim do Mundo', 'Sobreviva 60 s a uma chuva de meteoros.', [{ tipo: 'meteoros', quantidade: 35, area: 120 }], 60, 2000],
+    ['Tornado de Pizza', 'Sobreviva 50 s a um tornado com chuva de pizza.', [{ tipo: 'tornado', raio: 14, forca: 1.6, duracao: 50 }, { tipo: 'chuva_de_objetos', objeto: 'pizza', quantidade: 40, area: 80 }], 50, 1600],
+    ['Terremoto Monstro', 'Aguente 40 s de terremoto.', [{ tipo: 'terremoto', forca: 1.5, duracao: 40 }], 40, 1300],
+    ['Cidade em Chamas', 'Sobreviva 50 s no meio do fogo.', [{ tipo: 'fogo', raio: 25, duracao: 50 }, { tipo: 'clima', ceu: 'tempestade' }], 50, 1800],
+    ['Apocalipse Total', 'Meteoros, tornado e terremoto juntos. 60 s.', [{ tipo: 'meteoros', quantidade: 30, area: 120 }, { tipo: 'tornado', raio: 14, forca: 1.4, duracao: 60 }, { tipo: 'terremoto', forca: 1, duracao: 60 }], 60, 3500],
+  ]) M('sobreviver', n, d, { acoes, seg, premio: pr });
+}
+window.__dbg.missoes = { MISSOES, get ALVOS() { return ALVOS; }, ferirAlvo, iniciar: id => iniciarContrato(MISSOES.find(m => m.id === id)), get M() { return G.missao; } };
+const missoesFeitas = () => { try { return JSON.parse(localStorage.getItem('cidadeia_missoes_ok') || '[]'); } catch (e) { return []; } };
+
+// ---- começar e acompanhar uma missão
+function longeDoJogador(dmin = 120, dmax = 320) { for (let t = 0; t < 30; t++) { const p = calcadaPerto(jog.pos.x, jog.pos.z, dmin, dmax); if (cidadeEm(p.x, p.z)) return p; } return calcadaPerto(jog.pos.x, jog.pos.z, 60, 120); }
+function iniciarContrato(D) {
+  if (G.missao) encerrarContrato(false, true);
+  const C = { tipo: 'contrato', D, t: 0, alvos: [], extra: [] };
+  if (D.tipo === 'matar') {
+    const c = longeDoJogador();
+    for (let i = 0; i < D.qa; i++) { const p = c.clone().add(new THREE.Vector3(rnd(-6, 6), 0, rnd(-6, 6))); C.alvos.push(novoAlvo(p.x, p.z, { nome: D.qa > 1 ? `${D.alvo} ${i + 1}` : D.alvo, comp: D.comp, visual: D.vis, vel: D.comp === 'andar' ? 1.5 : 1.6 })); }
+    for (let i = 0; i < D.qg; i++) { const p = c.clone().add(new THREE.Vector3(rnd(-9, 9), 0, rnd(-9, 9))); C.alvos.push(novoAlvo(p.x, p.z, { papel: 'guarda', comp: 'patrulha', visual: 'guarda', nome: 'Segurança' })); }
+  } else if (D.tipo === 'espionar') {
+    const p = calcadaPerto(jog.pos.x, jog.pos.z, 20, 32); C.espiao = novoAlvo(p.x, p.z, { papel: 'espiao', comp: 'andar', nome: D.alvo, vel: 1.7 }); C.perto = 0; C.ok = 0; C.longe = -8;
+  } else if (D.tipo === 'foto') { C.pontos = Array.from({ length: D.q }, () => longeDoJogador(80, 260)); C.i = 0; C.parado = 0; }
+  else if (D.tipo === 'coletar') {
+    C.itens = Array.from({ length: D.q }, () => { const p = calcadaPerto(jog.pos.x, jog.pos.z, 40, 220); const m = new THREE.Mesh(new THREE.BoxGeometry(.8, .8, .8), new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffa400, emissiveIntensity: .6 })); m.position.set(p.x, alturaChao(p.x, p.z) + .8, p.z); cena.add(m); C.extra.push(m); return m; });
+  } else if (D.tipo === 'roubar') {
+    const p = longeDoJogador(90, 220), g = carroVariante(m => D.filtro === 'raro' ? m.raro : m.base === D.filtro); g.position.set(p.x, alturaChao(p.x, p.z), p.z); cena.add(g);
+    C.carro = novoVeiculo(g, { vel: 0, ang: 0 }); C.garagem = longeDoJogador(150, 300); C.extra.push();
+  } else if (D.tipo === 'fugir') { crime(D.nivel, 'missão de fuga'); C.fase = 'aguentar'; }
+  else if (D.tipo === 'corrida') { C.pontos = []; let b = jog.pos.clone(); for (let i = 0; i < D.q; i++) { b = calcadaPerto(b.x, b.z, 90, 170); C.pontos.push(b); } C.i = 0; }
+  else if (D.tipo === 'destruir') {
+    C.carros = Array.from({ length: D.q }, () => { const p = calcadaPerto(jog.pos.x, jog.pos.z, 50, 180), g = carroModelo(0xc1121f); g.position.set(p.x, alturaChao(p.x, p.z), p.z); cena.add(g); const v = novoVeiculo(g, { vel: 0, ang: Math.random() * 6 }); v.vida = Math.min(v.vida || 100, 60); return v; });
+  } else if (D.tipo === 'monstro') { const p = longeDoJogador(70, 120); criarMonstro({ ...D.mo, x: p.x, z: p.z, comportamento: 'agressivo' }); C.monstro = monstros[monstros.length - 1]; }
+  else if (D.tipo === 'sobreviver') { const ac = D.acoes.map(a => ({ x: jog.pos.x, z: jog.pos.z, ...a })); try { executar(ac); } catch (e) { console.warn(e); } C.vida0 = G.vida; }
+  G.missao = C;
+  aviso(`📋 ${D.nome}`, '#ffd166', 3); narrar('📋 ' + D.desc);
+}
+function encerrarContrato(ok, silencioso) {
+  const C = G.missao; if (!C || C.tipo !== 'contrato') return;
+  for (const a of C.alvos) if (!a.morto) { a.solto = true; if (a.tag) { cena.remove(a.tag); a.tag = null; } }
+  if (C.espiao && !C.espiao.morto) { C.espiao.solto = true; if (C.espiao.tag) { cena.remove(C.espiao.tag); C.espiao.tag = null; } }
+  for (const m of C.extra) if (m) cena.remove(m);
+  G.missao = null; G.alvoMissao = null;
+  if (silencioso) return;
+  if (ok) {
+    G.dinheiro += C.D.premio; aviso(`✅ MISSÃO CUMPRIDA: ${C.D.nome}  +$${C.D.premio}`, '#7CFC8a', 4.5); criarEfeito2d({ estilo: 'confete', duracao: 2.5 });
+    try { const f = new Set(missoesFeitas()); f.add(C.D.id); localStorage.setItem('cidadeia_missoes_ok', JSON.stringify([...f])); } catch (e) {}
+  } else aviso(`❌ MISSÃO FALHOU: ${C.D.nome}`, '#ff6060', 4);
+}
+function atualizarContrato(C, dt, marcar) {
+  const D = C.D, falhou = m => { narrar('❌ ' + m); encerrarContrato(false); };
+  if (G.vida <= 0) return falhou('Você morreu.');
+  if (D.tipo === 'matar') {
+    const vivos = C.alvos.filter(a => a.papel === 'alvo' && !a.morto), guardas = C.alvos.filter(a => a.papel === 'guarda' && !a.morto);
+    if (vivos[0]) marcar(vivos[0].pos); else marcar(guardas[0]?.pos || jog.pos);
+    painelMissao.textContent = `🔪 ${D.nome} — alvos: ${C.alvos.filter(a => a.papel === 'alvo' && a.morto).length}/${D.qa}` + (D.qg ? ` · seguranças: ${D.qg - guardas.length}/${D.qg}` : '') + (vivos[0] ? ` · ${Math.round(vivos[0].pos.distanceTo(jog.pos))} m` : '');
+    if (vivos.some(a => a.pos.distanceTo(jog.pos) > 260 && a.alerta)) return falhou('O alvo fugiu.');
+    if (!vivos.length && (D.nome !== 'Sem Testemunhas' || !guardas.length)) encerrarContrato(true);
+  } else if (D.tipo === 'espionar') {
+    const e = C.espiao, d = e.pos.distanceTo(jog.pos); marcar(e.pos);
+    if (e.morto) return falhou('Era pra seguir, não matar!');
+    if (d < 8) { C.perto += dt; if (C.perto > 2.5) { falarAlvo(e, 'Ei! Você tá me seguindo?!'); e.alerta = true; e.comp = 'fuga'; return falhou('Ele te viu!'); } } else C.perto = Math.max(0, C.perto - dt);
+    if (d > 45) { C.longe += dt; if (C.longe > 6) return falhou('Você perdeu ele de vista.'); } else { C.longe = 0; C.ok += dt; }
+    painelMissao.textContent = `🕵️ ${D.nome} — ${Math.round(d)} m ${d < 10 ? '⚠️ perto demais!' : d > 40 ? '⚠️ longe demais!' : '✔'} · ${Math.max(0, D.seg - C.ok).toFixed(0)} s`;
+    if (C.ok >= D.seg) encerrarContrato(true);
+  } else if (D.tipo === 'foto') {
+    const p = C.pontos[C.i]; marcar(p); const d = Math.hypot(p.x - jog.pos.x, p.z - jog.pos.z);
+    if (d < 14 && !dirigindo && (jog.mv?.length() || 0) < .5) { C.parado += dt; painelMissao.textContent = `📸 Fotografando... ${(3 - C.parado).toFixed(1)} s`; if (C.parado > 3) { C.i++; C.parado = 0; criarEfeito2d({ estilo: 'flash', cor: '#ffffff', duracao: .3 }); if (C.i >= C.pontos.length) encerrarContrato(true); } }
+    else { C.parado = 0; painelMissao.textContent = `📸 ${D.nome} — foto ${C.i + 1}/${C.pontos.length} — ${Math.round(d)} m (a pé, fique parado no lugar)`; }
+  } else if (D.tipo === 'coletar') {
+    const resta = D.tempo - C.t; let perto = null;
+    for (const m of C.itens) if (m.parent) { m.rotation.y += dt * 2; if (m.position.distanceTo(jog.pos.clone().setY(m.position.y)) < (dirigindo ? 4 : 2)) { cena.remove(m); criarEfeito2d({ estilo: 'flash', cor: '#ffd166', duracao: .2, intensidade: .3 }); } else if (!perto || m.position.distanceTo(jog.pos) < perto.position.distanceTo(jog.pos)) perto = m; }
+    const pegos = C.itens.filter(m => !m.parent).length; if (perto) marcar(perto.position);
+    painelMissao.textContent = `📦 ${D.nome} — ${pegos}/${D.q} · ${Math.max(0, resta).toFixed(0)} s`;
+    if (pegos >= D.q) encerrarContrato(true); else if (resta <= 0) falhou('Acabou o tempo.');
+  } else if (D.tipo === 'roubar') {
+    if (C.carro.destruido) return falhou('O carro foi destruído.');
+    if (dirigindo !== C.carro) { marcar(C.carro.g.position); painelMissao.textContent = `🚗 ${D.nome} — pegue o carro marcado (${Math.round(C.carro.g.position.distanceTo(jog.pos))} m)`; }
+    else { marcar(C.garagem); const d = Math.hypot(C.garagem.x - jog.pos.x, C.garagem.z - jog.pos.z); painelMissao.textContent = `🚗 Leve até a garagem — ${Math.round(d)} m`; if (d < 12) { encerrarContrato(true); entrarSair(); } }
+  } else if (D.tipo === 'fugir') {
+    if (D.seg) { painelMissao.textContent = `🚨 ${D.nome} — aguente ${Math.max(0, D.seg - C.t).toFixed(0)} s`; if (G.nivel < D.nivel) G.nivel = D.nivel; if (C.t >= D.seg) { G.nivel = 0; encerrarContrato(true); } }
+    else { painelMissao.textContent = `🚨 ${D.nome} — despiste a polícia (${'★'.repeat(Math.ceil(G.nivel))})`; if (C.t > 3 && G.nivel <= 0) encerrarContrato(true); }
+  } else if (D.tipo === 'corrida') {
+    const p = C.pontos[C.i], resta = D.tempo - C.t; marcar(p);
+    painelMissao.textContent = `🏁 ${D.nome} — ponto ${C.i + 1}/${D.q} · ${Math.max(0, resta).toFixed(0)} s`;
+    if (Math.hypot(p.x - jog.pos.x, p.z - jog.pos.z) < 15) { C.i++; criarEfeito2d({ estilo: 'flash', cor: '#ffe14d', duracao: .3, intensidade: .3 }); if (C.i >= D.q) encerrarContrato(true); }
+    else if (resta <= 0) falhou('Acabou o tempo.');
+  } else if (D.tipo === 'destruir') {
+    const vivos = C.carros.filter(v => !v.destruido); if (vivos[0]) marcar(vivos[0].g.position);
+    painelMissao.textContent = `💥 ${D.nome} — ${D.q - vivos.length}/${D.q} (bata, atire ou exploda)`;
+    if (!vivos.length) encerrarContrato(true);
+  } else if (D.tipo === 'monstro') {
+    marcar(C.monstro.pos); painelMissao.textContent = `👹 ${D.nome} — vida do ${C.monstro.nome}: ${Math.max(0, Math.round(C.monstro.vida))}`;
+    if (C.monstro.vida <= 0 || !monstros.includes(C.monstro)) encerrarContrato(true);
+  } else if (D.tipo === 'sobreviver') {
+    painelMissao.textContent = `🌪️ ${D.nome} — sobreviva ${Math.max(0, D.seg - C.t).toFixed(0)} s`; G.alvoMissao = null; marcadorMissao.visible = false;
+    if (C.t >= D.seg) encerrarContrato(true);
+  }
+}
+
+// ---- menu de missões (tecla N ou botão 📋)
+const menuMissoes = document.createElement('div'); menuMissoes.id = 'menuMissoes'; document.body.appendChild(menuMissoes);
+function abrirMissoes() {
+  if (estado !== 'jogando' && !menuMissoes.classList.contains('on')) return;
+  if (menuMissoes.classList.toggle('on')) {
+    soltarMouse(); const feitas = new Set(missoesFeitas());
+    menuMissoes.innerHTML = `<div class="mmCaixa"><div class="mmTopo"><b>📋 MISSÕES</b><span>${feitas.size}/${MISSOES.length} feitas</span>` +
+      `<button id="mmSangue">${SANGUE.on ? '🩸 Sangue: ligado' : '🩸 Sangue: desligado'}</button>${G.missao?.tipo === 'contrato' ? '<button id="mmDesistir">✖ Desistir da atual</button>' : ''}<button id="mmFechar">Fechar</button></div><div class="mmLista">` +
+      Object.entries(CAT_MISSAO).map(([k, nome]) => `<h4>${nome}</h4>` + MISSOES.filter(m => m.tipo === k).map(m => `<button class="mmItem${feitas.has(m.id) ? ' ok' : ''}" data-m="${m.id}"><b>${feitas.has(m.id) ? '✅ ' : ''}${m.nome}</b><small>${m.desc}</small><i>$${m.premio}</i></button>`).join('')).join('') + '</div></div>';
+    menuMissoes.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const D = MISSOES.find(m => m.id === b.dataset.m); menuMissoes.classList.remove('on'); entrarNoJogo(); iniciarContrato(D); });
+    $('#mmFechar').onclick = () => { menuMissoes.classList.remove('on'); entrarNoJogo(); };
+    $('#mmSangue').onclick = () => { SANGUE.on = !SANGUE.on; try { localStorage.setItem('cidadeia_sangue', SANGUE.on ? '1' : '0'); } catch (e) {} $('#mmSangue').textContent = SANGUE.on ? '🩸 Sangue: ligado' : '🩸 Sangue: desligado'; };
+    $('#mmDesistir')?.addEventListener('click', () => { encerrarContrato(false); menuMissoes.classList.remove('on'); entrarNoJogo(); });
+  } else entrarNoJogo();
+}
+addEventListener('keydown', e => { if (e.code === 'KeyN' && !digitando() && !e.repeat && (estado === 'jogando' || menuMissoes.classList.contains('on'))) abrirMissoes(); if (e.code === 'Escape' && menuMissoes.classList.contains('on')) { menuMissoes.classList.remove('on'); e.stopImmediatePropagation(); entrarNoJogo(); } }, true);
 
 // ---------------------------------------------------- MAPA v2 (M): tela cheia, zoom com a rodinha, arrasta, filtros, ao vivo, GPS com rota
 const mapaG = document.createElement('div'); mapaG.id = 'mapaG';
@@ -6373,7 +6686,7 @@ if (CELULAR) {
       <button data-k="Tab">🎯<small>armas</small></button>
       <button data-k="KeyX">⏱<small>foco</small></button>
     </div>
-    <div id="tqTopo"><button data-k="KeyM">🗺️</button><button data-k="KeyJ">🎭</button><button id="tqPoder">⚡</button><button id="tqChat">💬</button><button data-k="Escape">⏸</button></div>`;
+    <div id="tqTopo"><button data-k="KeyN">📋</button><button data-k="KeyM">🗺️</button><button data-k="KeyJ">🎭</button><button id="tqPoder">⚡</button><button id="tqChat">💬</button><button data-k="Escape">⏸</button></div>`;
   document.body.appendChild(T);
   // joystick: vira W/A/S/D (e corre se empurrar até a borda)
   const stick = $('#tqStick'), bola = $('#tqBola'); let idStick = null, cx = 0, cy = 0;
