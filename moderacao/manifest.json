@@ -1,0 +1,1 @@
+{"name": "Cidade IA Moderação", "short_name": "Moderação", "start_url": "./", "scope": "./", "id": "cidade-ia-moderacao", "display": "standalone", "background_color": "#0f0a1a", "theme_color": "#1b0f2e", "icons": [{"src": "icone.png", "sizes": "192x192", "type": "image/png"}, {"src": "icone-512.png", "sizes": "512x512", "type": "image/png"}]}

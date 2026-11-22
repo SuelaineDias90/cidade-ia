@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cidade IA Moderação</title>
+<meta name="theme-color" content="#1b0f2e">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icone.png"><link rel="apple-touch-icon" href="icone.png">
+<style>
+:root{--fundo:#0f0a1a;--barra:#1b0f2e;--bot:#251a3a;--eu:#5b2d8e;--texto:#f4eefc;--suave:#a99cc2;--sol:#ffd166;--ok:#3ddc8a;--ruim:#ff6f91}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--fundo);color:var(--texto);font:15px/1.45 "Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column}
+header{background:var(--barra);padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px #0006}
+header img{width:40px;height:40px;border-radius:50%}header b{display:block}header small{color:var(--suave)}
+#st{margin-left:auto;font-size:12px;color:var(--suave)}
+main{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:86%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word;box-shadow:0 1px 2px #0005}
+.m.bot{background:var(--bot);align-self:flex-start;border-top-left-radius:4px}
+.m.eu{background:var(--eu);align-self:flex-end;border-top-right-radius:4px}
+.m.sis{align-self:center;background:transparent;color:var(--suave);font-size:12.5px;box-shadow:none;text-align:center}
+.m time{display:block;font-size:11px;color:var(--suave);text-align:right;margin-top:3px}
+.m button{margin:8px 6px 0 0;border:0;border-radius:10px;padding:7px 11px;font:700 13px inherit;background:#ffffff1f;color:var(--texto);cursor:pointer}
+.m button.ban{background:var(--ruim);color:#1a0610}
+footer{background:var(--barra);padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);display:flex;gap:8px}
+footer input{flex:1;border:0;border-radius:22px;padding:12px 16px;background:#2a1d40;color:var(--texto);font:15px inherit;outline:none}
+footer button{border:0;border-radius:50%;width:46px;height:46px;background:var(--sol);color:#1a0f22;font-size:20px;cursor:pointer}
+#login{position:fixed;inset:0;background:var(--fundo);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
+#login img{width:90px;height:90px;border-radius:22px}
+#login input{width:min(320px,100%);border:1px solid #ffffff2a;border-radius:12px;padding:13px;background:#1b1229;color:var(--texto);font:16px inherit;text-align:center}
+#login button{border:0;border-radius:12px;padding:13px 26px;background:var(--sol);color:#1a0f22;font:800 16px inherit;cursor:pointer}
+#login p{color:var(--suave);max-width:34ch;margin:0}
+</style></head><body>
+<div id="login">
+  <img src="icone.png" alt="">
+  <h2 style="margin:0">Cidade IA Moderação</h2>
+  <p>Só o dono do jogo entra aqui. Digite a senha de dono (está no arquivo <b>senha_dono.txt</b> do seu PC).</p>
+  <input id="senha" type="password" placeholder="senha de dono" autocomplete="current-password">
+  <button id="entrar">Entrar</button>
+  <p id="erro" style="color:var(--ruim)"></p>
+</div>
+<header><img src="icone.png" alt=""><div><b>🤖 Bot Moderador</b><small>Cidade IA</small></div><span id="st">conectando…</span></header>
+<main id="msgs"></main>
+<footer><input id="txt" placeholder="/banir Nome#abcd 24h motivo" autocomplete="off"><button id="env" aria-label="enviar">➤</button></footer>
+<script src="rede.js"></script>
+<script>
+const COFRE = {"s": "2JNj6PABYAXzuUVilbq0Iw", "c": "FRqzK7lQeyRiUI82gHRdNeyKuwN-olbQxRelDCwtLAMMY5lPY23f5F9kYIMR58EHr_b99J177kPEQBim8ZReCab5h-EcrDtGiIPlV9aw_mrzMjm2nqOCmfQs8uwKzM2vYIJoTf6uP5gUYxwKlj_isV-OrzXE9GC8lRrmtmLnBN3dnHI0PJQwKt0KTnXKOT1CxP8fgwXXo_4oXsGQ7jVavRnmjNrxLtFh1XTzIZU4svPrrLmIQ3H-m-zksqJCEhPN1utnuQCevio6amhp9K8aQKqAlmKqkdNxZmPH-5hLYxSGej8stnxCnZnoDBfA78u9gA6os7QyegP7", "m": "lRdvppVCmW7Wr5PUY6z-Fi5JZkXD0ycIilucKPbfHOc"}, DONO_PUB = {"kty": "EC", "crv": "P-256", "x": "PYbeiItskOYqjuwqPrZ-wWtfTT0poVt5BuwHETQVIYI", "y": "eU3XyMDTCXZdSJfyj0kQRP1PwXhoTBi1TbVhUvZWopI"};
+const R = window.CIA_REDE, $ = s => document.querySelector(s);
+let chave = null, kbot = null, mq = null;
+const nomes = new Map(), bans = new Map();   // "nome#abcd" -> id ; id -> ban
+const HIST = 'ciamod_hist';
+const hist = (() => { try { return JSON.parse(localStorage.getItem(HIST) || '[]'); } catch (e) { return []; } })();
+const salvarHist = () => { try { localStorage.setItem(HIST, JSON.stringify(hist.slice(-300))); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+function mostrar(m, rolar = true) {
+  const d = document.createElement('div'); d.className = 'm ' + m.quem;
+  d.innerHTML = esc(m.txt) + (m.quem !== 'sis' ? `<time>${new Date(m.t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</time>` : '');
+  const cmd = (m.txt.match(/\/banir \S+ \S+ .*/) || [])[0];
+  if (m.quem === 'bot' && cmd) {
+    const alvo = cmd.split(' ')[1];
+    for (const [rot, tempo] of [['Banir 1h', '1h'], ['24h', '24h'], ['7 dias', '7d'], ['Pra sempre', 'perm']]) {
+      const b = document.createElement('button'); b.className = 'ban'; b.textContent = rot;
+      b.onclick = () => { $('#txt').value = `/banir ${alvo} ${tempo} ${cmd.split(' ').slice(3).join(' ')}`; $('#txt').focus(); };
+      d.appendChild(b);
+    }
+  }
+  $('#msgs').appendChild(d); if (rolar) $('#msgs').scrollTop = 1e9;
+}
+function dizer(quem, txt) { const m = { quem, txt, t: Date.now() }; hist.push(m); salvarHist(); mostrar(m); return m; }
+
+async function abrir(senha) {
+  const s = await R.abrirCofre(COFRE, senha);
+  chave = await crypto.subtle.importKey('jwk', s.jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  kbot = R.deB64(s.kbot);
+  try { localStorage.setItem('ciamod_s', JSON.stringify(s)); } catch (e) {}
+}
+async function comecar() {
+  $('#login').remove();
+  for (const m of hist) mostrar(m, false); $('#msgs').scrollTop = 1e9;
+  if (!hist.length) dizer('bot', 'Oi, dono! 👋 Eu fico de olho nas denúncias. Quando uma for verdadeira, te mando aqui.\n\nComandos:\n/banir Nome#abcd 24h motivo  (tempos: 1h, 24h, 7d, perm)\n/desbanir Nome#abcd\n/banidos\n/online\n/ajuda');
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  mq = new R.MQ();
+  mq.ouvintes.push(on => $('#st').textContent = on ? '🟢 online' : '🔴 reconectando…');
+  mq.ouvir('mod/msg/+', async (top, txt) => {
+    if (!txt) return; let m; try { m = JSON.parse(txt); } catch (e) { return; }
+    if (await R.hmacK(kbot, `${m.t}|${m.txt}`) !== m.h) return;   // não é do bot de verdade
+    if (!hist.some(h => h.t === m.t && h.quem === 'bot')) {
+      hist.push({ quem: 'bot', txt: m.txt, t: m.t }); salvarHist(); mostrar({ quem: 'bot', txt: m.txt, t: m.t });
+      if (m.extra?.alvo) nomes.set(`${m.extra.alvo.nome}#${m.extra.alvo.id.slice(0, 4)}`.toLowerCase(), m.extra.alvo.id);
+      if (document.hidden && Notification.permission === 'granted') new Notification('Cidade IA Moderação', { body: m.txt.slice(0, 140), icon: 'icone.png' });
+    }
+    mq.apagar(top);   // já li: tira do servidor
+  });
+  mq.ouvir('p/+', (top, txt) => { try { const id = top.slice(2), j = JSON.parse(txt); nomes.set(`${j.n}#${id.slice(0, 4)}`.toLowerCase(), id); online.set(id, { n: j.n, t: Date.now() }); } catch (e) {} });
+  const guardaBan = async txt => { try { const b = JSON.parse(txt); if (await R.banValido(b, DONO_PUB) && !(bans.get(b.id)?.t > b.t)) bans.set(b.id, b); } catch (e) {} };
+  mq.ouvir('ban/+', (t, txt) => txt && guardaBan(txt));
+  mq.ouvir('bans', (t, txt) => { try { for (const b of JSON.parse(txt)) guardaBan(JSON.stringify(b)); } catch (e) {} });
+  mq.ligar();
+}
+const online = new Map();
+function acharId(nome) {
+  const k = nome.toLowerCase().replace(/^@/, '');
+  if (nomes.has(k)) return nomes.get(k);
+  const tag = (k.split('#')[1] || '').slice(0, 4); if (!tag) return null;
+  const achou = [...new Set([...nomes.values(), ...bans.keys()])].filter(id => id.startsWith(tag));
+  return achou.length === 1 ? achou[0] : null;
+}
+const TEMPOS = { '1h': 3600e3, '24h': 86400e3, '1d': 86400e3, '3d': 3 * 86400e3, '7d': 7 * 86400e3, '30d': 30 * 86400e3, 'perm': 0 };
+async function publicarBan(b) {
+  b.sig = await R.assinar(chave, R.textoBan(b));
+  mq.pub('ban/' + b.id, b, true); bans.set(b.id, b);
+  mq.pub('bans', [...bans.values()], true);
+}
+async function comando(txt) {
+  dizer('eu', txt);
+  const [c, alvo, tempo, ...resto] = txt.trim().split(/\s+/);
+  if (!mq?.ok) return dizer('bot', '🔴 Estou sem conexão agora. Tenta de novo em alguns segundos.');
+  if (c === '/banir') {
+    if (!alvo || !(tempo in TEMPOS)) return dizer('bot', 'Use assim: /banir Nome#abcd 24h motivo\nTempos: 1h, 24h, 3d, 7d, 30d, perm');
+    const id = acharId(alvo); if (!id) return dizer('bot', `❓ Não achei "${alvo}". Copie o nome com o #código que eu mandei (ex: Pedro#a1b2).`);
+    const t = Date.now(), b = { id, nome: alvo.split('#')[0], ate: TEMPOS[tempo] ? t + TEMPOS[tempo] : 0, motivo: resto.join(' ') || 'regras', t };
+    await publicarBan(b);
+    return dizer('bot', `✅ ${alvo} banido ${b.ate ? 'até ' + new Date(b.ate).toLocaleString('pt-BR') : 'PERMANENTEMENTE'}.\nMotivo: ${b.motivo}\nSe ele estiver jogando, cai agora.`);
+  }
+  if (c === '/desbanir') {
+    const id = alvo && acharId(alvo); if (!id) return dizer('bot', 'Use assim: /desbanir Nome#abcd');
+    const t = Date.now(); await publicarBan({ id, nome: (alvo.split('#')[0]), ate: 1, motivo: 'desbanido', t });
+    return dizer('bot', `✅ ${alvo} foi desbanido.`);
+  }
+  if (c === '/banidos') {
+    const l = [...bans.values()].filter(R.banAtivo);
+    return dizer('bot', l.length ? '🚫 Banidos agora:\n' + l.map(b => `• ${b.nome}#${b.id.slice(0, 4)} — ${b.ate ? 'até ' + new Date(b.ate).toLocaleString('pt-BR') : 'pra sempre'} (${b.motivo})`).join('\n') : 'Ninguém banido agora. 😇');
+  }
+  if (c === '/online') {
+    const l = [...online].filter(([, o]) => Date.now() - o.t < 10000);
+    return dizer('bot', l.length ? `👥 ${l.length} jogando agora:\n` + l.map(([id, o]) => `• ${o.n}#${id.slice(0, 4)}`).join('\n') : 'Ninguém jogando no multiplayer agora.');
+  }
+  dizer('bot', 'Comandos:\n/banir Nome#abcd 24h motivo\n/desbanir Nome#abcd\n/banidos\n/online');
+}
+$('#env').onclick = () => { const v = $('#txt').value.trim(); if (v) { $('#txt').value = ''; comando(v); } };
+$('#txt').addEventListener('keydown', e => { if (e.key === 'Enter') $('#env').click(); });
+$('#entrar').onclick = async () => { $('#erro').textContent = ''; try { await abrir($('#senha').value.trim()); comecar(); } catch (e) { $('#erro').textContent = 'Senha errada.'; } };
+$('#senha').addEventListener('keydown', e => { if (e.key === 'Enter') $('#entrar').click(); });
+(async () => { try { const s = JSON.parse(localStorage.getItem('ciamod_s') || 'null'); if (s) { chave = await crypto.subtle.importKey('jwk', s.jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']); kbot = R.deB64(s.kbot); comecar(); } } catch (e) {} })();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body></html>

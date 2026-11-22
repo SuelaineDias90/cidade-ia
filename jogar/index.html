@@ -28,6 +28,7 @@ window.SEM_PC = true;
 <meta charset="utf-8">
 <title>Cidade IA</title>
 <link rel="manifest" href="./manifest.json"><meta name="theme-color" content="#2b1055"><link rel="icon" href="./static/icone-192.png"><link rel="apple-touch-icon" href="./static/icone-192.png">
+<script src="./static/rede.js"></script><script>window.DONO_PUB = {"kty": "EC", "crv": "P-256", "x": "PYbeiItskOYqjuwqPrZ-wWtfTT0poVt5BuwHETQVIYI", "y": "eU3XyMDTCXZdSJfyj0kQRP1PwXhoTBi1TbVhUvZWopI"};</script>
 <script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <style>
@@ -225,10 +226,21 @@ window.SEM_PC = true;
   .meGrade button{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font:600 14px 'Segoe UI';cursor:pointer;text-align:left;transition:.12s}
   .meGrade button:hover{background:#7b5cff;transform:translateY(-2px)}
   #caixaMp{position:fixed;left:16px;top:120px;width:330px;display:none;z-index:4;color:#fff;font:600 13px 'Segoe UI'}
-  #mpLista{background:rgba(20,40,90,.8);border-radius:10px;padding:6px 10px;margin-bottom:6px}
+  #mpLista{}
   #mpMsgs div{background:rgba(0,0,0,.55);border-radius:8px;padding:4px 8px;margin-top:3px}
   #mpTxt{width:100%;margin-top:6px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.6);color:#fff;font:600 13px 'Segoe UI'}
   #mpEntrar{display:none}#mpEntrar.on{display:block}
+  #mpEntrar input{width:100%;padding:10px;border-radius:10px;border:1px solid #555;background:#111;color:#fff;font:600 15px 'Segoe UI';margin:6px 0}
+  .mpConta{font:600 14px 'Segoe UI';color:#fff;margin:6px 0}.mpConta small{opacity:.6}
+  .mpLinks{font:600 12px 'Segoe UI';color:#aab;margin-top:6px}.mpLinks a{cursor:pointer;text-decoration:underline}
+  #mpTopo{display:flex;gap:6px;align-items:center;background:rgba(20,40,90,.85);border-radius:10px;padding:5px 6px 5px 10px}
+  #mpTopo span{flex:1}#mpTopo button{border:0;border-radius:8px;background:rgba(255,255,255,.15);color:#fff;font-size:16px;width:34px;height:30px;cursor:pointer}
+  #mpTopo button.on{background:#e63946}
+  #mpJogs{display:none;background:rgba(10,14,30,.92);border-radius:10px;margin-top:6px;max-height:40vh;overflow:auto}#mpJogs.on{display:block}
+  .mpJ{display:flex;gap:6px;align-items:center;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.08)}.mpJ span{flex:1}.mpJ small{opacity:.6}
+  .mpJ button{border:0;border-radius:7px;background:rgba(255,255,255,.14);color:#fff;font:700 11px 'Segoe UI';padding:5px 7px;cursor:pointer}
+  #mpMsgs small{opacity:.55}
+  #caixaMp{pointer-events:auto}
   .modalIA{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(5,8,20,.6);backdrop-filter:blur(4px)}
   .modalIA.on{display:flex}
   .modalIA .mi{width:min(460px,94vw);max-height:90vh;overflow:auto;background:#11141f;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:18px;color:#fff;font:500 14px 'Segoe UI';box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -3621,71 +3633,256 @@ function comecarModo(m) {
   aviso({ livre: '🌍 Modo Livre', normal: '🎮 Modo Normal', multi: '👥 Multiplayer' }[m] + (DONO && m !== 'livre' ? ' · 👑 IA de dono ligada' : ''), '#ffd166', 3);
 }
 $('#mNormal').onclick = () => comecarModo('normal');
-$('#mMulti').onclick = () => { $('#mpEntrar').classList.toggle('on'); try { $('#mpNome').value = localStorage.getItem('cidadeia_nome') || ''; } catch (e) {} $('#mpNome').focus(); };
-$('#mpIr').onclick = () => { const n = $('#mpNome').value.trim() || 'Jogador' + ((Math.random() * 900 + 100) | 0); try { localStorage.setItem('cidadeia_nome', n); } catch (e) {} MP.nome = n; MP.ligado = true; comecarModo('multi'); };
 
-// ---------------------------------------------------- MULTIPLAYER: manda seu estado ~10x/s e desenha os outros jogadores
-const MP = { id: Math.random().toString(36).slice(2, 10), nome: meuNick() || 'Jogador', ligado: false, outros: new Map(), desde: 0, pend: null, ocupado: false };
+// ==================================================================== MULTIPLAYER ONLINE (internet, 24h, sem servidor próprio)
+// conta = par de chaves no aparelho · posição/chat/voz por um servidor público de mensagens · ban só vale se assinado pelo dono
+const REDE = window.CIA_REDE;
+const MP = { id: null, nome: meuNick() || 'Jogador', ligado: false, outros: new Map(), conta: null, mq: null, bans: new Map(), mudos: new Set(), log: [], denunciados: new Map(), mic: null, pcs: new Map(), ultimo: 0 };
+const tag4 = id => '#' + (id || '').slice(0, 4);
+const escH = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const caixaMp = document.createElement('div'); caixaMp.id = 'caixaMp';
-caixaMp.innerHTML = '<div id="mpLista"></div><div id="mpMsgs"></div><input id="mpTxt" maxlength="200" placeholder="Enter: falar com os jogadores">';
+caixaMp.innerHTML = `<div id="mpTopo"><span id="mpLista"></span><button id="mpMic" title="microfone">🎤</button><button id="mpVerLista" title="jogadores">👥</button></div>
+  <div id="mpJogs"></div><div id="mpMsgs"></div><input id="mpTxt" maxlength="150" placeholder="Toque aqui ou Enter pra conversar">`;
 document.body.appendChild(caixaMp);
+
+// ---------- tela de conta (aparece ao tocar em Multiplayer)
+async function telaConta() {
+  const box = $('#mpEntrar'); box.classList.add('on');
+  if (!window.crypto?.subtle) { box.innerHTML = `<div class="mpConta">🔒 Pra jogar online, abra o jogo pelo app ou pelo site:<br><b>suelainedias90.github.io/cidade-ia/jogar</b></div>`; return; }
+  const c = await REDE.carregarConta().catch(() => null);
+  if (c) {
+    box.innerHTML = `<div class="mpConta">👤 Conta: <b>${escH(c.nome)}</b> <small>${tag4(c.id)}</small></div>
+      <button class="bm prin" id="mpIr"><i>🌎</i><span><b>Entrar no multiplayer online</b><small id="mpStatus">jogadores do mundo todo</small></span></button>
+      <div class="mpLinks"><a id="mpNomeNovo">trocar nome</a> · <a id="mpCodigo">código da conta</a> · <a id="mpOutra">usar outra conta</a></div>`;
+    $('#mpIr').onclick = () => entrarOnline(c);
+    $('#mpNomeNovo').onclick = () => { const n = prompt('Novo nome (até 16 letras):', c.nome); if (n && n.trim()) { REDE.renomearConta(REDE.filtrar(n.trim().slice(0, 16))); telaConta(); } };
+    $('#mpCodigo').onclick = () => { const cod = REDE.codigoConta(); navigator.clipboard?.writeText(cod).catch(() => {}); alert('Código da sua conta copiado!\n\nGuarde num lugar seguro e NÃO mostre pra ninguém: quem tiver esse código entra na sua conta.\nUse ele em "usar outra conta" pra entrar em outro celular ou PC.'); };
+    $('#mpOutra').onclick = async () => { const cod = prompt('Cole o código da conta:'); if (!cod) return; try { await REDE.entrarComCodigo(cod); telaConta(); } catch (e) { alert('Código inválido.'); } };
+  } else {
+    box.innerHTML = `<div class="mpConta">✨ <b>Crie sua conta</b> pra jogar online</div>
+      <input id="mpNome" maxlength="16" placeholder="seu nome no jogo">
+      <button class="bm prin" id="mpIr"><i>✅</i><span><b>Criar conta e entrar</b><small id="mpStatus">não precisa de e-mail nem senha</small></span></button>
+      <div class="mpLinks"><a id="mpOutra">já tenho conta (colar código)</a></div>`;
+    $('#mpNome').value = meuNick(); $('#mpNome').focus();
+    $('#mpIr').onclick = async () => {
+      const n = REDE.filtrar(($('#mpNome').value.trim() || 'Jogador' + ((Math.random() * 900 + 100) | 0)).slice(0, 16));
+      if (REDE.temPalavrao(n) || /\*/.test(n)) return alert('Escolha outro nome.');
+      try { localStorage.setItem('cidadeia_nome', n); } catch (e) {}
+      entrarOnline(await REDE.criarConta(n));
+    };
+    $('#mpOutra').onclick = async () => { const cod = prompt('Cole o código da conta:'); if (!cod) return; try { await REDE.entrarComCodigo(cod); telaConta(); } catch (e) { alert('Código inválido.'); } };
+  }
+}
+$('#mMulti').onclick = () => { if ($('#mpEntrar').classList.contains('on')) $('#mpEntrar').classList.remove('on'); else telaConta(); };
+
+// ---------- conexão
+function ligarRede() {
+  if (MP.mq) return MP.mq;
+  const mq = MP.mq = new REDE.MQ();
+  mq.ouvintes.push(on => { const s = $('#mpStatus'); if (s) s.textContent = on ? 'conectado ✅' : 'conectando…'; if (MODO === 'multi') addMpMsg(on ? '🟢 conectado ao servidor online' : '🔴 sem conexão, tentando de novo…'); });
+  mq.ouvir('ban/+', (t, txt) => receberBan(txt));
+  mq.ouvir('bans', (t, txt) => { try { for (const b of JSON.parse(txt)) receberBan(JSON.stringify(b)); } catch (e) {} });
+  mq.ouvir('p/+', (t, txt) => { try { const id = t.slice(2); if (id !== MP.id && MP.ligado) receberPos(id, JSON.parse(txt)); } catch (e) {} });
+  mq.ouvir('chat', (t, txt) => { try { receberChat(JSON.parse(txt)); } catch (e) {} });
+  mq.ouvir('sair/+', (t) => removerOutro(t.slice(5), true));
+  mq.ligar(); return mq;
+}
+async function receberBan(txt) {
+  let b; try { b = JSON.parse(txt); } catch (e) { return; }
+  if (!await REDE.banValido(b, window.DONO_PUB)) return;
+  const velho = MP.bans.get(b.id); if (velho && velho.t > b.t) return;
+  MP.bans.set(b.id, b);
+  try { const g = JSON.parse(localStorage.getItem('cidadeia_bans') || '{}'); g[b.id] = b; localStorage.setItem('cidadeia_bans', JSON.stringify(g)); } catch (e) {}
+  if (REDE.banAtivo(b)) { if (b.id === MP.id) expulsar(b); else removerOutro(b.id); }
+}
+try { const g = JSON.parse(localStorage.getItem('cidadeia_bans') || '{}'); for (const b of Object.values(g)) REDE.banValido(b, window.DONO_PUB).then(ok => ok && MP.bans.set(b.id, b)); } catch (e) {}
+const banido = id => REDE.banAtivo(MP.bans.get(id));
+function textoBanido(b) { return '🚫 Você foi banido ' + (b.ate === 0 ? 'PERMANENTEMENTE' : 'até ' + new Date(b.ate).toLocaleString('pt-BR')) + '.\nMotivo: ' + (b.motivo || '—'); }
+function expulsar(b) {
+  if (!MP.ligado) return;
+  MP.ligado = false; pararVoz(); for (const id of [...MP.outros.keys()]) removerOutro(id);
+  alert(textoBanido(b)); comecarModo('normal');
+}
+async function entrarOnline(conta) {
+  MP.conta = conta; MP.id = conta.id; MP.nome = conta.nome;
+  try { localStorage.setItem('cidadeia_nome', conta.nome); } catch (e) {} refazerNickJog?.();
+  const mq = ligarRede(); mq.ouvir('ban/' + MP.id, () => {});
+  const st = $('#mpStatus'); if (st) st.textContent = 'conectando…';
+  for (let i = 0; i < 40 && !mq.ok; i++) await new Promise(r => setTimeout(r, 150));
+  await new Promise(r => setTimeout(r, 900));   // espera os bans guardados chegarem
+  if (banido(MP.id)) { alert(textoBanido(MP.bans.get(MP.id))); return; }
+  if (!mq.ok) addMpMsg('🔴 sem internet agora; você entra sozinho e conecta quando a internet voltar');
+  MP.ligado = true; $('#mpEntrar').classList.remove('on'); comecarModo('multi');
+  addMpMsg(`👋 Você entrou como <b>${escH(MP.nome)}</b> ${tag4(MP.id)}. Seja gentil: dá pra denunciar quem atrapalha.`);
+}
+
+// ---------- posição (5x por segundo)
 function meuEstado() {
   const v = dirigindo;
   return { x: +jog.pos.x.toFixed(2), y: +jog.pos.y.toFixed(2), z: +jog.pos.z.toFixed(2), r: +(jog.rot || 0).toFixed(2), vel: +(jog.mv ? jog.mv.length() : 0).toFixed(2),
-    modo: !jog.chao ? 'pulo' : G.socoT > 0 ? G.socoTipo : jog.emote || '', int: !!G.interior, av: AVATAR,
+    modo: !jog.chao ? 'pulo' : G.socoT > 0 ? G.socoTipo : jog.emote || '', int: !!G.interior, av: AVATAR, mic: !!MP.mic,
     carro: v ? { tipo: v.g.userData.tipo, cor: v.g.children[0]?.material?.color?.getHex?.() ?? 0xb3121b, x: +v.g.position.x.toFixed(2), y: +v.g.position.y.toFixed(2), z: +v.g.position.z.toFixed(2), a: +v.ang.toFixed(3) } : null };
 }
-async function syncMp() {
-  if (!MP.ligado || MP.ocupado || MODO !== 'multi') return; MP.ocupado = true;
-  try {
-    const r = await fetch('/api/mp/sync', { method: 'POST', body: JSON.stringify({ id: MP.id, nome: MP.nome, estado: meuEstado(), desde: MP.desde, msg: MP.pend }) }).then(r => r.json());
-    MP.pend = null;
-    const vistos = new Set();
-    for (const j of r.jogadores || []) { vistos.add(j.id); atualizarOutro(j); }
-    for (const [id, O] of MP.outros) if (!vistos.has(id)) { cena.remove(O.b.g, O.tag); if (O.carro) cena.remove(O.carro); MP.outros.delete(id); addMpMsg('🚪 ' + O.nome + ' saiu'); }
-    for (const m of r.chat || []) addMpMsg(`<b>${m.nome}:</b> ${m.txt.replace(/</g, '&lt;')}`);
-    if (r.agora) MP.desde = r.agora;
-    $('#mpLista').innerHTML = `👥 <b>${MP.outros.size + 1}</b> jogando: <b>${MP.nome}</b>` + [...MP.outros.values()].map(O => ', ' + O.nome).join('');
-  } catch (e) {}
-  MP.ocupado = false;
+setInterval(() => {
+  if (!MP.ligado || MODO !== 'multi' || !MP.mq?.ok) return;
+  MP.mq.pub('p/' + MP.id, { n: MP.nome, e: meuEstado() });
+  const agora = performance.now();
+  for (const [id, O] of MP.outros) if (agora - O.visto > 7000) removerOutro(id, true);
+  vozVizinhos();
+}, 200);
+addEventListener('beforeunload', () => { if (MP.ligado && MP.mq?.ok) MP.mq.pub('sair/' + MP.id, '1'); });
+function receberPos(id, j) {
+  if (banido(id) || MODO !== 'multi') return;
+  atualizarOutro({ id, nome: REDE.filtrar(String(j.n || 'Jogador').slice(0, 16)), estado: j.e || {} });
 }
-setInterval(syncMp, 100);
-addEventListener('beforeunload', () => { if (MP.ligado) navigator.sendBeacon?.('/api/mp/sair', JSON.stringify({ id: MP.id })); });
-function addMpMsg(html) { const d = document.createElement('div'); d.innerHTML = html; $('#mpMsgs').appendChild(d); while ($('#mpMsgs').children.length > 8) $('#mpMsgs').firstChild.remove(); }
+function removerOutro(id, avisar) {
+  const O = MP.outros.get(id); if (!O) return;
+  cena.remove(O.b.g, O.tag); if (O.bolha) cena.remove(O.bolha); if (O.carro) cena.remove(O.carro);
+  MP.outros.delete(id); fecharVoz(id); if (avisar) addMpMsg('🚪 ' + escH(O.nome) + ' saiu'); listaJogs();
+}
 function atualizarOutro(j) {
   let O = MP.outros.get(j.id);
   if (!O) {
     const b = boneco({ estilo: 'casual' }); cena.add(b.g);
-    O = { b, nome: j.nome, tag: nickSprite(j.nome, { icone: j.dono ? '👑' : '🎮', cor1: '#3a86ff', cor2: '#06d6a0', sub: j.dono ? 'dono do servidor' : '' }), pos: new THREE.Vector3(j.estado.x || 0, j.estado.y || 0, j.estado.z || 0), rot: 0, carro: null, tipoCarro: null };
-    cena.add(O.tag); MP.outros.set(j.id, O); addMpMsg('✅ ' + j.nome + ' entrou');
+    O = { b, nome: j.nome, tag: nickSprite(j.nome, { icone: '🎮', cor1: '#3a86ff', cor2: '#06d6a0', sub: tag4(j.id) }), pos: new THREE.Vector3(j.estado.x || 0, j.estado.y || 0, j.estado.z || 0), rot: 0, carro: null, tipoCarro: null };
+    cena.add(O.tag); MP.outros.set(j.id, O); addMpMsg('✅ ' + escH(j.nome) + ' entrou'); listaJogs();
   }
-  O.e = j.estado || {};
+  O.visto = performance.now(); O.e = j.estado || {};
   const avTxt = JSON.stringify(O.e.av || null);
   if (O.e.av && avTxt !== O.avTxt && !O.montando) { O.avTxt = avTxt; O.montando = true; montarAvatar(O.e.av).then(b => { b.g.position.copy(O.b.g.position); cena.remove(O.b.g); cena.add(b.g); O.b = b; }).finally(() => O.montando = false); }
 }
 function atualizarOutros(dt) {
+  caixaMp.style.display = MODO === 'multi' && estado === 'jogando' ? 'block' : 'none';
   if (MODO !== 'multi') return;
-  for (const O of MP.outros.values()) {
+  for (const [id, O] of MP.outros) {
     const e = O.e || {}; if (e.x === undefined) continue;
-    const k = Math.min(1, dt * 12);
+    const k = Math.min(1, dt * 8);
     O.pos.x += (e.x - O.pos.x) * k; O.pos.y += (e.y - O.pos.y) * k; O.pos.z += (e.z - O.pos.z) * k;
     const visivel = !e.int && !G.interior;
+    let topo;
     if (e.carro) {
       if (!O.carro || O.tipoCarro !== e.carro.tipo) { if (O.carro) cena.remove(O.carro); O.carro = carroModelo(e.carro.cor, e.carro.tipo); cena.add(O.carro); O.tipoCarro = e.carro.tipo; }
       O.carro.position.lerp(new THREE.Vector3(e.carro.x, e.carro.y, e.carro.z), k); virarSuave(O.carro, e.carro.a, k);
-      O.carro.visible = visivel; O.b.g.visible = false; O.tag.position.set(O.carro.position.x, O.carro.position.y + 5, O.carro.position.z);
+      O.carro.visible = visivel; O.b.g.visible = false; topo = new THREE.Vector3(O.carro.position.x, O.carro.position.y + 5, O.carro.position.z);
     } else {
       if (O.carro) { cena.remove(O.carro); RODAS.carros.delete(O.carro); O.carro = null; O.tipoCarro = null; }
       O.b.g.visible = visivel; O.b.g.position.copy(O.pos); virarSuave(O.b.g, e.r || 0, k);
       animarBoneco(O.b, relogio, e.vel || 0, e.modo || '');
-      if (O.b.altTag === undefined && O.b.g.parent) { const bb = new THREE.Box3().setFromObject(O.b.g); O.b.altTag = isFinite(bb.max.y) ? Math.max(1, bb.max.y - O.b.g.position.y) : 3; } O.tag.position.set(O.pos.x, O.pos.y + (O.b.altTag ?? 3) - .05, O.pos.z);
+      if (O.b.altTag === undefined && O.b.g.parent) { const bb = new THREE.Box3().setFromObject(O.b.g); O.b.altTag = isFinite(bb.max.y) ? Math.max(1, bb.max.y - O.b.g.position.y) : 3; }
+      topo = new THREE.Vector3(O.pos.x, O.pos.y + (O.b.altTag ?? 3) - .05, O.pos.z);
     }
-    O.tag.visible = visivel;
+    O.tag.position.copy(topo); O.tag.visible = visivel;
+    if (O.bolha) { O.bolhaT -= dt; O.bolha.position.set(topo.x, topo.y + O.tag.scale.y + .15, topo.z); O.bolha.visible = visivel; if (O.bolhaT <= 0) { cena.remove(O.bolha); O.bolha = null; } }
+    // voz: mais alto perto, some longe
+    const pc = MP.pcs.get(id); if (pc?.audio) pc.audio.volume = MP.mudos.has(id) ? 0 : Math.max(0, Math.min(1, 1 - O.pos.distanceTo(jog.pos) / 50));
   }
-  caixaMp.style.display = MODO === 'multi' && estado === 'jogando' ? 'block' : 'none';
 }
-$('#mpTxt').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { const v = e.target.value.trim(); if (v) { MP.pend = v; addMpMsg(`<b>${MP.nome}:</b> ${v.replace(/</g, '&lt;')}`); } e.target.value = ''; e.target.blur(); renderer.domElement.requestPointerLock()?.catch?.(() => {}); } if (e.key === 'Escape') e.target.blur(); });
-addEventListener('keydown', e => { if (MODO === 'multi' && estado === 'jogando' && e.code === 'Enter' && document.activeElement !== $('#mpTxt') && !digitando()) { e.preventDefault(); soltarMouse(); $('#mpTxt').focus(); } });
+
+// ---------- chat (balão em cima da cabeça, igual Roblox)
+function bolhaSprite(txt) {
+  const E = 3, c = document.createElement('canvas'), g = c.getContext('2d'), F = 26 * E, maxW = 420 * E;
+  g.font = `700 ${F}px "Segoe UI"`;
+  const linhas = []; let l = '';
+  for (const p of txt.split(' ')) { const t = l ? l + ' ' + p : p; if (g.measureText(t).width > maxW && l) { linhas.push(l); l = p; } else l = t; } linhas.push(l);
+  const W = Math.min(maxW, Math.max(...linhas.map(x => g.measureText(x).width))) + 36 * E, H = linhas.length * F * 1.25 + 24 * E;
+  c.width = W + 8 * E; c.height = H + 18 * E;
+  g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.roundRect(4 * E, 4 * E, W, H, 18 * E); g.fill();
+  g.beginPath(); g.moveTo(c.width / 2 - 10 * E, H + 3 * E); g.lineTo(c.width / 2 + 10 * E, H + 3 * E); g.lineTo(c.width / 2, H + 16 * E); g.fill();
+  g.fillStyle = '#16131f'; g.font = `700 ${F}px "Segoe UI"`; g.textAlign = 'center'; g.textBaseline = 'top';
+  linhas.forEach((x, i) => g.fillText(x, c.width / 2, 4 * E + 12 * E + i * F * 1.25));
+  const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false })); const s = .0085 / E;
+  sp.scale.set(c.width * s, c.height * s, 1); sp.center.set(.5, 0); sp.renderOrder = 11; return sp;
+}
+function addMpMsg(html) { const d = document.createElement('div'); d.innerHTML = html; $('#mpMsgs').appendChild(d); while ($('#mpMsgs').children.length > 9) $('#mpMsgs').firstChild.remove(); }
+async function falar(txt) {
+  txt = REDE.filtrar(txt.trim().slice(0, 150)); if (!txt || !MP.ligado) return;
+  if (performance.now() - MP.ultimo < 1200) return addMpMsg('⏳ devagar, espera um pouquinho');
+  MP.ultimo = performance.now();
+  const t = Date.now(), sig = await REDE.assinar(MP.conta.priv, [MP.id, txt, t].join('|'));
+  MP.mq.pub('chat', { id: MP.id, nome: MP.nome, txt, t, pub: MP.conta.pub, sig });
+  addMpMsg(`<b>${escH(MP.nome)}:</b> ${escH(txt)}`); guardarLog(MP.id, MP.nome, txt);
+}
+async function receberChat(m) {
+  if (!MP.ligado || m.id === MP.id || banido(m.id) || MP.mudos.has(m.id)) return;
+  if (Math.abs(Date.now() - m.t) > 120000) return;
+  if (await REDE.idDe(m.pub) !== m.id || !await REDE.conferir(m.pub, [m.id, m.txt, m.t].join('|'), m.sig)) return;   // falsificado
+  const txt = REDE.filtrar(String(m.txt).slice(0, 150)), nome = REDE.filtrar(String(m.nome).slice(0, 16));
+  addMpMsg(`<b>${escH(nome)}</b> <small>${tag4(m.id)}</small>: ${escH(txt)}`); guardarLog(m.id, nome, m.txt);
+  const O = MP.outros.get(m.id); if (O) { if (O.bolha) cena.remove(O.bolha); O.bolha = bolhaSprite(txt); O.bolhaT = 7; cena.add(O.bolha); }
+}
+function guardarLog(id, nome, txt) { MP.log.push({ id, nome, txt, t: Date.now() }); if (MP.log.length > 60) MP.log.shift(); }
+$('#mpTxt').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { falar(e.target.value); e.target.value = ''; e.target.blur(); if (!document.body.classList.contains('celular')) renderer.domElement.requestPointerLock()?.catch?.(() => {}); } if (e.key === 'Escape') e.target.blur(); });
+addEventListener('keydown', e => { if (MODO === 'multi' && estado === 'jogando' && (e.code === 'Enter' || e.code === 'Slash') && document.activeElement !== $('#mpTxt') && !digitando()) { e.preventDefault(); soltarMouse(); $('#mpTxt').focus(); } });
+
+// ---------- lista de jogadores: silenciar e denunciar
+function listaJogs() {
+  $('#mpLista').innerHTML = `👥 <b>${MP.outros.size + 1}</b> online`;
+  $('#mpJogs').innerHTML = [...MP.outros].map(([id, O]) => `<div class="mpJ"><span>${escH(O.nome)} <small>${tag4(id)}</small>${O.e?.mic ? ' 🎤' : ''}</span>
+    <button data-mudo="${id}">${MP.mudos.has(id) ? '🔈 ouvir' : '🔇 silenciar'}</button><button data-den="${id}">🚩 denunciar</button></div>`).join('') || '<div class="mpJ">ninguém por perto ainda</div>';
+}
+$('#mpVerLista').onclick = () => { listaJogs(); $('#mpJogs').classList.toggle('on'); };
+$('#mpJogs').addEventListener('click', e => {
+  const m = e.target.dataset.mudo, d = e.target.dataset.den;
+  if (m) { MP.mudos.has(m) ? MP.mudos.delete(m) : MP.mudos.add(m); listaJogs(); }
+  if (d) denunciar(d);
+});
+async function denunciar(id) {
+  const O = MP.outros.get(id); if (!O) return;
+  if (Date.now() - (MP.denunciados.get(id) || 0) < 600000) return alert('Você já denunciou esse jogador. A moderação vai olhar.');
+  const op = prompt(`Denunciar ${O.nome} ${tag4(id)}. Por quê?\n1 = xingamento / ofensa\n2 = assédio / perseguição\n3 = trapaça / bug de propósito\n4 = nome ou conversa imprópria\n5 = outro`, '1');
+  const motivo = { 1: 'xingamento/ofensa', 2: 'assédio/perseguição', 3: 'trapaça', 4: 'nome ou conversa imprópria', 5: 'outro' }[String(op || '').trim()];
+  if (!motivo) return;
+  const t = Date.now(), corpo = { de: { id: MP.id, nome: MP.nome }, alvo: { id, nome: O.nome }, motivo, chat: MP.log.slice(-30), t, pub: MP.conta.pub };
+  corpo.sig = await REDE.assinar(MP.conta.priv, [MP.id, id, motivo, t].join('|'));
+  MP.mq.pub(`den/${MP.id}-${t}`, corpo, true);   // fica guardada até o bot ler
+  MP.denunciados.set(id, t); MP.mudos.add(id); listaJogs();
+  addMpMsg(`🚩 Denúncia enviada. ${escH(O.nome)} foi silenciado pra você.`);
+}
+
+// ---------- chat de voz (direto entre os jogadores, só quem está perto)
+const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' }];
+$('#mpMic').onclick = async () => {
+  if (MP.mic) { pararVoz(); $('#mpMic').classList.remove('on'); addMpMsg('🎤 microfone desligado'); return; }
+  try { MP.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { return addMpMsg('🎤 não deu pra usar o microfone (permita o microfone pro jogo)'); }
+  $('#mpMic').classList.add('on'); addMpMsg('🎤 microfone ligado: quem estiver perto te ouve');
+  for (const id of [...MP.pcs.keys()]) fecharVoz(id);
+};
+function pararVoz() { if (MP.mic) { MP.mic.getTracks().forEach(t => t.stop()); MP.mic = null; } for (const id of [...MP.pcs.keys()]) fecharVoz(id); }
+function fecharVoz(id) { const p = MP.pcs.get(id); if (!p) return; try { p.pc.close(); } catch (e) {} p.audio?.remove(); MP.pcs.delete(id); }
+function novaPc(id) {
+  const pc = new RTCPeerConnection({ iceServers: ICE }), p = { pc, t: performance.now() };
+  if (MP.mic) for (const tr of MP.mic.getTracks()) pc.addTrack(tr, MP.mic); else pc.addTransceiver('audio', { direction: 'recvonly' });
+  pc.ontrack = ev => { if (!p.audio) { p.audio = document.createElement('audio'); p.audio.autoplay = true; document.body.appendChild(p.audio); } p.audio.srcObject = ev.streams[0] || new MediaStream([ev.track]); p.audio.play?.().catch(() => {}); };
+  pc.onconnectionstatechange = () => { if (['failed', 'closed'].includes(pc.connectionState)) fecharVoz(id); };
+  MP.pcs.set(id, p); return p;
+}
+const iceProntos = pc => new Promise(r => { if (pc.iceGatheringState === 'complete') return r(); const f = () => pc.iceGatheringState === 'complete' && r(); pc.addEventListener('icegatheringstatechange', f); setTimeout(r, 2500); });
+function vozVizinhos() {
+  if (!MP.mic || !MP.mq?.ok) return;   // quem liga é quem está com microfone
+  for (const [id, O] of MP.outros) {
+    const perto = O.pos.distanceTo(jog.pos) < 45 && !MP.mudos.has(id);
+    if (!perto) { if (MP.pcs.has(id) && O.pos.distanceTo(jog.pos) > 60) fecharVoz(id); continue; }
+    if (MP.pcs.has(id) || MP.pcs.size >= 8) continue;
+    if (O.e?.mic && MP.id > id) continue;   // os dois com mic: só um começa
+    const p = novaPc(id);
+    (async () => { await p.pc.setLocalDescription(await p.pc.createOffer()); await iceProntos(p.pc); MP.mq.pub('voz/' + id, { de: MP.id, k: 'oferta', sdp: p.pc.localDescription.sdp }); })().catch(() => fecharVoz(id));
+  }
+}
+function ouvirVoz() {
+  MP.mq.ouvir('voz/' + MP.id, async (t, txt) => {
+    let m; try { m = JSON.parse(txt); } catch (e) { return; }
+    if (!MP.ligado || banido(m.de) || MP.mudos.has(m.de) || !MP.outros.has(m.de)) return;
+    if (m.k === 'oferta') {
+      fecharVoz(m.de); const p = novaPc(m.de);
+      await p.pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
+      await p.pc.setLocalDescription(await p.pc.createAnswer()); await iceProntos(p.pc);
+      MP.mq.pub('voz/' + m.de, { de: MP.id, k: 'resposta', sdp: p.pc.localDescription.sdp });
+    } else if (m.k === 'resposta') { const p = MP.pcs.get(m.de); if (p && p.pc.signalingState === 'have-local-offer') await p.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }); }
+  });
+}
+{ const v = entrarOnline; entrarOnline = async c => { await v(c); if (MP.ligado && !MP.vozOk) { MP.vozOk = true; ouvirVoz(); } }; }
 // os outros jogadores aparecem no radar
 $('#mLimpar').onclick = () => { limpar(); narrar('🧹 Tudo limpo!'); entrarNoJogo(); };
 interfaceJogo(false);
