@@ -5549,20 +5549,119 @@ function tirarMotorista(g) {
   const pos = g.position.clone().addScaledVector(lado, W * .5 + .9); pos.y = alturaChao(pos.x, pos.z);
   const b = boneco({ roupa: d.roupa, pele: d.pele, cabelo: d.cab, calca: pega(['#1d3557', '#2b2d42', '#111111', '#6b4f2a']) });
   b.g.position.copy(pos); cena.add(b.g);
-  const fuga = pos.clone().sub(jog.pos); fuga.y = 0; if (fuga.lengthSq() < .01) fuga.copy(lado); fuga.normalize();
-  const fala = pega(['Ei! Meu carro!', 'Socorro! Ladrão!', 'Não me machuca!', 'Leva, leva! Só me deixa ir!', 'Polícia! Roubaram meu carro!']);
-  narrar('🏃 Motorista: "' + fala + '"');
-  let t = 0;
+  reagirRoubo(b, lado);
+}
+// ---- 56 REAÇÕES de quem tem o carro roubado. Cada passo: [ação, segundos, pose/golpe, fala, chamaPolícia]
+// ações: pose (fica parado fazendo a pose) · fugir · zigue (foge desviando) · andar (vai embora andando) · recuar (de costas, mãos pra cima)
+//        perseguir (corre atrás do carro) · atacar (vai pra cima: soco/chute no carro ou em você)
+const REACOES = [
+  [['fugir', 8, '', 'Socorro! Ladrão!']],
+  [['pose', 2.5, 'rendido', 'Calma, calma! Pode levar!'], ['andar', 3], ['fugir', 5]],
+  [['fugir', 2.5, '', 'Polícia!'], ['pose', 5, 'celular', 'Alô, 190? Roubaram meu carro!', 1], ['andar', 4]],
+  [['perseguir', 2, '', 'Sai do meu carro, vagabundo!'], ['atacar', 4, 'soco'], ['fugir', 4, '', 'Tá bom, tá bom!']],
+  [['pose', 3, 'ajoelhar', 'Não... meu carro...'], ['pose', 4, 'chorar'], ['andar', 4]],
+  [['perseguir', 5, '', 'Volta aqui!'], ['pose', 2, 'bravo', 'Desgraçado!'], ['andar', 4]],
+  [['pose', 4, 'medo', '...'], ['fugir', 5, '', 'Meu Deus!']],
+  [['pose', 2, 'deitar', 'Ai!'], ['pose', 2.5, 'sentar_chao', 'Minha perna...'], ['andar', 5]],
+  [['pose', 5, 'celular', 'Tô filmando, vai tudo pra internet!'], ['fugir', 4]],
+  [['pose', 3, 'ajoelhar', 'Por favor, é meu carro de trabalho!'], ['fugir', 5]],
+  [['pose', 2, 'rendido', 'Toma, a chave tá aí!'], ['andar', 5, '', 'Que dia...']],
+  [['pose', 3, 'apontar', 'Ladrão! Ladrão! Pega ele!'], ['perseguir', 3], ['pose', 3, 'cansado', 'Não aguento mais...']],
+  [['pose', 1.5, 'medo', 'Ai, meu coração...'], ['pose', 6, 'deitar'], ['pose', 3, 'sentar_chao', 'O que aconteceu?']],
+  [['fugir', 6, '', 'Alguém chama a polícia!', 1]],
+  [['pose', 2, 'bravo', 'Seu folgado!'], ['atacar', 3, 'chute'], ['fugir', 4]],
+  [['pose', 4, 'acenar', 'Ajuda! Alguém me ajuda!'], ['andar', 4]],
+  [['pose', 2.5, 'encolher', 'Tá no seguro mesmo...'], ['andar', 6]],
+  [['pose', 2, 'rir', 'Isso não tá acontecendo...'], ['pose', 3, 'chorar'], ['andar', 4]],
+  [['zigue', 7, '', 'Não atira! Não atira!']],
+  [['fugir', 3, '', 'Socorro!'], ['pose', 4, 'acenar', 'Táxi! Táxi!'], ['andar', 3]],
+  [['pose', 3, 'pensar', 'E agora, como eu volto pra casa?'], ['andar', 5]],
+  [['pose', 4, 'celular', 'Amor, roubaram o carro!'], ['pose', 3, 'chorar'], ['andar', 3]],
+  [['pose', 4, 'ajoelhar', 'Senhor, me protege...'], ['fugir', 4]],
+  [['perseguir', 2, '', 'Não!'], ['pose', 2, 'agachar', 'Me devolve!'], ['fugir', 4, '', 'Ele vai me atropelar!']],
+  [['perseguir', 1.5, '', 'Sai daí!'], ['atacar', 3, 'soco'], ['pose', 2, 'bravo', 'Eu vou te achar!'], ['andar', 4]],
+  [['fugir', 2, '', 'Socorro!'], ['pose', 1.5, 'deitar', 'Ai!'], ['fugir', 5]],
+  [['pose', 4, 'ler', 'Anotei a placa, hein!', 1], ['andar', 4]],
+  [['pose', 4, 'encolher', 'Não me machuca...'], ['andar', 5]],
+  [['pose', 3, 'acenar', 'Polícia! Aqui!', 1], ['perseguir', 3], ['pose', 3, 'cansado']],
+  [['andar', 2, '', 'Não acredito...'], ['pose', 6, 'sentar_chao', 'Acabou meu dia.']],
+  [['andar', 3, '', 'Na minha época não era assim...'], ['pose', 2, 'bravo', 'Vagabundo!'], ['andar', 3]],
+  [['fugir', 3], ['pose', 4, 'celular', '190? É um assalto!', 1], ['fugir', 3]],
+  [['pose', 1.5, 'rendido', 'Leva tudo!'], ['fugir', 6]],
+  [['perseguir', 1.5, '', 'Ô, ô, ô!'], ['pose', 1.5, 'medo', 'Tá, tá, foi mal!'], ['fugir', 5]],
+  [['pose', 2.5, 'palmas', 'Parabéns, hein! Muito corajoso!'], ['andar', 4]],
+  [['recuar', 3, '', 'Tô saindo, tô saindo...'], ['fugir', 4]],
+  [['fugir', 3, '', 'Segurança!'], ['pose', 3, 'acenar', 'Ele roubou meu carro!', 1], ['andar', 3]],
+  [['pose', 3, 'pensar', 'Meu carro novo!'], ['pose', 3, 'chorar'], ['andar', 3]],
+  [['recuar', 4, '', 'Calma, amigo, calma...'], ['fugir', 4]],
+  [['pose', 2.5, 'apontar', 'Você vai se arrepender!'], ['andar', 4]],
+  [['fugir', 2, '', 'Não, não, não!'], ['pose', 3, 'ajoelhar', 'O carro nem tá pago!'], ['andar', 3]],
+  [['perseguir', 4, '', 'Para esse carro!'], ['pose', 4, 'cansado', 'Ufa... não dá...'], ['andar', 3]],
+  [['atacar', 2, 'soco', 'Sai, sai!'], ['fugir', 5]],
+  [['pose', 3, 'chorar', 'Meu bebê! Cuida bem dele!'], ['andar', 4]],
+  [['pose', 6, 'celular', 'Galera, ao vivo: roubaram meu carro!'], ['andar', 3]],
+  [['pose', 2, 'apontar', 'Esse carro tem rastreador, viu?', 1], ['andar', 4]],
+  [['recuar', 1.5, '', 'Opa!'], ['pose', 3, 'sentar_chao', 'Que susto...'], ['andar', 4]],
+  [['fugir', 4, '', 'Vizinho! Roubaram meu carro!'], ['pose', 3, 'acenar'], ['fugir', 2]],
+  [['pose', 3, 'bravo', 'Era só o que faltava!'], ['pose', 2, 'encolher'], ['andar', 4]],
+  [['pose', 3, 'palmas', 'Gente! Ladrão!'], ['fugir', 4]],
+  [['pose', 2, 'reverencia', 'Que Deus te perdoe.'], ['andar', 5]],
+  [['pose', 2, 'karate', 'Eu faço caratê, hein!'], ['atacar', 3, 'chute'], ['fugir', 4, '', 'Tá, você ganhou!']],
+  [['pose', 2, 'medo'], ['pose', 5, 'deitar', '...'], ['pose', 2, 'sentar_chao', 'Onde eu tô?']],
+  [['pose', 2, 'pensar', 'Pelo menos me deixa pegar meu celular?'], ['pose', 2, 'rendido'], ['andar', 4]],
+  [['fugir', 5, '', 'Sai da frente!'], ['pose', 3, 'medo', 'Ele quase me pegou...']],
+  [['pose', 2, 'encolher', 'Tudo bem, eu nem gostava desse carro.'], ['andar', 5]],
+];
+const Y_ = new THREE.Vector3(0, 1, 0);
+window.__dbg.reagir = i => { const b = boneco({}); b.g.position.set(jog.pos.x + 3, alturaChao(jog.pos.x + 3, jog.pos.z), jog.pos.z); cena.add(b.g); reagirRoubo(b, new THREE.Vector3(1, 0, 0), i); return REACOES.length; };
+function reagirRoubo(b, lado, iR) {
+  const R = iR != null ? REACOES[iR] : pega(REACOES), alvo = () => dirigindo ? dirigindo.g.position : jog.pos;
+  let i = -1, t = 0, dur = 0, passo = null, golpeT = 0, bolha = null, bolhaT = 0, fimT = 0, dir = new THREE.Vector3();
+  const falar = txt => { if (bolha) cena.remove(bolha); bolha = bolhaSprite(txt); bolhaT = 3.2; cena.add(bolha); };
+  const longeDe = () => { dir.copy(b.g.position).sub(alvo()); dir.y = 0; if (dir.lengthSq() < .01) dir.copy(lado); return dir.normalize(); };
+  const andarPara = (d, vel, dt, olhar) => {
+    const nx = b.g.position.x + d.x * vel * dt, nz = b.g.position.z + d.z * vel * dt;
+    if (colide(new THREE.Vector3(nx, b.g.position.y, nz), .4)) d.applyAxisAngle(Y_, (Math.random() < .5 ? 1 : -1) * 1.2);
+    else { b.g.position.x = nx; b.g.position.z = nz; b.g.position.y = alturaChao(nx, nz); }
+    virarSuave(b.g, olhar ?? Math.atan2(d.x, d.z), dt * 10);
+  };
+  const proximo = () => {
+    i++; t = 0; passo = R[i];
+    if (!passo) return;
+    dur = passo[1];
+    if (passo[3]) falar(passo[3]);
+    if (passo[4]) crime(1, 'a vítima chamou a polícia');
+    if (passo[0] === 'fugir' || passo[0] === 'zigue' || passo[0] === 'andar' || passo[0] === 'recuar') longeDe();
+  };
+  proximo();
   quadros.push(dt => {
     t += dt;
-    if (t < .5) { animarBoneco(b, relogio, 0, ''); return true; }        // sai do carro
-    const vel = t < 1 ? 2.5 : 6.5;                                      // assustado: corre pra longe
-    const nx = b.g.position.x + fuga.x * vel * dt, nz = b.g.position.z + fuga.z * vel * dt;
-    if (colide(new THREE.Vector3(nx, b.g.position.y, nz), .4)) fuga.applyAxisAngle(new THREE.Vector3(0, 1, 0), (Math.random() < .5 ? 1 : -1) * 1.2);
-    else { b.g.position.x = nx; b.g.position.z = nz; b.g.position.y = alturaChao(nx, nz); }
-    virarSuave(b.g, Math.atan2(fuga.x, fuga.z), dt * 10);
-    animarBoneco(b, relogio, vel, '');
-    if (t > 9 || b.g.position.distanceTo(jog.pos) > 70) { cena.remove(b.g); return false; }
+    if (bolha) { bolhaT -= dt; bolha.position.set(b.g.position.x, b.g.position.y + 2.05, b.g.position.z); if (bolhaT <= 0) { cena.remove(bolha); bolha = null; } }
+    if (passo && t >= dur) proximo();
+    if (!passo) {   // acabou a reação: vai embora andando e some longe de você
+      fimT += dt; andarPara(dir, 1.8, dt); animarBoneco(b, relogio, 1.8, '');
+      if (fimT > 8 || b.g.position.distanceTo(jog.pos) > 60) { cena.remove(b.g); if (bolha) cena.remove(bolha); return false; }
+      return true;
+    }
+    const [acao, , pose] = passo, a = alvo();
+    const olharAlvo = Math.atan2(a.x - b.g.position.x, a.z - b.g.position.z);
+    if (acao === 'pose') { virarSuave(b.g, olharAlvo, dt * 4); animarBoneco(b, relogio, 0, pose || ''); }
+    else if (acao === 'fugir' || acao === 'zigue') { const d = dir.clone(); if (acao === 'zigue') d.applyAxisAngle(Y_, Math.sin(t * 5) * .8); andarPara(acao === 'zigue' ? d : dir, t < .4 ? 3 : 6.5, dt); animarBoneco(b, relogio, 6.5, ''); }
+    else if (acao === 'andar') { andarPara(dir, 1.8, dt); animarBoneco(b, relogio, 1.8, ''); }
+    else if (acao === 'recuar') { andarPara(dir, 1.1, dt, olharAlvo); animarBoneco(b, relogio, 0, 'rendido'); }
+    else if (acao === 'perseguir' || acao === 'atacar') {
+      const d = new THREE.Vector3(a.x - b.g.position.x, 0, a.z - b.g.position.z), dist = d.length(); d.normalize();
+      const perto = dist < (dirigindo ? 2.8 : 1.6);
+      if (!perto) { andarPara(d, acao === 'atacar' ? 5 : 6, dt); animarBoneco(b, relogio, 6, ''); }
+      else if (acao === 'perseguir') { virarSuave(b.g, olharAlvo, dt * 6); animarBoneco(b, relogio, 0, 'bravo'); }
+      else {
+        golpeT -= dt; virarSuave(b.g, olharAlvo, dt * 8);
+        const golpe = pose === 'chute' ? 'chute' : (Math.floor(t * 1.7) % 2 ? 'soco_d' : 'soco_e');
+        animarBoneco(b, relogio, 0, golpe);
+        if (golpeT <= 0) { golpeT = .6; if (dirigindo) danoVeiculo(dirigindo, 2); else danoJogador(4, 'briga com o dono do carro'); }
+      }
+      if (dirigindo && dist > 25 && acao === 'perseguir') t = dur;   // o carro foi embora: desiste
+    }
     return true;
   });
 }
