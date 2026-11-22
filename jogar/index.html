@@ -5482,6 +5482,7 @@ addEventListener('keydown', e => {
 });
 setTimeout(function dicaLugar() { if (estado !== 'jogando') return setTimeout(dicaLugar, 3000); if (G.branco) return; const [P, d] = lugarMaisPerto(); aviso(`${ICONE_LUGAR[P.tipo]} ${P.nome}: aperte K`, '#ffd166', 5); }, 12000);
 window.__dbg.vida = () => VIDA;
+window.__dbg.raro = nome => { const g = carroVariante(m => m.raro && (!nome || m.nome.includes(nome))); g.position.set(jog.pos.x + 4, alturaChao(jog.pos.x + 4, jog.pos.z), jog.pos.z); cena.add(g); const v = novoVeiculo(g, { vel: 0, ang: 0 }); return g.userData.nomeModelo; };
 window.__dbg.lojas = { get pos() { return jog.pos.clone(); }, PORTAS, entrarLugar, sairLugar, iniciarAssalto, get assalto() { return G.assalto; } };
 // ---------------------------------------------------- MENU DE ANIMAÇÕES (J)
 const menuEmote = document.createElement('div'); menuEmote.id = 'menuEmote';
@@ -6306,7 +6307,7 @@ function atualizarGTA2(dt) {
   if (G.miraEscondida) { G.miraEscondida = false; $('#mira').style.display = jog.arma ? 'block' : 'none'; }
   atualizarRodas(dt); atualizarMissao(dt); atualizarRadio(); atualizarFuncoesIA(dt); atualizarInterior(dt); atualizarVida(dt); atualizarOutros(dt); atualizarBranco(); atualizarMultidao(dt);
   for (const c of [...veiculos, ...transito]) c.g.children.forEach(gg => gg.isGroup && gg.children.forEach(o => { if (o.userData.chama) o.scale.setScalar(.7 + Math.random() * .5 + (c === dirigindo && teclas.ShiftLeft ? .8 : 0)); }));
-  for (const v of veiculos) if (v.extra) v.extra.children.forEach(o => { if (o.userData.chama) o.scale.setScalar(.7 + Math.random() * .5 + (v === dirigindo && teclas.ShiftLeft ? .8 : 0)); });
+  for (const v of veiculos) if (v.extra?.children) v.extra.children.forEach(o => { if (o.userData.chama) o.scale.setScalar(.7 + Math.random() * .5 + (v === dirigindo && teclas.ShiftLeft ? .8 : 0)); });
   // velocímetro + nitro + rádio
   velo.style.display = dirigindo ? 'block' : 'none';
   if (dirigindo) {
