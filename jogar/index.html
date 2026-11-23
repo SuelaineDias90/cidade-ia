@@ -508,7 +508,7 @@ window.SEM_PC = true;
     <button class="bm" id="mLimpar">🧹 Limpar tudo que o Claude criou</button>
     <div class="mpSec">AJUSTES</div>
     <button class="bm" id="mGraf">🖥️ Gráficos: alto</button>
-    <button class="bm" id="mTempo">⏱ Tempo: normal (1 dia = 12 min)</button>
+    <button class="bm" id="mTempo">⏱ Tempo: realista (dia ~1h20 · noite ~30 min)</button>
     <button class="bm sair" id="mSair">🚪 Sair pro menu inicial</button>
   </div>
   <div class="mpDir">
@@ -2822,7 +2822,26 @@ function calcularRota(de, para) {
 }
 function mudarTag(n, txt) { if (n.tagTxt === txt) return; n.tagTxt = txt; cena.remove(n.tag); n.tag = textoSprite(txt); cena.add(n.tag); }
 // ============================================================ relógio / clima
-let hora = 8.5, minutoReal = 0, SEG_POR_HORA = 30;
+let hora = (() => { try { const h = parseFloat(localStorage.getItem('cidadeia_hora')); return h >= 0 && h < 24 ? h : 8.5; } catch (e) { return 8.5; } })(), minutoReal = 0, SEG_POR_HORA = 300;
+// dia demora bem mais que a noite (no realista: dia ~1h20, noite ~30 min de verdade); a hora fica salva
+const fatorHora = h => (h >= 6 && h < 18.8) ? 1.25 : .5;
+setInterval(() => { try { localStorage.setItem('cidadeia_hora', hora.toFixed(3)); } catch (e) {} }, 5000);
+// luz de contorno nos personagens (pôr do sol laranja, noite azulada): deixa o boneco 'colado' no céu do momento
+const RIM = { cor: { value: new THREE.Color(0) }, forca: { value: 0 } };
+function realcarPersonagem(b, clonar) {
+  b?.g?.traverse(o => {
+    if (!o.isMesh) return; const ms = Array.isArray(o.material) ? o.material : [o.material];
+    const novos = ms.map(m => {
+      if (!m || m.userData?.rim || !m.isMeshStandardMaterial) return m;
+      const n = clonar ? m.clone() : m; n.userData = { ...n.userData, rim: true }; n.envMapIntensity = Math.max(n.envMapIntensity ?? 1, .9);
+      const ob = n.onBeforeCompile, ok = n.customProgramCacheKey?.bind(n);
+      n.onBeforeCompile = (s, r) => { ob?.(s, r); s.uniforms.uRimCor = RIM.cor; s.uniforms.uRimF = RIM.forca; s.fragmentShader = 'uniform vec3 uRimCor;\nuniform float uRimF;\n' + s.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ float fr = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 3.2); totalEmissiveRadiance += uRimCor * fr * uRimF; }'); };
+      n.customProgramCacheKey = () => 'rim|' + (ok ? ok() : ''); n.needsUpdate = true; return n;
+    });
+    o.material = Array.isArray(o.material) ? novos : novos[0];
+  });
+  return b;
+}
 window.__dbg.hora = v => hora = v; window.__dbg.ir = (x, z, y = 0) => { jog.pos.set(x, 0, z); yaw = y; };
 const PROFS = ['', 'aposentado', 'personal trainer', '', 'padeiro', 'advogada', 'motoboy entregador', 'freira'];
 PADRAO.forEach(([nome, personalidade, bordao], i) => criarNPC({ nome, personalidade, bordao, profissao: PROFS[i] }));
@@ -2861,6 +2880,12 @@ function atualizarCeu() {
   const luz = noite ? .25 : (clima === 'tempestade' ? .8 : clima === 'chuva' ? 1.3 : hora > 17 ? 2 : 2.6);
   sol.intensity = luz; sol.color.set(hora > 17 && !noite ? 0xffc58f : noite ? 0x8fa8ff : 0xfff1dd);
   hemi.intensity = noite ? .3 : .35;   // o mapa de ambiente (reflexos) já ilumina hemi.color.set(noite ? 0x6f86c9 : 0xcfe3ff);
+  { const h = hora; let cor, f;
+    if (h >= 16.3 && h < 19.8) { const k = 1 - Math.abs(h - 18.4) / 2.1; cor = [1, .55, .25]; f = .12 + Math.max(0, k) * .33; }
+    else if (h >= 5.2 && h < 7.6) { const k = 1 - Math.abs(h - 6.3) / 1.3; cor = [1, .65, .5]; f = .1 + Math.max(0, k) * .25; }
+    else if (h < 5.2 || h >= 19.8) { cor = [.32, .42, .95]; f = .16; }
+    else { cor = [.85, .92, 1]; f = .07; }
+    if (clima === 'tempestade' || clima === 'chuva') f *= .5; RIM.cor.value.setRGB(cor[0], cor[1], cor[2]); RIM.forca.value = f; }
   const escuro = hora < 6.3 || hora > 18.8 || clima === 'tempestade';
   if (escuro !== atualizarCeu.noite) { atualizarCeu.noite = escuro; noiteNaCidade(escuro); }
   const ang = ((hora - 6) / 14) * Math.PI;
@@ -4008,7 +4033,7 @@ function ouvirVoz() {
 // os outros jogadores aparecem no radar
 $('#mLimpar').onclick = () => { limpar(); narrar('🧹 Tudo limpo!'); entrarNoJogo(); };
 interfaceJogo(false);
-const VELS = [[30, 'normal (1 dia = 12 min)'], [10, 'rápido (1 dia = 4 min)'], [2.5, 'turbo (1 dia = 1 min)'], [90, 'lento (1 dia = 36 min)']];
+const VELS = [[300, 'realista (dia ~1h20 · noite ~30 min)'], [30, 'rápido (dia ~8 min)'], [10, 'muito rápido (dia ~3 min)'], [2.5, 'turbo (1 min)']];
 let iVel = 0;
 function usarIA() { try { return localStorage.getItem('cidadeia_ia3d') !== 'nao'; } catch { return true; } }
 $('#mIA').textContent = '🧬 Bonecos 3D de IA: ' + (usarIA() ? 'ligado' : 'desligado');
@@ -6631,9 +6656,10 @@ async function montarAvatar(av) {
 // PROTAGONISTA do Modo Normal (personagem original do Cidade IA): Davi, motorista de fuga
 const PROTAGONISTA = { fem: false, estilo: 'realista', corpo: null, pele: '#8d5524', roupa: '#2b2d42', calca: '#3d5a80', sapato: '#f4f4f4', cabelo: '#16100d', cabeloEstilo: 'curto', estiloRoupa: 'casual', jaqueta: '#c1121f', acessorios: [{ tipo: 'bone', cor: '#111111' }] };
 const avatarAtual = () => MODO === 'normal' ? PROTAGONISTA : AVATAR;
+{ const v = bonecoIA; bonecoIA = async (...a) => realcarPersonagem(await v(...a), false); }
 async function aplicarAvatarJogador() {
   if (jog.forma !== 'pessoa') return;
-  const b = await montarAvatar(avatarAtual());
+  const b = realcarPersonagem(await montarAvatar(avatarAtual()), true);
   b.g.position.copy(bonecoJog.g.position); b.g.rotation.copy(bonecoJog.g.rotation); b.g.scale.multiplyScalar(jog.tam); b.g.visible = bonecoJog.g.visible;
   cena.remove(bonecoJog.g); cena.add(b.g); bonecoJog = b;
 }
@@ -7773,7 +7799,7 @@ function loop(agora) {
   medirFps((agora - ultimo) / 1000);
   const dtReal = estado === 'pausa' ? 0 : Math.min(.05, (agora - ultimo) / 1000);
   const dt = dtReal * (G.roda ? .2 : 1) * (FOCO.on ? .35 : 1); ultimo = agora; relogio += dt; atualizarFoco(dtReal);
-  hora = (hora + dt / SEG_POR_HORA) % 24;
+  hora = (hora + dt / (SEG_POR_HORA * fatorHora(hora))) % 24;
   atualizarJogador(dt); atualizarNPCs(dt); atualizarMonstros(dt); atualizarTiros(dt); atualizarObjetos(dt);
   for (let i = efeitos.length - 1; i >= 0; i--) { let vivo = false; try { vivo = efeitos[i].atualizar(dt); } catch (e) { console.warn(e); } if (!vivo) { efeitos[i].remover(); efeitos.splice(i, 1); } }
   if (chuva) { const a = chuva.geometry.attributes.position.array; const vel = chuva.userData.neve ? 6 : 50; for (let i = 1; i < a.length; i += 3) { a[i] -= vel * dt; if (a[i] < 0) a[i] = 80; } chuva.geometry.attributes.position.needsUpdate = true; chuva.position.set(jog.pos.x, 0, jog.pos.z); }
