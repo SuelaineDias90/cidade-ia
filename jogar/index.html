@@ -4484,6 +4484,8 @@ function amassarMalha(v, x, z, forca) {
 // ---- lançar / capotar um carro (física 3D: voa, gira nos 3 eixos, quica e assenta)
 function lancarCarro(v, vx, vz, subir, giro) {
   if (!v || v.destruido || v.t) return;
+  const grande = (v.g && (v.g.userData.tipo === "onibus" || v.g.userData.tipo === "caminhao")) || (v.L || 4) > 6.2;
+  if (grande) { subir = Math.min(subir, 1.2); giro *= .35; vx *= .4; vz *= .4; if (subir < 2 && Math.abs(giro) < 1.2) { v.spin = THREE.MathUtils.clamp((v.spin || 0) + giro, -3, 3); return; } }
   v.voando = true; v.vy = Math.max(v.vy || 0, subir); v.wx = (v.wx || 0) + rnd(-giro, giro); v.wz = (v.wz || 0) + rnd(-giro, giro);
   v.rx = v.rx || 0; v.rz = v.rz || 0; v.spin = THREE.MathUtils.clamp((v.spin || 0) + rnd(-giro, giro), -6, 6);
   const s = Math.sin(v.ang), c = Math.cos(v.ang); v.vel = vx * s + vz * c; v.lat = vx * c - vz * s;
@@ -4522,7 +4524,7 @@ function destrocos(x, y, z, n) { criarEfeito({ forma: 'explosao', particula: 'fa
 // decide e aplica a física da batida (escolhe entre empurrar, girar, lançar, capotar... conforme força/massa/ângulo)
 function promoverTransito(C) {
   const c = C.t, i = transito.indexOf(c); if (i >= 0) transito.splice(i, 1);
-  try { tirarMotorista(c.g); } catch (e) {}
+  const mot = c.g.userData.motorista; if (mot) { c.g.userData.motorista = null; c.g.remove(mot); }   // só tira o motoristinha, SEM fugir nem chamar polícia (não é roubo)
   const nv = novoVeiculo(c.g, { vel: (c.vel || 0) * (c.sentido || 1), ang: c.g.rotation.y });
   C.o = nv; C.t = null; return nv;
 }
