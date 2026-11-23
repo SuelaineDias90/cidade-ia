@@ -1314,6 +1314,78 @@ for (const eixo of ['z', 'x']) for (const [nome, cor0] of [['verm', 0xff2a1a], [
   }
 }
 
+// ============================================================ MAIS CIDADE DE VERDADE (estilo GTA 6): toldos, floreiras, árvores de rua, outdoors, bueiros
+{
+  const BE = (BLOCO - RUA) / 2 - 1.6;            // ~22.4: borda interna da calçada (onde encostam os props)
+  const NUC = 200;                                // só no miolo urbano; lá fora fica residencial
+  let sem = 7; const rng = () => (sem = (sem * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const pega2 = a => a[Math.floor(rng() * a.length) % a.length];
+  // InstancedMesh com rotação (y) e cor por instância: [x,y,z,yaw,cor,sx,sy,sz]
+  const instCor = (geo, mat, lista, sombra = true) => {
+    if (!lista.length) return null;
+    const im = new THREE.InstancedMesh(geo, mat, lista.length), o = new THREE.Object3D(), c = new THREE.Color();
+    lista.forEach((t, i) => { o.position.set(t[0], t[1], t[2]); o.rotation.set(0, t[3] || 0, 0); o.scale.set(t[5] ?? 1, t[6] ?? 1, t[7] ?? 1); o.updateMatrix(); im.setMatrixAt(i, o.matrix); if (t[4] != null) { c.set(t[4]); im.setColorAt(i, c); } });
+    im.castShadow = sombra; im.receiveShadow = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; cena.add(im); return im;
+  };
+  const coresToldo = [0xc0392b, 0x1e8449, 0x2471a3, 0xca6f1e, 0x7d3c98, 0x117a65, 0xb03a2e, 0x2c3e50];
+  const coresFlor = [0xff5d8f, 0xffd166, 0xff7a00, 0xef476f, 0x9b5de5, 0xffffff, 0xff006e, 0xfb5607];
+  const toldos = [], valanca = [], caixaFlor = [], flores = [], tronco = [], copa = [], assento = [], encosto = [], peBanco = [], jornalBox = [];
+  const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+  const ocupado = (x, z) => Math.abs(x - 30) < 22 && Math.abs(z - 30) < 22;   // praça já é decorada
+  for (let bi = -4; bi <= 3; bi++) for (let bj = -4; bj <= 3; bj++) {
+    const cx = bi * BLOCO + BLOCO / 2, cz = bj * BLOCO + BLOCO / 2;
+    if (Math.max(Math.abs(cx), Math.abs(cz)) > NUC || ocupado(cx, cz)) continue;
+    for (const [nx, nz] of dirs) {
+      const yaw = Math.atan2(nx, nz), px = -nz, pz = nx;   // px,pz = eixo ao longo da calçada
+      const base = [cx + nx * BE, cz + nz * BE];
+      const at = (o) => [base[0] + px * o, base[1] + pz * o];
+      // 2 toldos de loja (acima da cabeça), cor variada
+      for (const o of [-11.5, 11.5]) { const [x, z] = at(o); toldos.push([x, 3.35, z, yaw, pega2(coresToldo)]); valanca.push([x, 2.98, z, yaw, 0xf5f0e6]); }
+      // árvore de rua no meio da quadra
+      { const [x, z] = at(0); tronco.push([x, 0, z, 0]); copa.push([x, 3.5, z, rng() * 6, null, .9 + rng() * .3, 1 + rng() * .3, .9 + rng() * .3]); }
+      // floreira com flores
+      { const [x, z] = at(17); caixaFlor.push([x, .35, z, yaw]); for (let k = 0; k < 5; k++) flores.push([x + (rng() - .5) * 1.4, .8 + rng() * .25, z + (rng() - .5) * .9, 0, pega2(coresFlor)]); }
+      // banco de rua virado pra calçada (de costas pra rua)
+      { const [x, z] = at(-17); const yb = yaw + Math.PI; assento.push([x, .62, z, yb]); encosto.push([x - nx * .28, 1.0, z - nz * .28, yb]); peBanco.push([x + px * .9, .3, z + pz * .9, yb], [x - px * .9, .3, z - pz * .9, yb]); }
+      // banca de jornal/revista colorida perto de um canto
+      if (rng() < .5) { const [x, z] = at(7.5); jornalBox.push([x, .55, z, yaw, pega2(coresFlor)]); }
+    }
+  }
+  // bueiros (tampas de bueiro) no meio das ruas do centro
+  const bueiro = [];
+  for (let i = -3; i <= 3; i++) for (let k = -NUC; k <= NUC; k += 40) { bueiro.push([i * BLOCO, .03, k + 20, 0], [k + 20, .031, i * BLOCO, 0]); }
+  // materiais
+  const matToldo = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .75 });
+  const matFerroRua = MB(0x3a3f45, .5, .6), matMadeiraRua = MB(0x8b5a2b, .8), matFolhaRua = MB(0x2f7d33, .85), matTroncoRua = MB(0x6b4a2f, .95), matTampa = MB(0x2b2e31, .7, .5);
+  const geoToldo = new THREE.BoxGeometry(4.6, .14, 2).rotateX(-.42).translate(0, 0, .95);
+  const geoValanca = new THREE.BoxGeometry(4.6, .5, .08).translate(0, 0, 1.78);
+  instCor(geoToldo, matToldo, toldos);
+  instCor(geoValanca, matToldo, valanca);
+  instancias(new THREE.CylinderGeometry(.22, .3, 3.2, 7).translate(0, 1.6, 0), matTroncoRua, tronco, true);
+  instCor(new THREE.IcosahedronGeometry(1.9, 1), matFolhaRua, copa, true);
+  instancias(new THREE.BoxGeometry(2.6, .7, 1.1).translate(0, 0, 0), matMadeiraRua, caixaFlor, true);
+  instCor(new THREE.SphereGeometry(.28, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .8 }), flores, false);
+  instancias(new THREE.BoxGeometry(2.4, .14, .62).translate(0, 0, 0), matMadeiraRua, assento, true);
+  instancias(new THREE.BoxGeometry(2.4, .6, .1), matMadeiraRua, encosto, true);
+  instancias(new THREE.BoxGeometry(.1, .6, .6), matFerroRua, peBanco, true);
+  instCor(new THREE.BoxGeometry(1.5, 1.1, 1).translate(0, 0, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .6 }), jornalBox, true);
+  instancias(new THREE.CylinderGeometry(.55, .55, .06, 16), matTampa, bueiro, false);
+
+  // outdoors (painéis de propaganda que brilham) nas avenidas principais
+  const matOutdoorTela = new THREE.MeshStandardMaterial({ color: 0x111318, emissive: 0xffffff, emissiveIntensity: .5, roughness: .5 });
+  matsNoite.push({ m: matOutdoorTela, forca: .9, base: .5 });
+  const corTela = [0xff2e63, 0x08d9d6, 0xffd93d, 0x6a67ce, 0xff9f1c, 0x3ddc84];
+  const outdoors = [[0, -120, 0], [0, 120, Math.PI], [-120, 0, Math.PI / 2], [120, 0, -Math.PI / 2], [60, -180, 0], [-60, 180, Math.PI], [180, 60, -Math.PI / 2], [-180, -60, Math.PI / 2]];
+  const telaLista = [], molduraLista = [];
+  for (let i = 0; i < outdoors.length; i++) {
+    const [x, z, r] = outdoors[i], g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = r; cena.add(g);
+    for (const s of [-2.4, 2.4]) filho(g, new THREE.CylinderGeometry(.16, .2, 9, 8), matFerroRua, s, 4.5, 0, true);
+    filho(g, new THREE.BoxGeometry(8, 4, .3), MB(0x1a1d22, .6, .3), 0, 10, 0, true);
+    const tela = filho(g, new THREE.PlaneGeometry(7.3, 3.4), matOutdoorTela.clone(), 0, 10, .18, false);
+    tela.material.emissive.setHex(corTela[i % corTela.length]); tela.material.emissiveIntensity = .7; matsNoite.push({ m: tela.material, forca: 1.1, base: .7 });
+  }
+}
+
 mesclarCidade();
 function noiteNaCidade(noite) {
   const alvo = noite ? 1 : 0;
