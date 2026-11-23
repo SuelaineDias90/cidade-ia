@@ -1375,7 +1375,8 @@ for (const eixo of ['z', 'x']) for (const [nome, cor0] of [['verm', 0xff2a1a], [
   const matOutdoorTela = new THREE.MeshStandardMaterial({ color: 0x111318, emissive: 0xffffff, emissiveIntensity: .5, roughness: .5 });
   matsNoite.push({ m: matOutdoorTela, forca: .9, base: .5 });
   const corTela = [0xff2e63, 0x08d9d6, 0xffd93d, 0x6a67ce, 0xff9f1c, 0x3ddc84];
-  const outdoors = [[0, -120, 0], [0, 120, Math.PI], [-120, 0, Math.PI / 2], [120, 0, -Math.PI / 2], [60, -180, 0], [-60, 180, Math.PI], [180, 60, -Math.PI / 2], [-180, -60, Math.PI / 2]];
+  // nas calçadas das avenidas (NÃO em cima da rua), virados pra avenida
+  const outdoors = [[50, 30, Math.PI / 2], [-50, -30, -Math.PI / 2], [30, 50, 0], [-30, -50, Math.PI], [50, 90, Math.PI / 2], [-50, -90, -Math.PI / 2], [90, 50, 0], [-90, -50, Math.PI]];
   const telaLista = [], molduraLista = [];
   for (let i = 0; i < outdoors.length; i++) {
     const [x, z, r] = outdoors[i], g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = r; cena.add(g);
@@ -6425,15 +6426,28 @@ function construirTema(tipo, X) {
 await etapa('Decorando boate, cinema, museu e mais 19 lugares...', 56);
 { let x = 20700; for (const t of Object.keys(TEMAS)) { construirTema(t, x); x += 150; } }
 for (const [t, C] of Object.entries(TEMAS)) ICONE_LUGAR[t] = C.ic;
+// vagas de loja DENTRO da cidade (calçadas de frente pra rua, não em cima do asfalto)
+const vagasLoja = (() => {
+  const v = [];
+  for (let bi = -3; bi <= 2; bi++) for (let bj = -3; bj <= 2; bj++) {
+    const cx = bi * 60 + 30, cz = bj * 60 + 30;
+    if (Math.max(Math.abs(cx), Math.abs(cz)) > 165) continue;
+    v.push([cx, cz + 21], [cx, cz - 21], [cx + 21, cz], [cx - 21, cz]);
+  }
+  const fixas = [[-90, 22], [210, 56], [-210, -56], [122, 150], [30, -122], [30, 30]];
+  const livre = v.filter(([x, z]) => !fixas.some(f => Math.hypot(f[0] - x, f[1] - z) < 16));
+  let s2 = 98765; const rr = () => (s2 = (s2 * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  for (let i = livre.length - 1; i > 0; i--) { const j = Math.floor(rr() * (i + 1)); [livre[i], livre[j]] = [livre[j], livre[i]]; }
+  return livre;
+})();
 // portas na cidade (procuram um ponto livre na calçada)
 const PORTAS = [
   { tipo: 'loja', nome: 'Mercadinho 24h', x: -90, z: 22 }, { tipo: 'banco', nome: 'Banco Central', x: 210, z: 56 }, { tipo: 'joalheria', nome: 'Joalheria Brilho', x: -210, z: -56 },
   { tipo: 'lanchonete', nome: 'Lanchonete do Zé', x: 122, z: 150 }, { tipo: 'loja', nome: 'Conveniência Posto', x: 30, z: -122 }, { tipo: 'banco', nome: 'Banco do Porto', x: 5340, z: -1640 },
   { tipo: 'loja', nome: 'Mercado da Vila', x: -5100, z: 820 },
   ...Object.keys(TEMAS).map((t, i) => {
-    const locais = [[7, 2], [-7, 3], [8, -6], [-9, -5], [10, 8], [-11, 7], [13, 0], [-13, -1], [4, 11], [-3, -12], [16, 5], [-15, 4], [6, -14], [-6, 14], [18, -8], [-17, -9], [2, 18], [-2, -18], [20, 3], [-19, 2], [11, -16], [-12, 16]];
-    const [bx, bz] = locais[i % locais.length], sx = i % 2 ? 1 : -1;
-    return { tipo: t, nome: TEMAS[t].nome, x: bx * 60 + sx * 9.3, z: bz * 60 + 22 };
+    const [x, z] = vagasLoja[i % vagasLoja.length] || [i * 12 - 120, 180];
+    return { tipo: t, nome: TEMAS[t].nome, x, z };
   }), { tipo: 'lanchonete', nome: 'Quiosque da Praia', x: 4560, z: 2940 }, { tipo: 'joalheria', nome: 'Ouro da Serra', x: 840, z: -2520 },
 ];
 Object.assign(ICONE_LUGAR, { loja: '🛒', banco: '🏦', joalheria: '💎', lanchonete: '🍔' });
@@ -6445,6 +6459,83 @@ for (const P of PORTAS) {
   gp.add(feixe(P.tipo === 'banco' ? 0x3ddc5a : 0xffd166, 70));
   P.g = gp; P.anel = anel;
   LOCAIS_RADAR.push({ x: P.x, z: P.z, cor: P.tipo === 'banco' ? '#3ddc5a' : '#ffd166' });
+}
+// ============================ LOJAS DE RUA: entra ANDANDO pela porta (sem teletransporte) ============================
+const LOJAS_RUA = [];
+let assaltoRua = null, dentroLojaRua = null;
+function criarLojaRua(x, z, nx, nz, nome, cor, roubo) {
+  const LA = 9, PR = 7.5, AL = 4, GAP = 3, T = .3, sx = -nz, sz = nx;
+  const g = new THREE.Group(); cena.add(g);
+  const cxr = x - nx * (PR / 2), czr = z - nz * (PR / 2), wX = Math.abs(sx) * LA + Math.abs(nx) * PR, wZ = Math.abs(sz) * LA + Math.abs(nz) * PR;
+  const sol = (px, pz, w, d, h) => solidos.push({ minX: px - w / 2, maxX: px + w / 2, minZ: pz - d / 2, maxZ: pz + d / 2, h });
+  const parede = MB(cor, .85);
+  filho(g, new THREE.BoxGeometry(wX, .2, wZ), MB(0xdad3c4, .85), cxr, .11, czr);                 // piso
+  filho(g, new THREE.BoxGeometry(wX, .2, wZ), MB(0xece7dd, .9), cxr, AL, czr);                    // teto
+  filho(g, new THREE.BoxGeometry(wX * .72, .08, wZ * .72), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff4e0, emissiveIntensity: 1.2 }), cxr, AL - .13, czr, false);  // luz do teto (emissiva)
+  // parede do fundo + laterais
+  filho(g, new THREE.BoxGeometry(Math.abs(sx) * LA + Math.abs(nx) * T, AL, Math.abs(sz) * LA + Math.abs(nz) * T), parede, x - nx * PR, AL / 2, z - nz * PR);
+  sol(x - nx * PR, z - nz * PR, Math.abs(sx) * LA + Math.abs(nx) * T, Math.abs(sz) * LA + Math.abs(nz) * T, AL);
+  for (const g2 of [-1, 1]) { const px = cxr + g2 * sx * LA / 2, pz = czr + g2 * sz * LA / 2; filho(g, new THREE.BoxGeometry(Math.abs(nx) * PR + Math.abs(sx) * T, AL, Math.abs(nz) * PR + Math.abs(sz) * T), parede, px, AL / 2, pz); sol(px, pz, Math.abs(nx) * PR + Math.abs(sx) * T, Math.abs(nz) * PR + Math.abs(sz) * T, AL); }
+  // fachada com vão da porta (2 pedaços) + vitrine de vidro
+  const segW = (LA - GAP) / 2, off = (LA + GAP) / 4;
+  for (const g2 of [-1, 1]) {
+    const px = x + g2 * sx * off, pz = z + g2 * sz * off;
+    filho(g, new THREE.BoxGeometry(Math.abs(sx) * segW + Math.abs(nx) * T, AL, Math.abs(sz) * segW + Math.abs(nz) * T), parede, px, AL / 2, pz); sol(px, pz, Math.abs(sx) * segW + Math.abs(nx) * T, Math.abs(sz) * segW + Math.abs(nz) * T, AL);
+    filho(g, new THREE.BoxGeometry(Math.abs(sx) * (segW - .7) + Math.abs(nx) * .06, 2, Math.abs(sz) * (segW - .7) + Math.abs(nz) * .06), new THREE.MeshStandardMaterial({ color: 0xbfe3f5, roughness: .05, metalness: .3, transparent: true, opacity: .4 }), px, 2, pz, false);
+  }
+  filho(g, new THREE.BoxGeometry(Math.abs(sx) * GAP + Math.abs(nx) * T, AL - 3, Math.abs(sz) * GAP + Math.abs(nz) * T), parede, x, 3.5, z);   // verga em cima da porta
+  filho(g, new THREE.BoxGeometry(Math.abs(sx) * (GAP + 2.2) + Math.abs(nx) * 1.8, .14, Math.abs(sz) * (GAP + 2.2) + Math.abs(nz) * 1.8), MB(cor, .7), x + nx * .9, 2.9, z + nz * .9);   // toldo
+  const L = letreiro(nome, '#111', '#ffd166', 5.4, 1); L.position.set(x + nx * .15, AL + .55, z + nz * .15); L.rotation.y = Math.atan2(nx, nz); cena.add(L);
+  // balcão + prateleiras + atendente
+  const bx = x - nx * (PR - 2), bz = z - nz * (PR - 2);
+  filho(g, new THREE.BoxGeometry(Math.abs(sx) * (LA - 3.5) + Math.abs(nx) * 1.3, 1.1, Math.abs(sz) * (LA - 3.5) + Math.abs(nz) * 1.3), MB(0x6b4a33, .5), bx, .55, bz); sol(bx, bz, Math.abs(sx) * (LA - 3.5) + Math.abs(nx) * 1.3, Math.abs(sz) * (LA - 3.5) + Math.abs(nz) * 1.3, 1.1);
+  for (const g2 of [-1, 1]) for (let k = 0; k < 3; k++) { const d2 = -1.2 - k * 2, px = cxr + g2 * sx * (LA / 2 - .7) + nx * d2, pz = czr + g2 * sz * (LA / 2 - .7) + nz * d2; filho(g, new THREE.BoxGeometry(Math.abs(sx) * .5 + Math.abs(nx) * 1.5, 2.3, Math.abs(sz) * .5 + Math.abs(nz) * 1.5), MB(pega([0xe63946, 0x2a9d8f, 0xe9c46a, 0x457b9d, 0xff70a6, 0x8ac926]), .6), px, 1.25, pz); }
+  const at = boneco({ estilo: 'social' }); at.g.position.set(x - nx * (PR - 1.1), 0, z - nz * (PR - 1.1)); at.g.rotation.y = Math.atan2(nx, nz); cena.add(at.g);
+  const pz0 = { b: at, emote: 'cruzado' }; realista(pz0);
+  const shop = { x, z, nx, nz, sx, sz, LA, PR, nome, bx, bz, at: pz0, roubadoAte: 0, valor: roubo ? [roubo[0], roubo[1]] : null, tempo: roubo ? roubo[2] : 0, estrelas: roubo ? roubo[3] : 0 };
+  LOJAS_RUA.push(shop); LOCAIS_RADAR.push({ x, z, cor: '#ffd166' });
+  return shop;
+}
+{
+  const temas = [['Mercadinho', '🛒', 0x1e8449, [300, 900, 8, 2]], ['Lanchonete', '🍔', 0xd94c3a, [200, 600, 7, 2]], ['Loja de Roupas', '👗', 0x8e44ad, [400, 1100, 9, 2]], ['Farmácia', '💊', 0x27ae60, [500, 1400, 9, 2]], ['Eletrônicos', '📺', 0x2471a3, [1500, 4000, 12, 3]], ['Padaria', '🥖', 0xca6f1e, [250, 700, 7, 2]], ['Pet Shop', '🐠', 0x16a085, [200, 700, 7, 2]], ['Sorveteria', '🍦', 0xff6fa5, [200, 600, 7, 2]], ['Livraria', '📚', 0x7a5232, [300, 800, 8, 2]], ['Floricultura', '🌷', 0xff5d8f, [150, 450, 6, 2]], ['Barbearia', '💈', 0x34495e, [200, 500, 6, 2]], ['Loja de Games', '🎮', 0x5a3fd4, [600, 1600, 9, 3]]];
+  const cand = [];
+  for (let bi = -4; bi <= 3; bi++) for (let bj = -4; bj <= 3; bj++) { const cx = bi * 60 + 30, cz = bj * 60 + 30; if (Math.max(Math.abs(cx), Math.abs(cz)) > 240) continue; cand.push([cx, cz + 21, 0, 1], [cx, cz - 21, 0, -1], [cx + 21, cz, 1, 0], [cx - 21, cz, -1, 0]); }
+  let s3 = 4242; const rr = () => (s3 = (s3 * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  for (let i = cand.length - 1; i > 0; i--) { const j = Math.floor(rr() * (i + 1)); [cand[i], cand[j]] = [cand[j], cand[i]]; }
+  const livreFoot = (x, z, nx, nz) => { const sx = -nz, sz2 = nx; for (let dn = .4; dn < 8; dn += 1.4) for (let ds = -4.5; ds <= 4.5; ds += 1.8) if (colide(new THREE.Vector3(x - nx * dn + sx * ds, 1, z - nz * dn + sz2 * ds), .6)) return false; return colide(new THREE.Vector3(x + nx * 2, 1, z + nz * 2), .6) ? false : true; };
+  let put = 0;
+  for (const [x, z, nx, nz] of cand) {
+    if (put >= temas.length) break;
+    if (!livreFoot(x, z, nx, nz)) continue;
+    if (LOJAS_RUA.some(s => Math.hypot(s.x - x, s.z - z) < 30)) continue;
+    if (PORTAS.some(p => Math.hypot(p.x - x, p.z - z) < 20)) continue;
+    const t = temas[put]; criarLojaRua(x, z, nx, nz, t[1] + ' ' + t[0], t[2], t[3]); put++;
+  }
+  console.log('lojas de rua (entra andando):', put);
+}
+function atualizarLojasRua(dt) {
+  dentroLojaRua = null;
+  for (const s of LOJAS_RUA) { const dn = (jog.pos.x - s.x) * s.nx + (jog.pos.z - s.z) * s.nz, ds = (jog.pos.x - s.x) * s.sx + (jog.pos.z - s.z) * s.sz; if (dn < -.4 && dn > -(s.PR - .4) && Math.abs(ds) < s.LA / 2 - .4) { dentroLojaRua = s; break; } }
+  for (const s of LOJAS_RUA) if (s.at && Math.hypot(s.x - jog.pos.x, s.z - jog.pos.z) < 55) animarBoneco(s.at.b, relogio + s.x, 0, s.at.emote);
+  const A = assaltoRua;
+  if (dentroLojaRua && !A && dentroLojaRua.valor) { const s = dentroLojaRua, perto = Math.hypot(jog.pos.x - s.bx, jog.pos.z - s.bz) < 3.2; if (perto) { const d = $('#dica'); d.style.display = 'block'; d.textContent = s.roubadoAte > relogio ? '😒 "Você de novo?!"' : '[E] 🔫 Assaltar' + (jog.arma ? '' : ' (precisa de arma)'); } }
+  if (!A) return;
+  const s = A.s, perto = Math.hypot(jog.pos.x - s.bx, jog.pos.z - s.bz) < 3.6;
+  if (G.morto || dentroLojaRua !== s) { fimAssaltoRua(false); return; }
+  if (perto) A.t += dt; else A.t = Math.max(0, A.t - dt * .5);
+  const bar = document.getElementById('barraAssalto'); if (bar) { bar.style.display = 'block'; const e = document.getElementById('baEnche'); if (e) e.style.width = Math.min(100, A.t / A.dur * 100) + '%'; const tx = document.getElementById('baTxt'); if (tx) tx.textContent = perto ? `pegando o dinheiro... $${Math.round(A.valor * Math.min(1, A.t / A.dur)).toLocaleString('pt-BR')}` : '⚠️ volte pro balcão!'; }
+  if (A.t >= A.dur) fimAssaltoRua(true);
+}
+function iniciarAssaltoRua(s) {
+  if (!s.valor) return; if (s.roubadoAte > relogio) return aviso('Esse lugar já foi assaltado. Volte mais tarde.', '#ffb347', 2);
+  if (!jog.arma) return aviso('🔫 Você precisa de uma ARMA na mão pra assaltar (TAB)', '#ff6060', 2.5);
+  assaltoRua = { s, t: 0, dur: s.tempo, valor: Math.round(rnd(s.valor[0], s.valor[1]) / 10) * 10 };
+  if (s.at) s.at.emote = 'rendido'; crime(1, 'assalto'); alarme(true); aviso('🚨 Ninguém se mexe! Fique perto do balcão!', '#ff4d4d', 2.5);
+}
+function fimAssaltoRua(ok) {
+  const A = assaltoRua; if (!A) return; assaltoRua = null; const bar = document.getElementById('barraAssalto'); if (bar) bar.style.display = 'none'; alarme(false);
+  if (A.s.at) A.s.at.emote = 'cruzado';
+  if (ok) { G.dinheiro += A.valor; A.s.roubadoAte = relogio + 240; crime(Math.max(1, A.s.estrelas - 1), 'roubou ' + A.s.nome); aviso(`💰 ASSALTO! +$${A.valor.toLocaleString('pt-BR')} — FUJA!`, '#7CFC8a', 4); }
 }
 // troca o boneco simples pelo corpo realista do Blender (mesmas cores do estilo)
 function realista(alvo) {
@@ -6499,6 +6590,7 @@ function alarme(ligar) {
   } catch (e) {}
 }
 function atualizarInterior(dt) {
+  atualizarLojasRua(dt);
   for (const P of PORTAS) if (P.anel && P.g.position.distanceTo(jog.pos) < 200) { P.anel.rotation.y += dt; P.anel.position.y = .15 + Math.sin(relogio * 3) * .08; }
   const S = G.interior; if (!S) return;
   const I = S.I, lx = jog.pos.x - I.X, lz = jog.pos.z;
@@ -6528,6 +6620,7 @@ function atualizarInterior(dt) {
 }
 addEventListener('keydown', e => {
   if (e.code !== 'KeyE' || estado !== 'jogando' || digitando()) return;
+  if (dentroLojaRua && !assaltoRua && dentroLojaRua.valor && Math.hypot(jog.pos.x - dentroLojaRua.bx, jog.pos.z - dentroLojaRua.bz) < 3.2) { iniciarAssaltoRua(dentroLojaRua); e.stopImmediatePropagation(); return; }
   const P = portaPerto(); if (P) { entrarLugar(P); e.stopImmediatePropagation(); return; }
   const S = G.interior; if (!S) return; e.stopImmediatePropagation();
   const I = S.I, lx = jog.pos.x - I.X, lz = jog.pos.z;
@@ -6547,6 +6640,7 @@ setTimeout(function dicaLugar() { if (estado !== 'jogando') return setTimeout(di
 window.__dbg.vida = () => VIDA; window.__dbg.transito = () => transito;
 window.__dbg.raro = nome => { const g = carroVariante(m => m.raro && (!nome || m.nome.includes(nome))); g.position.set(jog.pos.x + 4, alturaChao(jog.pos.x + 4, jog.pos.z), jog.pos.z); cena.add(g); const v = novoVeiculo(g, { vel: 0, ang: 0 }); return g.userData.nomeModelo; };
 window.__dbg.lojas = { get pos() { return jog.pos.clone(); }, PORTAS, entrarLugar, sairLugar, iniciarAssalto, get assalto() { return G.assalto; } };
+window.__dbg.lojasRua = LOJAS_RUA; window.__dbg.dentroLoja = () => dentroLojaRua;
 // ---------------------------------------------------- MENU DE ANIMAÇÕES (J)
 const menuEmote = document.createElement('div'); menuEmote.id = 'menuEmote';
 menuEmote.innerHTML = '<div class="meTit">🎭 ANIMAÇÕES <small>clique numa · J ou Esc fecha · andar cancela</small></div><div class="meGrade">' +
@@ -8586,6 +8680,13 @@ function loop(agora) {
   if (tremor.forca > 0) { camera.position.x += rnd(-1, 1) * tremor.forca; camera.position.y += rnd(-1, 1) * tremor.forca; tremor.forca = Math.max(0, tremor.forca - dt * .8); }
   camera.lookAt(alvo);
   if (G.interior) { const I = G.interior.I, m = 1; camera.position.x = THREE.MathUtils.clamp(camera.position.x, I.X - I.W / 2 + m, I.X + I.W / 2 - m); camera.position.z = THREE.MathUtils.clamp(camera.position.z, -I.D / 2 + m, I.D / 2 - m); camera.position.y = THREE.MathUtils.clamp(camera.position.y, Y_INT + .5, Y_INT + I.H - .5); camera.lookAt(alvo); }
+  if (typeof dentroLojaRua !== 'undefined' && dentroLojaRua && !dirigindo) {   // câmera dentro da loja de rua: não atravessa parede nem sobe no teto
+    const s = dentroLojaRua;
+    let dn = (camera.position.x - s.x) * s.nx + (camera.position.z - s.z) * s.nz, ds = (camera.position.x - s.x) * s.sx + (camera.position.z - s.z) * s.sz;
+    dn = THREE.MathUtils.clamp(dn, -(s.PR - .7), 1.4); ds = THREE.MathUtils.clamp(ds, -(s.LA / 2 - .6), s.LA / 2 - .6);
+    camera.position.x = s.x + s.nx * dn + s.sx * ds; camera.position.z = s.z + s.nz * dn + s.sz * ds;
+    camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1, 3.5); bonecoJog.g.visible = true; camera.lookAt(alvo);
+  }
   if (G.camModo === 2 && estado === 'jogando') {
     if (dirigindo) { const dd = new THREE.Vector3(Math.sin(dirigindo.ang), 0, Math.cos(dirigindo.ang)); camera.position.copy(dirigindo.g.position).addScaledVector(dd, .2).add(new THREE.Vector3(0, 2.25, 0)); camera.lookAt(camera.position.clone().addScaledVector(dd, 10).add(new THREE.Vector3(0, -.8, 0))); }
     else { camera.position.copy(jog.pos).add(new THREE.Vector3(0, 2.85 * jog.tam, 0)); camera.lookAt(camera.position.clone().add(new THREE.Vector3(-Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch) * .8 + .15, -Math.cos(yaw) * Math.cos(pitch)))); }
