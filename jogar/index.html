@@ -1733,13 +1733,19 @@ mar.material = new THREE.MeshPhysicalMaterial({ color: 0x0b3f5e, roughness: .06,
 // ---- MAR ULTRA REALISTA: ondas de Gerstner de verdade perto de você (a malha anda junto com a câmera), espuma nas cristas, brilho do sol e reflexo do céu
 const MAR_Y = -.35, ONDAS = [[62, .42, .32, .35], [33, .26, .38, 1.45], [18, .13, .42, -.85], [9.5, .06, .5, 2.35], [5.2, .025, .55, -2.1]], ONDA_F = { v: 1 };
 function alturaOnda(x, z, t = relogio) { let y = 0; for (const [L, A, , ang] of ONDAS) { const k = 6.2832 / L, c = Math.sqrt(9.8 * 1.6 / k), dx = Math.cos(ang), dz = Math.sin(ang); y += A * ONDA_F.v * Math.sin(k * (dx * x + dz * z) - k * c * t); } return y; }
-const U_MAR = { uT: { value: 0 }, uC: { value: new THREE.Vector2() }, uF: { value: 1 } };
+// máscara: as ondas só existem onde é mar de verdade (perto da terra elas somem e afundam, nada de água na rua)
+const MASC_N = 96, mascDados = new Uint8Array(MASC_N * MASC_N * 4), mascTex = new THREE.DataTexture(mascDados, MASC_N, MASC_N, THREE.RGBAFormat); mascTex.magFilter = mascTex.minFilter = THREE.LinearFilter; mascTex.needsUpdate = true;
+const U_MAR = { uT: { value: 0 }, uC: { value: new THREE.Vector2() }, uF: { value: 1 }, uMasc: { value: mascTex }, uMascC: { value: new THREE.Vector2(1e9, 1e9) } };
+function refazerMascara(cx, cz) {
+  for (let j = 0; j < MASC_N; j++) for (let i = 0; i < MASC_N; i++) { const x = cx + (i / (MASC_N - 1) - .5) * 900, z = cz + (j / (MASC_N - 1) - .5) * 900, d = MAR_Y - alturaChao(x, z); mascDados[(j * MASC_N + i) * 4] = Math.round(255 * Math.min(1, Math.max(0, (d - .4) / 1.6))); }
+  mascTex.needsUpdate = true; U_MAR.uMascC.value.set(cx, cz);
+}
 const marOndas = new THREE.Mesh(new THREE.PlaneGeometry(900, 900, 240, 240).rotateX(-Math.PI / 2), mar.material.clone());
 marOndas.material.color.set(0x0a3a58); marOndas.material.opacity = .93; marOndas.frustumCulled = false; marOndas.renderOrder = 1; marOndas.receiveShadow = true;
 marOndas.material.onBeforeCompile = s => {
   Object.assign(s.uniforms, U_MAR);
   const ondas = ONDAS.map(([L, A, Q, ang]) => `onda(vec2(${Math.cos(ang).toFixed(4)}, ${Math.sin(ang).toFixed(4)}), ${L.toFixed(2)}, ${A.toFixed(3)} * uF * fade, ${Q.toFixed(2)}, pw, P, T, B, crista);`).join('\n');
-  s.vertexShader = s.vertexShader.replace('void main() {', `uniform float uT; uniform vec2 uC; uniform float uF; varying float vCrista;
+  s.vertexShader = s.vertexShader.replace('void main() {', `uniform float uT; uniform vec2 uC; uniform float uF; uniform sampler2D uMasc; uniform vec2 uMascC; varying float vCrista;
 void onda(vec2 d, float L, float A, float Q, vec2 pw, inout vec3 P, inout vec3 T, inout vec3 B, inout float cr) {
   float k = 6.2832 / L, c = sqrt(9.8 * 1.6 / k), f = k * dot(d, pw) - k * c * uT, s = sin(f), co = cos(f), qa = Q * A;
   P.x += qa * d.x * co; P.z += qa * d.y * co; P.y += A * s;
@@ -1748,10 +1754,10 @@ void onda(vec2 d, float L, float A, float Q, vec2 pw, inout vec3 P, inout vec3 T
   cr += max(0., s) * A * k * 2.2;
 }
 void main() {`)
-    .replace('#include <beginnormal_vertex>', `vec2 pw = position.xz + uC; float fade = 1. - smoothstep(260., 440., length(position.xz));
+    .replace('#include <beginnormal_vertex>', `vec2 pw = position.xz + uC; float fade = 1. - smoothstep(260., 440., length(position.xz)); float masc = texture2D(uMasc, (pw - uMascC) / 900. + .5).r; fade *= masc;
   vec3 P = position, T = vec3(1., 0., 0.), B = vec3(0., 0., 1.); float crista = 0.;
   ${ondas}
-  vCrista = clamp(crista, 0., 1.);
+  vCrista = clamp(crista, 0., 1.) * masc; P.y -= (1. - masc) * 1.4;
   vec3 objectNormal = normalize(cross(B, T));
   #ifdef USE_TANGENT
   vec3 objectTangent = vec3(1., 0., 0.);
@@ -1765,6 +1771,7 @@ function atualizarMarOndas() {
   ONDA_F.v = clima === 'tempestade' ? 2.3 : clima === 'chuva' ? 1.4 : 1; U_MAR.uF.value += (ONDA_F.v - U_MAR.uF.value) * .02; ONDA_F.v = U_MAR.uF.value;
   U_MAR.uT.value = relogio; const passo = 900 / 240, cx = Math.round(camera.position.x / passo) * passo, cz = Math.round(camera.position.z / passo) * passo;
   marOndas.position.x = cx; marOndas.position.z = cz; U_MAR.uC.value.set(cx, cz); marOndas.visible = !G.branco && !G.interior;
+  if (Math.hypot(cx - U_MAR.uMascC.value.x, cz - U_MAR.uMascC.value.y) > 120) refazerMascara(Math.round(cx / 60) * 60, Math.round(cz / 60) * 60);
 }
 
 // ---- materiais do mundo
@@ -5300,9 +5307,9 @@ function atualizarTelaSangue(dt) {
   telaSg.style.display = 'block'; const g = telaSg.getContext('2d'); g.clearRect(0, 0, telaSg.width, telaSg.height);
   for (let i = TSG.gotas.length - 1; i >= 0; i--) {
     const q = TSG.gotas[i]; q.vida += dt; q.y += q.vy * dt; const a = Math.max(0, 1 - q.vida / q.max);
-    const gr = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, q.r); gr.addColorStop(0, `rgba(110,0,8,${.8 * a})`); gr.addColorStop(.7, `rgba(80,0,5,${.55 * a})`); gr.addColorStop(1, 'rgba(60,0,0,0)');
+    const gr = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, q.r); const cA = q.agua ? '200,230,255' : '110,0,8', cB = q.agua ? '150,200,240' : '80,0,5'; gr.addColorStop(0, `rgba(${cA},${(q.agua ? .35 : .8) * a})`); gr.addColorStop(.7, `rgba(${cB},${(q.agua ? .25 : .55) * a})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = gr; g.beginPath(); g.ellipse(q.x, q.y, q.r, q.r * 1.15, 0, 0, 7); g.fill();
-    g.fillStyle = `rgba(90,0,6,${.5 * a})`; g.fillRect(q.x - 2, q.y, 4, q.vy * q.vida * .6);   // escorrendo
+    g.fillStyle = q.agua ? `rgba(190,225,255,${.3 * a})` : `rgba(90,0,6,${.5 * a})`; g.fillRect(q.x - 2, q.y, 4, q.vy * q.vida * .6);   // escorrendo
     if (q.vida > q.max) TSG.gotas.splice(i, 1);
   }
 }
