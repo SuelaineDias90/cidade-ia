@@ -341,6 +341,31 @@ window.SEM_PC = true;
   .mmItem:hover{background:#ffffff1a;border-color:#ffd16688}.mmItem b{font-size:14px}.mmItem small{color:#b9aed0;font-size:12px}.mmItem i{color:#7CFC8a;font-style:normal;font-weight:800;font-size:12px}
   .mmItem.ok{opacity:.7}
   #telaSangue{position:fixed;inset:0;pointer-events:none;z-index:5;display:none}
+  #studio{position:fixed;inset:0;pointer-events:none;z-index:20;display:none;font-family:'Segoe UI';color:#fff}#studio.on{display:block}
+  .stTopo{pointer-events:auto;position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:8px 12px;background:rgba(14,10,26,.92);border-bottom:1px solid #ffffff22;flex-wrap:wrap}
+  .stTopo b{letter-spacing:1px;margin-right:6px}.stTopo input{background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:8px;padding:7px 10px;font:600 14px 'Segoe UI';width:200px}
+  .stTopo button,.stLado button,.stJogo button{border:0;border-radius:9px;padding:8px 12px;background:#ffffff1c;color:#fff;font:700 13px 'Segoe UI';cursor:pointer}
+  .stTopo button:hover,.stLado button:hover{background:#ffffff30}.stVerde{background:#2f9e5a!important}
+  .stLado{pointer-events:auto;position:absolute;right:0;top:52px;bottom:0;width:min(400px,92vw);background:rgba(14,10,26,.93);border-left:1px solid #ffffff22;display:flex;flex-direction:column}
+  .stAbas{display:flex;flex-wrap:wrap;gap:4px;padding:8px}.stAbas button{padding:7px 9px;font-size:12px}.stAbas button.on{background:#7b5cff}
+  #stCorpo{flex:1;overflow-y:auto;padding:4px 12px 16px}
+  .stFerr{display:grid;grid-template-columns:1fr 1fr;gap:5px}.stFerr button{text-align:left;font-size:12px}.stFerr button.on{background:#ffd166;color:#1a1026}
+  .stCorL{display:flex;gap:8px;align-items:center;margin:10px 0;font-size:13px}.stCorL input[type=text],.stCorL input:not([type]){flex:1;background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:8px;padding:6px}
+  .stSel{display:flex;gap:6px;align-items:center;font-size:20px;margin:10px 0 6px}.stSel input{flex:1;background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:8px;padding:7px;font:700 14px 'Segoe UI'}
+  .stGrade{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stGrade label,.stProps label{display:grid;gap:3px;font-size:11px;color:#c9bfe0}
+  .stGrade input{width:100%;background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:7px;padding:5px;font:600 13px 'Segoe UI'}
+  .stProps label{grid-template-columns:110px 1fr 40px;align-items:center;margin:8px 0;font-size:13px;color:#fff}
+  .stLinha{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0;align-items:center;font-size:13px}.stLinha select{background:#1f1733;color:#fff;border:1px solid #ffffff2a;border-radius:7px;padding:6px}
+  #stCod{width:100%;height:calc(100vh - 260px);min-height:240px;background:#0b0816;color:#d7f7c8;border:1px solid #ffffff2a;border-radius:10px;padding:10px;font:13px/1.45 Consolas,'Courier New',monospace;resize:vertical;tab-size:2}
+  .stObs{font-size:12.5px;color:#b9aed0;margin:8px 0;line-height:1.45}.stObs code,.stAjuda code{background:#ffffff14;padding:1px 5px;border-radius:5px}
+  .stAjuda{font-size:13px;line-height:1.5}.stAjuda pre{background:#0b0816;border-radius:10px;padding:10px;font-size:11.5px;white-space:pre-wrap;color:#d7f7c8}.stAjuda h4,#stCorpo h4{color:#ffd166;margin:12px 0 4px}
+  .stJogo{display:grid;gap:3px;background:#ffffff0c;border:1px solid #ffffff18;border-radius:10px;padding:9px;margin:7px 0}.stJogo small{color:#b9aed0}.stJogo span{font-size:12px}.stJogo button{justify-self:start;margin-top:4px}
+  #stDica{position:absolute;left:12px;bottom:12px;max-width:calc(100% - 440px);font-size:12px;background:rgba(14,10,26,.75);padding:7px 10px;border-radius:9px;color:#d8cff0}
+  #stHud{position:fixed;inset:0;pointer-events:none;z-index:19;display:none;font-family:'Segoe UI'}#stHud.on{display:block}
+  #stPts{position:absolute;top:14px;left:50%;transform:translateX(-50%);font:900 26px 'Segoe UI';color:#ffd166;text-shadow:0 2px 8px #000}
+  #stMsg{position:absolute;top:60px;left:50%;transform:translateX(-50%);font:800 22px 'Segoe UI';color:#fff;text-shadow:0 2px 10px #000;text-align:center;max-width:80vw}
+  #stLog{position:absolute;left:12px;bottom:70px;white-space:pre;font:12px Consolas,monospace;color:#ffd6a5;text-shadow:0 1px 3px #000;max-width:50vw;overflow:hidden}
+  #stParar{pointer-events:auto;position:absolute;top:12px;right:12px;border:0;border-radius:10px;padding:10px 14px;background:#e63946;color:#fff;font:800 14px 'Segoe UI';cursor:pointer}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
   #mapaG canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;border:0;border-radius:0}
@@ -2527,7 +2552,7 @@ setInterval(async () => {
     for (const k of chaves) { const e = r[k]?.estado; if (!e) continue; pedidos3d[k].estado = e; if (e === 'pronto') aplicarModelo3d(k); }
   } catch { }
 }, 4000);
-window.__dbg.jog = () => bonecoJog;
+window.__dbg.jog = () => bonecoJog; window.__dbg.reAcess = () => aplicarAcessorios(bonecoJog, avatarAtual().acessorios); window.__dbg.close = (lado = 1) => { const b = bonecoJog, h = new THREE.Vector3(); b.p.cabeca.getWorldPosition(h); const c = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, .05, 50); const f = new THREE.Vector3(Math.sin(b.g.rotation.y + lado), 0, Math.cos(b.g.rotation.y + lado)); c.position.copy(h).addScaledVector(f, 1.6).add(new THREE.Vector3(0, .25, 0)); c.lookAt(h.x, h.y + .25, h.z); renderer.render(cena, c); };
 window.__dbg.vitrine = async () => { let i = 0; for (const c of CORPOS_MH) { const b = await bonecoIA(c[0], null, { roupa: pega(ROUPAS), calca: pega(CALCAS), sapato: '#222222', cabelo: pega(CABELOS) }); b.g.position.set(jog.pos.x - 16 + i * 2.9, 0, jog.pos.z - 9); cena.add(b.g); i++; } return i; };
 window.__dbg.vestir = k => pedirModelo3d(k, {}, 'jogador');
 // ---------------------------------------------------- modelo base: 1 homem + 1 mulher, cada pessoa ganha suas cores
@@ -3993,7 +4018,7 @@ function refazerGrade() {
 function colide(p, r) {
   if (solidos.length !== gradeTam || solidos[solidos.length - 1] !== gradeUlt) refazerGrade();
   const l = grade.get(Math.floor(p.x / GRADE) * 10007 + Math.floor(p.z / GRADE)); if (!l) return null;
-  for (const s of l) if (p.x > s.minX - r && p.x < s.maxX + r && p.z > s.minZ - r && p.z < s.maxZ + r && p.y < s.h - .5) return s;
+  for (const s of l) if (p.x > s.minX - r && p.x < s.maxX + r && p.z > s.minZ - r && p.z < s.maxZ + r && p.y < s.h - .5 && !(s.minY !== undefined && p.y + 1.6 < s.minY)) return s;
   return null;
 }
 function mover(p, d, r) {
@@ -4027,7 +4052,7 @@ function atualizarJogador(dt) {
   if (teclas.Space && jog.chao && !digitando()) { jog.vy = jog.pulo * (1 + Math.min(.25, jog.mv.length() / 60)); jog.chao = false; }
   const vyAntes = jog.vy;
   jog.vy -= 25 * gravidade * dt; jog.vy = Math.max(jog.vy, -60); jog.pos.y += jog.vy * dt;
-  let piso = Math.max(-1.2, alturaChao(jog.pos.x, jog.pos.z)); const s = colide(jog.pos.clone().setY(-10), .3); if (s && jog.pos.y >= s.h - 1) piso = Math.max(piso, s.h);
+  let piso = Math.max(-1.2, alturaChao(jog.pos.x, jog.pos.z)); const s = colide(jog.pos.clone().setY(-10), .3); if (s && jog.pos.y >= s.h - 1) piso = Math.max(piso, s.h); if (ST.on) piso = Math.max(piso, pisoStudio(jog.pos));
   if (G.interior) piso = Math.max(piso, Y_INT);
   if (agua && jog.pos.y < agua.position.y) { jog.vy = Math.max(jog.vy, -2); if (teclas.Space) jog.vy = 4; }
   if (jog.pos.y <= piso) {
@@ -6471,7 +6496,13 @@ function malhaAcessorio(tipo, cor = '#ffd166') {
   const P = (geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = true; g.add(o); return o; };
   const c = cor;
   switch (tipo) {
-    case 'bone': P(new THREE.SphereGeometry(.25, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), m(c), 0, .36, 0); P(new THREE.BoxGeometry(.32, .03, .2), m(c), 0, .37, .2); break;
+    case 'bone': {   // boné de verdade: copa em gomos, aba curva, botão e regulador atrás
+      const copa = P(new THREE.SphereGeometry(.25, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), m(c, .85), 0, .34, -.01); copa.scale.set(1, .78, 1.08);
+      const faixa = P(new THREE.CylinderGeometry(.252, .252, .05, 24, 1, true), m(c, .9), 0, .355, -.01); faixa.scale.set(1, 1, 1.08);
+      const aba = P(new THREE.CylinderGeometry(.27, .27, .018, 24, 1, false, -Math.PI * .42, Math.PI * .84), m(c, .8), 0, .345, .05, -.12); aba.scale.set(.95, 1, 1.25);
+      P(new THREE.SphereGeometry(.022, 8, 6), m(c, .7), 0, .535, -.01);
+      P(new THREE.BoxGeometry(.1, .025, .02), m('#bbbbbb', .3, .8), 0, .37, -.275); break;
+    }
     case 'chapeu': P(new THREE.CylinderGeometry(.42, .42, .03, 24), m(c), 0, .4, 0); P(new THREE.CylinderGeometry(.22, .24, .34, 20), m(c), 0, .57, 0); P(new THREE.CylinderGeometry(.245, .245, .06, 20), m('#111'), 0, .44, 0); break;
     case 'coroa': for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; P(new THREE.ConeGeometry(.05, .16, 4), m(c, .25, .55), Math.cos(a) * .2, .52, Math.sin(a) * .2); } P(new THREE.CylinderGeometry(.22, .22, .08, 20, 1, true), m(c, .25, .55), 0, .44, 0); break;
     case 'oculos': for (const s of [-1, 1]) P(new THREE.BoxGeometry(.13, .07, .02), m('#111', .1, .6), s * .09, .24, .25); P(new THREE.BoxGeometry(.34, .02, .02), m('#111'), 0, .26, .25); break;
@@ -6493,12 +6524,14 @@ function aplicarAcessorios(b, lista) {
   if (!b?.p) return;
   for (const o of b.acess || []) o.parent?.remove(o);
   b.acess = [];
-  const esc = b.p.ossos ? (b.escAcess || 1) : 1;
+  // boneco realista tem cabeça menor e mais alta que o clássico: acessório encolhe e sobe pro lugar certo
+  const AJ = window.AJ_ACESS || { cab: .7, cy: .07, cz: .02, corpo: .82, by: .12 };
   for (const a of lista || []) {
     const A = ACESSORIOS[a.tipo]; if (!A) continue;
     const osso = A.osso === 'cabeca' ? b.p.cabeca : b.p.corpo; if (!osso) continue;
+    const esc = b.p.ossos ? (A.osso === 'cabeca' ? AJ.cab : AJ.corpo) * (b.escAcess || 1) : 1;
     const mesh = malhaAcessorio(a.tipo, a.cor); mesh.scale.setScalar((a.escala || 1) * esc);
-    if (b.p.ossos) mesh.position.set(0, A.osso === 'cabeca' ? -.08 : .12, 0);
+    if (b.p.ossos) mesh.position.set(0, A.osso === 'cabeca' ? AJ.cy : AJ.by, A.osso === 'cabeca' ? AJ.cz : 0);
     osso.add(mesh); b.acess.push(mesh);
   }
 }
@@ -7003,6 +7036,347 @@ desenharRadar = function () {
   }
 };
 
+
+// ==================================================================== STUDIO CIDADE IA: crie seu próprio jogo (construir, programar em JavaScript ou Lua, personagem, animar, testar, publicar)
+const ST = { on: false, modo: 'editar', partes: [], sel: null, ferr: 'selecionar', cor: '#4cc9f0', ox: 41500, oz: 2500, camAlvo: new THREE.Vector3(41500, 0, 2500), camDist: 38, camYaw: .7, camPitch: .75, worker: null, hud: null, msgT: 0, tocando: new Set(), checkpoint: null, salvoJog: null, jogandoComunidade: false, prox: 1 };
+const TIPOS_PARTE = {
+  bloco: { ic: '🧱', nome: 'Bloco', sx: 4, sy: 1, sz: 4 }, esfera: { ic: '⚪', nome: 'Esfera', sx: 2, sy: 2, sz: 2 }, cilindro: { ic: '🛢️', nome: 'Cilindro', sx: 2, sy: 3, sz: 2 },
+  rampa: { ic: '📐', nome: 'Rampa', sx: 4, sy: 2, sz: 6 }, parede: { ic: '🧱', nome: 'Parede', sx: 8, sy: 4, sz: .5 }, moeda: { ic: '🪙', nome: 'Moeda', sx: 1, sy: 1, sz: .2, cor: '#ffd166' },
+  spawn: { ic: '🏁', nome: 'Início', sx: 3, sy: .3, sz: 3, cor: '#3ddc8a' }, lava: { ic: '🔥', nome: 'Lava (mata)', sx: 4, sy: .4, sz: 4, cor: '#ff3b1f' },
+  checkpoint: { ic: '🚩', nome: 'Checkpoint', sx: 3, sy: .3, sz: 3, cor: '#3a86ff' }, trampolim: { ic: '🤸', nome: 'Trampolim', sx: 3, sy: .5, sz: 3, cor: '#ff70a6' },
+  chegada: { ic: '🏆', nome: 'Chegada (ganha)', sx: 4, sy: .3, sz: 4, cor: '#ffd700' }, placa: { ic: '🪧', nome: 'Placa com texto', sx: 4, sy: 2, sz: .2, cor: '#ffffff', texto: 'Olá!' },
+  boneco: { ic: '🧍', nome: 'Boneco (NPC)', sx: 1, sy: 1, sz: 1, cor: '#c0392b' }, arvore: { ic: '🌳', nome: 'Árvore', sx: 1, sy: 1, sz: 1, cor: '#3c7d32' },
+};
+const EXEMPLOS_ST = {
+  js: `// JavaScript — o jogo chama essas funções. Veja a aba "Ajuda".
+jogo.ao_comecar(() => {
+  jogo.mensagem('Pegue todas as moedas e chegue na bandeira dourada!');
+  jogo.jogador.vel = 12;      // velocidade do personagem
+  jogo.jogador.pulo = 14;     // força do pulo
+});
+
+jogo.ao_tocar('Moeda', moeda => {
+  moeda.apagar();
+  jogo.somar_pontos(1);
+});
+
+// uma plataforma que vai e volta
+let t = 0;
+jogo.a_cada_quadro(dt => {
+  t += dt;
+  const p = jogo.parte('Elevador');
+  if (p) p.y = 3 + Math.sin(t) * 3;
+});`,
+  lua: `-- Lua (igual Roblox!) — o jogo chama essas funções. Veja a aba "Ajuda".
+jogo.ao_comecar(function()
+  jogo.mensagem("Pegue todas as moedas e chegue na bandeira dourada!")
+  jogo.jogador.vel = 12
+  jogo.jogador.pulo = 14
+end)
+
+jogo.ao_tocar("Moeda", function(moeda)
+  moeda:apagar()
+  jogo.somar_pontos(1)
+end)
+
+local t = 0
+jogo.a_cada_quadro(function(dt)
+  t = t + dt
+  local p = jogo.parte("Elevador")
+  if p then p.y = 3 + math.sin(t) * 3 end
+end)`,
+};
+const JOGO_NOVO = () => ({ nome: 'Meu jogo', desc: '', lang: 'js', codigo: EXEMPLOS_ST.js, jogador: { vel: 10, pulo: 12, tamanho: 1, gravidade: 1, vida: 100 }, partes: [] });
+let STJ = (() => { try { return JSON.parse(localStorage.getItem('cidadeia_studio_atual') || 'null') || JOGO_NOVO(); } catch (e) { return JOGO_NOVO(); } })();
+const salvarST = () => { STJ.partes = ST.partes.map(p => dadosParte(p)); try { localStorage.setItem('cidadeia_studio_atual', JSON.stringify(STJ)); } catch (e) { aviso('Sem espaço pra salvar', '#ff6060', 2); } };
+const dadosParte = p => { const { mesh, s, ...d } = p; return d; };
+
+// ---- peças 3D
+function malhaParte(p) {
+  const T = TIPOS_PARTE[p.tipo] || TIPOS_PARTE.bloco, cor = p.cor || T.cor || '#4cc9f0';
+  const m = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: .55, ...o });
+  let g;
+  switch (p.tipo) {
+    case 'esfera': g = new THREE.Mesh(new THREE.SphereGeometry(.5, 24, 16), m(cor)); break;
+    case 'cilindro': case 'moeda': g = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, 1, 24), m(cor, p.tipo === 'moeda' ? { metalness: .8, roughness: .25, emissive: cor, emissiveIntensity: .25 } : {})); if (p.tipo === 'moeda') g.rotation.x = Math.PI / 2; break;
+    case 'rampa': { const s = new THREE.Shape([new THREE.Vector2(-.5, -.5), new THREE.Vector2(.5, -.5), new THREE.Vector2(.5, .5)]); const geo = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false }); geo.translate(0, 0, -.5); geo.rotateY(-Math.PI / 2); g = new THREE.Mesh(geo, m(cor)); break; }
+    case 'lava': g = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), m(cor, { emissive: '#ff2200', emissiveIntensity: .8 })); break;
+    case 'chegada': case 'spawn': case 'checkpoint': g = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), m(cor, { emissive: cor, emissiveIntensity: .35 })); break;
+    case 'placa': { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'); c.fillStyle = cor; c.fillRect(0, 0, 512, 256); c.fillStyle = '#111'; c.font = 'bold 64px Segoe UI'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(p.texto || '').slice(0, 24), 256, 128); g = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), [m('#555'), m('#555'), m('#555'), m('#555'), new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(cv) }), m('#555')]); break; }
+    case 'boneco': { const b = boneco({ roupa: cor }); g = new THREE.Group(); g.add(b.g); g.userData.boneco = b; break; }
+    case 'arvore': { g = new THREE.Group(); const tr = new THREE.Mesh(new THREE.CylinderGeometry(.25, .35, 3, 10), m('#5b3b24')); tr.position.y = 1.5; g.add(tr); const co = new THREE.Mesh(new THREE.IcosahedronGeometry(1.8, 1), m(cor, { flatShading: true })); co.position.y = 4; g.add(co); break; }
+    default: g = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), m(cor));
+  }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.parte = p; } });
+  return g;
+}
+function posicionarParte(p) {
+  const g = p.mesh, escalavel = !['boneco', 'arvore'].includes(p.tipo);
+  g.position.set(ST.ox + p.x, p.y, ST.oz + p.z); g.rotation.y = p.ry || 0; g.visible = p.visivel !== false;
+  if (escalavel) { if (p.tipo === 'moeda') g.scale.set(p.sx, p.sz, p.sy); else g.scale.set(p.sx, p.sy, p.sz); } else g.scale.setScalar(Math.max(p.sx, p.sy, p.sz));
+  // colisão (blocos sólidos; moedas, lava, chegada etc. só detectam toque)
+  if (p.s) { const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); p.s = null; }
+  const solido = p.solido !== false && !['moeda', 'boneco', 'esfera'].includes(p.tipo) && p.visivel !== false;
+  if (solido) { const r = Math.abs(Math.sin(p.ry || 0)) > .7, w = (r ? p.sz : p.sx) / 2, d = (r ? p.sx : p.sz) / 2, alto = p.tipo === 'arvore' ? 5 : p.sy; p.s = { minX: ST.ox + p.x - w, maxX: ST.ox + p.x + w, minZ: ST.oz + p.z - d, maxZ: ST.oz + p.z + d, h: p.y + alto / 2, minY: p.tipo === 'arvore' ? p.y : p.y - alto / 2, studio: true }; solidos.push(p.s); }
+}
+function novaParte(tipo, d = {}) {
+  const T = TIPOS_PARTE[tipo] || TIPOS_PARTE.bloco;
+  const p = { id: 'p' + (ST.prox++), tipo, nome: d.nome || T.nome.split(' ')[0], x: 0, y: (d.sy || T.sy) / 2, z: 0, sx: T.sx, sy: T.sy, sz: T.sz, ry: 0, cor: T.cor || ST.cor, texto: T.texto, visivel: true, ...d };
+  p.mesh = malhaParte(p); cena.add(p.mesh); posicionarParte(p); ST.partes.push(p); return p;
+}
+function apagarParte(p) { cena.remove(p.mesh); if (p.s) { const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); } ST.partes.splice(ST.partes.indexOf(p), 1); if (ST.sel === p) selecionar(null); }
+function recriarParte(p) { cena.remove(p.mesh); p.mesh = malhaParte(p); cena.add(p.mesh); posicionarParte(p); }
+function carregarPartes(lista) { for (const p of [...ST.partes]) apagarParte(p); for (const d of lista || []) { const n = +String(d.id || '').slice(1); if (n >= ST.prox) ST.prox = n + 1; const p = { ...d }; p.mesh = malhaParte(p); cena.add(p.mesh); posicionarParte(p); ST.partes.push(p); } }
+
+// ---- interface
+const SP = document.createElement('div'); SP.id = 'studio'; document.body.appendChild(SP);
+SP.innerHTML = `<div class="stTopo"><b>🛠️ STUDIO CIDADE IA</b><input id="stNome" maxlength="30"><button id="stTestar" class="stVerde">▶ Testar</button><button id="stSalvar">💾 Salvar</button><button id="stPublicar">🌎 Publicar</button><button id="stNovo">📄 Novo</button><button id="stSair">✖ Sair</button></div>
+<div class="stLado"><div class="stAbas"><button data-ab="construir" class="on">🧱 Construir</button><button data-ab="codigo">📜 Código</button><button data-ab="pers">🧍 Personagem</button><button data-ab="animar">🎬 Animar</button><button data-ab="comunidade">🎮 Jogos</button><button data-ab="ajuda">❓ Ajuda</button></div><div id="stCorpo"></div></div>
+<div id="stDica">Clique no chão pra colocar · clique numa peça pra escolher · botão direito arrasta a câmera · rodinha: zoom · WASD move a câmera · Del apaga · Ctrl+D duplica</div>`;
+const stHud = document.createElement('div'); stHud.id = 'stHud'; stHud.innerHTML = '<div id="stPts"></div><div id="stMsg"></div><div id="stLog"></div><button id="stParar">■ Parar teste</button>'; document.body.appendChild(stHud);
+let abaST = 'construir';
+function pintarST() {
+  const C = $('#stCorpo'); $('#stNome').value = STJ.nome;
+  SP.querySelectorAll('[data-ab]').forEach(b => b.classList.toggle('on', b.dataset.ab === abaST));
+  if (abaST === 'construir') {
+    C.innerHTML = `<div class="stFerr"><button data-f="selecionar" class="${ST.ferr === 'selecionar' ? 'on' : ''}">👆 Selecionar</button>${Object.entries(TIPOS_PARTE).map(([k, T]) => `<button data-f="${k}" class="${ST.ferr === k ? 'on' : ''}">${T.ic} ${T.nome}</button>`).join('')}</div>
+      <label class="stCorL">Cor das novas peças <input type="color" id="stCor" value="${ST.cor}"></label><div id="stProps"></div>`;
+    C.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { ST.ferr = b.dataset.f; pintarST(); });
+    $('#stCor').oninput = e => ST.cor = e.target.value;
+    pintarProps();
+  } else if (abaST === 'codigo') {
+    C.innerHTML = `<div class="stLinha">Linguagem: <select id="stLang"><option value="js">JavaScript</option><option value="lua">Lua (igual Roblox)</option></select><button id="stExemplo">Exemplo</button></div>
+      <textarea id="stCod" spellcheck="false"></textarea><div class="stObs">O código roda isolado do jogo: não consegue ver a sua conta nem mexer em nada fora do seu jogo. Erros aparecem no canto da tela no teste.</div>`;
+    $('#stLang').value = STJ.lang; $('#stCod').value = STJ.codigo;
+    $('#stLang').onchange = e => { STJ.lang = e.target.value; if (confirm('Trocar pelo exemplo em ' + (STJ.lang === 'lua' ? 'Lua' : 'JavaScript') + '?')) { STJ.codigo = EXEMPLOS_ST[STJ.lang]; $('#stCod').value = STJ.codigo; } };
+    $('#stCod').oninput = e => STJ.codigo = e.target.value;
+    $('#stCod').onkeydown = e => { e.stopPropagation(); if (e.key === 'Tab') { e.preventDefault(); const t = e.target, s = t.selectionStart; t.value = t.value.slice(0, s) + '  ' + t.value.slice(t.selectionEnd); t.selectionStart = t.selectionEnd = s + 2; STJ.codigo = t.value; } };
+    $('#stExemplo').onclick = () => { STJ.codigo = EXEMPLOS_ST[STJ.lang]; $('#stCod').value = STJ.codigo; };
+  } else if (abaST === 'pers') {
+    const J = STJ.jogador, campo = (k, n, min, max, passo) => `<label>${n}<input type="range" min="${min}" max="${max}" step="${passo}" data-j="${k}" value="${J[k]}"><b>${J[k]}</b></label>`;
+    C.innerHTML = `<div class="stProps">${campo('vel', '🏃 Velocidade', 2, 40, 1)}${campo('pulo', '⤒ Pulo', 4, 40, 1)}${campo('tamanho', '📏 Tamanho', .3, 4, .1)}${campo('gravidade', '🌍 Gravidade', .1, 3, .1)}${campo('vida', '❤️ Vida', 1, 500, 1)}</div>
+      <div class="stObs">Isso vale quando alguém joga o seu jogo. No código dá pra mudar durante o jogo: <code>jogo.jogador.vel = 30</code>, <code>jogo.jogador.tamanho = 2</code>, <code>jogo.jogador.animacao('samba')</code>, <code>jogo.jogador.teleportar(0, 5, 0)</code>.</div>`;
+    C.querySelectorAll('[data-j]').forEach(i => i.oninput = () => { STJ.jogador[i.dataset.j] = +i.value; i.nextElementSibling.textContent = i.value; });
+  } else if (abaST === 'animar') {
+    C.innerHTML = `<div class="stObs">Crie animações com o editor de quadros-chave (igual Roblox): mexa os ossos, marque poses na linha do tempo e dê play. Depois use no seu jogo com <code>jogo.jogador.animacao('nome')</code> ou nas animações (tecla J).</div><button id="stAbrirAnim" class="stVerde">🎬 Abrir editor de animação</button>
+      <div class="stObs">Animações prontas pra usar no código: ${Object.keys(EMOTES).join(', ')}</div>`;
+    $('#stAbrirAnim').onclick = () => { abrirPJ('publicar'); };
+  } else if (abaST === 'comunidade') {
+    const lista = [...JOGOS_COM.values()].sort((a, b) => b.t - a.t);
+    C.innerHTML = `<div class="stObs">Jogos publicados por criadores. O código deles roda isolado, sem acesso à sua conta.</div>` +
+      (lista.length ? lista.map(j => `<div class="stJogo"><b>${escH(j.jogo.nome)}</b><small>por ${escH(j.autor)} · ${j.jogo.partes.length} peças · ${j.jogo.lang === 'lua' ? 'Lua' : 'JS'}</small><span>${escH(j.jogo.desc || '')}</span><button data-jg="${j.topico}">▶ Jogar</button><button data-cp="${j.topico}">📥 Copiar pro meu Studio</button></div>`).join('') : '<div class="stObs">Carregando… (ninguém publicou ainda? Seja o primeiro!)</div>') +
+      `<h4>Meus jogos salvos</h4>` + meusJogosST().map((j, i) => `<div class="stJogo"><b>${escH(j.nome)}</b><small>${j.partes.length} peças</small><button data-abrir="${i}">Abrir</button><button data-apg="${i}">🗑</button></div>`).join('');
+    C.querySelectorAll('[data-jg]').forEach(b => b.onclick = () => jogarComunidade(JOGOS_COM.get(b.dataset.jg)));
+    C.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { if (!confirm('Copiar esse jogo pro seu Studio? (o jogo atual vai pros seus jogos salvos)')) return; guardarMeuJogo(); STJ = JSON.parse(JSON.stringify(JOGOS_COM.get(b.dataset.cp).jogo)); STJ.nome += ' (cópia)'; carregarPartes(STJ.partes); abaST = 'construir'; pintarST(); });
+    C.querySelectorAll('[data-abrir]').forEach(b => b.onclick = () => { guardarMeuJogo(); STJ = meusJogosST()[+b.dataset.abrir]; carregarPartes(STJ.partes); abaST = 'construir'; pintarST(); });
+    C.querySelectorAll('[data-apg]').forEach(b => b.onclick = () => { if (!confirm('Apagar esse jogo salvo?')) return; const l = meusJogosST(); l.splice(+b.dataset.apg, 1); try { localStorage.setItem('cidadeia_studio_meus', JSON.stringify(l)); } catch (e) {} pintarST(); });
+    ouvirComunidade();
+  } else {
+    C.innerHTML = `<div class="stAjuda"><h4>Como fazer um jogo</h4><ol><li>🧱 <b>Construir</b>: escolha uma peça e clique no chão. Coloque um 🏁 Início (onde o jogador nasce) e uma 🏆 Chegada.</li><li>📜 <b>Código</b>: dê nome às peças e programe o que acontece.</li><li>▶ <b>Testar</b>: joga na hora. ■ volta a editar.</li><li>🌎 <b>Publicar</b>: todo mundo pode jogar na aba 🎮 Jogos.</li></ol>
+      <h4>Peças especiais (funcionam sem código)</h4><p>🪙 Moeda = +1 ponto · 🔥 Lava = morre · 🚩 Checkpoint = renasce ali · 🤸 Trampolim = pula alto · 🏆 Chegada = ganha</p>
+      <h4>Comandos (JavaScript e Lua)</h4><pre>jogo.ao_comecar(função)
+jogo.a_cada_quadro(função(dt))
+jogo.ao_tocar('NomeDaPeça', função(peça))   ('*' = qualquer peça)
+jogo.ao_apertar('E', função)
+jogo.depois(segundos, função) · jogo.repetir(segundos, função)
+jogo.parte('Nome')  → peça: .x .y .z .sx .sy .sz .cor .visivel .texto
+   peça.mover(dx,dy,dz) · peça.girar(graus) · peça.sumir() · peça.aparecer() · peça.apagar()
+jogo.criar('bloco', {x:0, y:5, z:0, cor:'#ff0000', nome:'Novo'})
+jogo.mensagem('texto') · jogo.pontos() · jogo.somar_pontos(1)
+jogo.ganhar('texto') · jogo.perder('texto')
+jogo.jogador.vel / .pulo / .tamanho / .gravidade / .vida / .x .y .z
+jogo.jogador.teleportar(x,y,z) · jogo.jogador.animacao('samba')
+jogo.aleatorio(1, 10) · jogo.tempo() · print('debug')</pre><p>Em Lua os métodos da peça usam dois-pontos: <code>peca:mover(0,1,0)</code>.</p></div>`;
+  }
+}
+function pintarProps() {
+  const B = $('#stProps'); if (!B) return; const p = ST.sel;
+  if (!p) { B.innerHTML = `<div class="stObs">${ST.partes.length} peças no seu jogo. Escolha uma peça pra editar.</div>`; return; }
+  const n = (k, rot, passo = .5) => `<label>${rot}<input type="number" step="${passo}" data-p="${k}" value="${+(+p[k]).toFixed(2)}"></label>`;
+  B.innerHTML = `<div class="stSel">${TIPOS_PARTE[p.tipo]?.ic || ''} <input id="stPNome" value="${escH(p.nome)}" maxlength="24" title="nome usado no código"></div>
+    <div class="stGrade">${n('x', 'X')}${n('y', 'Y')}${n('z', 'Z')}${n('sx', 'Larg.')}${n('sy', 'Alt.')}${n('sz', 'Prof.')}<label>Giro°<input type="number" step="15" data-p="ry" value="${Math.round((p.ry || 0) * 180 / Math.PI)}"></label><label>Cor<input type="color" id="stPCor" value="${p.cor || '#ffffff'}"></label></div>
+    ${p.tipo === 'placa' ? `<label class="stCorL">Texto <input id="stPTexto" value="${escH(p.texto || '')}" maxlength="24"></label>` : ''}
+    <label class="stCorL"><input type="checkbox" id="stPSol" ${p.solido !== false ? 'checked' : ''}> sólido (dá pra subir)</label>
+    <div class="stLinha"><button data-m="y,1">⬆</button><button data-m="y,-1">⬇</button><button data-m="x,-1">⬅</button><button data-m="x,1">➡</button><button data-m="z,-1">↖</button><button data-m="z,1">↘</button><button id="stDup">⧉ Duplicar</button><button id="stApg">🗑 Apagar</button></div>`;
+  B.querySelectorAll('[data-p]').forEach(i => i.onchange = () => { const k = i.dataset.p; p[k] = k === 'ry' ? +i.value * Math.PI / 180 : +i.value; if (k.startsWith('s')) p[k] = Math.max(.1, p[k]); posicionarParte(p); });
+  B.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const [k, v] = b.dataset.m.split(','); p[k] += +v; posicionarParte(p); pintarProps(); });
+  B.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => e.stopPropagation()));
+  $('#stPNome').oninput = e => p.nome = e.target.value.trim() || p.tipo;
+  $('#stPCor').oninput = e => { p.cor = e.target.value; recriarParte(p); };
+  $('#stPSol').onchange = e => { p.solido = e.target.checked; posicionarParte(p); };
+  if ($('#stPTexto')) $('#stPTexto').onchange = e => { p.texto = e.target.value; recriarParte(p); };
+  $('#stDup').onclick = () => duplicar(p); $('#stApg').onclick = () => apagarParte(p);
+}
+const caixaSel = new THREE.BoxHelper(undefined, 0xffd166); caixaSel.visible = false; cena.add(caixaSel);
+function selecionar(p) { ST.sel = p; caixaSel.visible = !!p; if (p) caixaSel.setFromObject(p.mesh); pintarProps(); }
+function duplicar(p) { const d = dadosParte(p); delete d.id; const n = novaParte(p.tipo, { ...d, x: p.x + p.sx + .5 }); selecionar(n); }
+SP.querySelectorAll('[data-ab]').forEach(b => b.onclick = () => { if (abaST === 'codigo') STJ.codigo = $('#stCod')?.value ?? STJ.codigo; abaST = b.dataset.ab; pintarST(); });
+$('#stNome').oninput = e => STJ.nome = e.target.value; $('#stNome').addEventListener('keydown', e => e.stopPropagation());
+
+// ---- entrar / sair
+function abrirStudio() {
+  if (G.interior) sairLugar(); if (dirigindo) entrarSair();
+  ST.on = true; ST.modo = 'editar'; estado = 'studio';
+  $('#menuInicio').classList.remove('on'); $('#menuPausa').classList.remove('on'); interfaceJogo(false); soltarMouse();
+  irMundoBranco(true); BRANCO.domo.visible = true; ST.camAlvo.set(ST.ox, 0, ST.oz);
+  if (!ST.partes.length) carregarPartes(STJ.partes?.length ? STJ.partes : [{ id: 'p1', tipo: 'spawn', nome: 'Início', x: 0, y: .15, z: 0, sx: 3, sy: .3, sz: 3, cor: '#3ddc8a' }, { id: 'p2', tipo: 'bloco', nome: 'Chão', x: 0, y: -.5, z: 10, sx: 30, sy: 1, sz: 40, cor: '#8d99ae' }]);
+  SP.classList.add('on'); stHud.classList.remove('on'); bonecoJog.g.visible = false; tagJog.visible = false; pintarST();
+}
+function sairStudio() {
+  pararTeste(); salvarST(); ST.on = false; SP.classList.remove('on'); caixaSel.visible = false;
+  for (const p of [...ST.partes]) { cena.remove(p.mesh); if (p.s) { const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); } } ST.partes.length = 0;
+  bonecoJog.g.visible = true; irMundoBranco(false); irParaInicio();
+}
+$('#stSair').onclick = sairStudio;
+$('#stSalvar').onclick = () => { if (abaST === 'codigo') STJ.codigo = $('#stCod').value; salvarST(); guardarMeuJogo(); aviso('💾 Jogo salvo!', '#3ddc8a', 2); };
+$('#stNovo').onclick = () => { if (!confirm('Começar um jogo novo? (o atual fica nos seus jogos salvos)')) return; guardarMeuJogo(); STJ = JOGO_NOVO(); carregarPartes([]); ST.partes.length || carregarPartes([{ id: 'p1', tipo: 'spawn', nome: 'Início', x: 0, y: .15, z: 0, sx: 3, sy: .3, sz: 3, cor: '#3ddc8a' }]); pintarST(); };
+const meusJogosST = () => { try { return JSON.parse(localStorage.getItem('cidadeia_studio_meus') || '[]'); } catch (e) { return []; } };
+function guardarMeuJogo() { salvarST(); const l = meusJogosST().filter(j => j.nome !== STJ.nome); l.unshift(JSON.parse(JSON.stringify(STJ))); try { localStorage.setItem('cidadeia_studio_meus', JSON.stringify(l.slice(0, 20))); } catch (e) {} }
+
+// ---- mouse no editor: colocar, selecionar, câmera
+const rayST = new THREE.Raycaster(), mouseST = new THREE.Vector2();
+let arrastST = null;
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (!ST.on || ST.modo !== 'editar') return;
+  if (e.button === 2 || e.button === 1) { arrastST = { x: e.clientX, y: e.clientY }; return; }
+  mouseST.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); rayST.setFromCamera(mouseST, camera);
+  const hits = rayST.intersectObjects(ST.partes.map(p => p.mesh), true);
+  if (ST.ferr === 'selecionar') { selecionar(hits[0]?.object.userData.parte || null); return; }
+  let ponto;
+  if (hits[0]) { const h = hits[0]; ponto = h.point.clone(); const P = h.object.userData.parte; ponto.y = P.y + P.sy / 2; }
+  else { const t = -rayST.ray.origin.y / rayST.ray.direction.y; if (!(t > 0)) return; ponto = rayST.ray.origin.clone().addScaledVector(rayST.ray.direction, t); }
+  const T = TIPOS_PARTE[ST.ferr], x = Math.round((ponto.x - ST.ox) * 2) / 2, z = Math.round((ponto.z - ST.oz) * 2) / 2;
+  const p = novaParte(ST.ferr, { x, z, y: ponto.y + T.sy / 2, cor: T.cor || ST.cor }); selecionar(p);
+});
+addEventListener('pointermove', e => { if (!arrastST) return; ST.camYaw -= (e.clientX - arrastST.x) * .006; ST.camPitch = THREE.MathUtils.clamp(ST.camPitch + (e.clientY - arrastST.y) * .005, .1, 1.45); arrastST = { x: e.clientX, y: e.clientY }; });
+addEventListener('pointerup', () => arrastST = null);
+renderer.domElement.addEventListener('contextmenu', e => { if (ST.on) e.preventDefault(); });
+renderer.domElement.addEventListener('wheel', e => { if (ST.on && ST.modo === 'editar') ST.camDist = THREE.MathUtils.clamp(ST.camDist * (1 + e.deltaY * .001), 6, 220); });
+addEventListener('keydown', e => {
+  if (!ST.on || ST.modo !== 'editar' || digitando()) return;
+  if ((e.code === 'Delete' || e.code === 'Backspace') && ST.sel) apagarParte(ST.sel);
+  if (e.code === 'KeyD' && e.ctrlKey && ST.sel) { e.preventDefault(); duplicar(ST.sel); }
+  if (e.code === 'KeyR' && ST.sel) { ST.sel.ry = (ST.sel.ry || 0) + Math.PI / 4; posicionarParte(ST.sel); pintarProps(); }
+  if (e.code === 'Escape') selecionar(null);
+});
+function cameraStudio(dt) {
+  const f = new THREE.Vector3(-Math.sin(ST.camYaw), 0, -Math.cos(ST.camYaw)), d = new THREE.Vector3(-f.z, 0, f.x), v = ST.camDist * .9 * dt;
+  if (!digitando()) { if (teclas.KeyW) ST.camAlvo.addScaledVector(f, v); if (teclas.KeyS) ST.camAlvo.addScaledVector(f, -v); if (teclas.KeyD) ST.camAlvo.addScaledVector(d, v); if (teclas.KeyA) ST.camAlvo.addScaledVector(d, -v); if (teclas.KeyE) ST.camAlvo.y += v; if (teclas.KeyQ) ST.camAlvo.y = Math.max(0, ST.camAlvo.y - v); }
+  camera.position.set(ST.camAlvo.x + Math.sin(ST.camYaw) * Math.cos(ST.camPitch) * ST.camDist, ST.camAlvo.y + Math.sin(ST.camPitch) * ST.camDist, ST.camAlvo.z + Math.cos(ST.camYaw) * Math.cos(ST.camPitch) * ST.camDist);
+  camera.lookAt(ST.camAlvo); if (ST.sel) caixaSel.setFromObject(ST.sel.mesh);
+}
+addEventListener('keydown', e => { if (ST.on && !digitando()) teclas[e.code] = true; });
+addEventListener('keyup', e => { if (ST.on) teclas[e.code] = false; });
+
+// ---- testar / jogar
+function iniciarTeste(soJogar = false) {
+  if (abaST === 'codigo') STJ.codigo = $('#stCod')?.value ?? STJ.codigo;
+  salvarST(); ST.copia = ST.partes.map(dadosParte);
+  ST.modo = 'testar'; ST.soJogar = soJogar; SP.classList.remove('on'); stHud.classList.add('on'); selecionar(null);
+  $('#stPts').textContent = ''; $('#stMsg').textContent = ''; $('#stLog').textContent = '';
+  ST.salvoJog = { vel: jog.vel, pulo: jog.pulo, tam: jog.tam, grav: gravidade };
+  const J = STJ.jogador; jog.vel = J.vel; jog.pulo = J.pulo; jog.tam = J.tamanho; gravidade = J.gravidade; bonecoJog.g.scale.setScalar(J.tamanho); ST.vida = J.vida; ST.pontos = 0;
+  const sp = ST.partes.find(p => p.tipo === 'spawn'); ST.checkpoint = sp ? new THREE.Vector3(ST.ox + sp.x, sp.y + sp.sy / 2 + .1, ST.oz + sp.z) : new THREE.Vector3(ST.ox, 1, ST.oz);
+  jog.pos.copy(ST.checkpoint); jog.vy = 0; bonecoJog.g.visible = true; ST.tocando.clear(); ST.fim = false;
+  estado = 'jogando'; interfaceJogo(true); entrarNoJogo(); estado = 'jogando';
+  try { ST.worker?.terminate(); } catch (e) {}
+  ST.worker = new Worker('./static/studio_worker.js'); ST.respondeu = performance.now(); ST.esperando = false;
+  ST.worker.onmessage = ({ data }) => { ST.esperando = false; ST.respondeu = performance.now(); for (const c of data) comandoST(c); };
+  ST.worker.onerror = e => logST('erro: ' + e.message);
+  const mandar = luaUrl => { ST.worker.postMessage({ t: 'init', lang: STJ.lang, codigo: STJ.codigo, luaUrl, partes: ST.partes.map(dadosParte), jogador: { ...STJ.jogador, x: 0, y: 0, z: 0 } }); ST.esperando = true; ST.respondeu = performance.now(); };
+  if (STJ.lang === 'lua') { ST.esperando = true; ST.respondeu = performance.now() + 20000; luaPronta().then(mandar).catch(() => { logST('⚠️ Não deu pra carregar o Lua (precisa de internet). Use JavaScript.'); }); } else mandar();
+}
+let LUA_URL = null;
+async function luaPronta() { if (LUA_URL) return LUA_URL; const txt = await (await fetch('https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js')).text(); LUA_URL = URL.createObjectURL(new Blob([txt], { type: 'text/javascript' })); return LUA_URL; }
+function pararTeste() {
+  if (ST.modo !== 'testar') return;
+  try { ST.worker?.terminate(); } catch (e) {} ST.worker = null;
+  ST.modo = 'editar'; stHud.classList.remove('on');
+  if (ST.salvoJog) { jog.vel = ST.salvoJog.vel; jog.pulo = ST.salvoJog.pulo; jog.tam = ST.salvoJog.tam; gravidade = ST.salvoJog.grav; bonecoJog.g.scale.setScalar(1); }
+  carregarPartes(ST.copia || []);
+  if (ST.soJogar) { ST.soJogar = false; STJ = ST.meuSalvo || STJ; carregarPartes(STJ.partes); }
+  estado = 'studio'; interfaceJogo(false); soltarMouse(); bonecoJog.g.visible = false; tagJog.visible = false; SP.classList.add('on'); pintarST();
+}
+$('#stTestar').onclick = () => iniciarTeste(false);
+$('#stParar').onclick = pararTeste;
+function logST(t) { const l = $('#stLog'); l.textContent = (l.textContent + '\n' + t).split('\n').slice(-5).join('\n'); }
+function msgST(t, seg = 3) { $('#stMsg').textContent = t; ST.msgT = seg; }
+function comandoST([op, a, b, c2]) {
+  if (op === 'msg') msgST(REDE.filtrar(a).slice(0, 140), b);
+  else if (op === 'pontos') { ST.pontos = a; $('#stPts').textContent = '⭐ ' + a; }
+  else if (op === 'parte') { const p = ST.partes.find(x => x.id === a); if (p) { const corMudou = b.cor && b.cor !== p.cor, txt = b.texto !== undefined && b.texto !== p.texto; Object.assign(p, b); if (corMudou || txt) recriarParte(p); else posicionarParte(p); } }
+  else if (op === 'criar') { if (ST.partes.length < 1500 && TIPOS_PARTE[b.tipo]) { const d = { ...b }; delete d.id; const p = novaParte(b.tipo, d); p.id = a; } }
+  else if (op === 'apagar') { const p = ST.partes.find(x => x.id === a); if (p) apagarParte(p); }
+  else if (op === 'jogador') { if (a.vel !== undefined) jog.vel = Math.min(80, a.vel); if (a.pulo !== undefined) jog.pulo = Math.min(80, a.pulo); if (a.tamanho !== undefined) { jog.tam = Math.max(.2, Math.min(8, a.tamanho)); bonecoJog.g.scale.setScalar(jog.tam); } if (a.gravidade !== undefined) gravidade = Math.max(.05, Math.min(5, a.gravidade)); if (a.vida !== undefined) ST.vida = a.vida; }
+  else if (op === 'tp') jog.pos.set(ST.ox + a, b, ST.oz + c2);
+  else if (op === 'anim') jog.emote = EMOTES[a] ? a : null;
+  else if (op === 'fim') { if (ST.fim) return; ST.fim = true; msgST((a ? '🏆 ' : '💀 ') + REDE.filtrar(b), 99); if (a) criarEfeito2d({ estilo: 'confete', duracao: 3 }); setTimeout(() => { if (ST.modo === 'testar') pararTeste(); }, 3500); }
+  else if (op === 'log') logST('› ' + a); else if (op === 'erro') logST('⚠️ ' + a);
+}
+function morrerST() { sangue('tiro_saida', jog.pos); jog.pos.copy(ST.checkpoint); jog.vy = 0; ST.vida = STJ.jogador.vida; msgST('💀 Você morreu! Voltando…', 1.5); }
+function atualizarStudio(dt) {
+  if (!ST.on) return;
+  if (ST.modo === 'editar') { cameraStudio(dt); return; }
+  if (ST.msgT > 0) { ST.msgT -= dt; if (ST.msgT <= 0) $('#stMsg').textContent = ''; }
+  if (jog.pos.y < -30) morrerST();
+  if (ST.vida <= 0) morrerST();
+  // toques nas peças
+  const agora = new Set();
+  for (const p of ST.partes) {
+    if (p.visivel === false) continue;
+    const r = Math.abs(Math.sin(p.ry || 0)) > .7, w = (r ? p.sz : p.sx) / 2 + .5, d = (r ? p.sx : p.sz) / 2 + .5, px = ST.ox + p.x, pz = ST.oz + p.z;
+    const dentro = Math.abs(jog.pos.x - px) < w && Math.abs(jog.pos.z - pz) < d && jog.pos.y < p.y + p.sy / 2 + .4 && jog.pos.y + 1.8 * jog.tam > p.y - p.sy / 2;
+    if (!dentro) continue; agora.add(p.id);
+    if (ST.tocando.has(p.id)) continue;
+    if (p.tipo === 'moeda') { apagarParte(p); ST.pontos++; $('#stPts').textContent = '⭐ ' + ST.pontos; ST.worker?.postMessage({ t: 'some', id: p.id }); criarEfeito2d({ estilo: 'flash', cor: '#ffd166', duracao: .2, intensidade: .3 }); }
+    else if (p.tipo === 'lava') morrerST();
+    else if (p.tipo === 'checkpoint') { ST.checkpoint = new THREE.Vector3(px, p.y + p.sy / 2 + .1, pz); msgST('🚩 Checkpoint!', 1.5); }
+    else if (p.tipo === 'trampolim') { jog.vy = jog.pulo * 2.2; jog.chao = false; }
+    else if (p.tipo === 'chegada') comandoST(['fim', true, 'Você chegou! ⭐ ' + ST.pontos]);
+    ST.worker?.postMessage({ t: 'tocar', id: p.id });
+  }
+  ST.tocando = agora;
+  // o código do criador roda a cada quadro (se travar, o jogo para o código e avisa)
+  if (ST.worker && !ST.esperando) { ST.esperando = true; ST.worker.postMessage({ t: 'quadro', dt, jog: { x: jog.pos.x - ST.ox, y: jog.pos.y, z: jog.pos.z - ST.oz, vida: ST.vida } }); }
+  else if (ST.worker && performance.now() - ST.respondeu > 3000) { ST.worker.terminate(); ST.worker = null; logST('⚠️ O código travou (loop infinito?) e foi parado.'); }
+}
+addEventListener('keydown', e => { if (ST.on && ST.modo === 'testar' && ST.worker && e.code.startsWith('Key')) ST.worker.postMessage({ t: 'tecla', k: e.code.slice(3) }); if (ST.on && ST.modo === 'testar' && e.code === 'Escape') { e.stopImmediatePropagation(); pararTeste(); } }, true);
+quadros.push(dt => { atualizarStudio(dt); return true; }); window.__dbg.st = { ST, get STJ() { return STJ; } };
+// piso das peças flutuantes (plataformas de obby)
+function pisoStudio(p) { let piso = -Infinity; if (!ST.on) return piso; for (const q of ST.partes) { const s = q.s; if (!s) continue; if (p.x > s.minX - .3 && p.x < s.maxX + .3 && p.z > s.minZ - .3 && p.z < s.maxZ + .3 && p.y >= s.h - .6 && s.h > piso) piso = s.h; } return piso; }
+
+// ---- publicar e jogos da comunidade (pelo servidor público, assinado pela sua conta)
+const JOGOS_COM = new Map(); let mqJogos = null;
+function ouvirComunidade() {
+  if (mqJogos) return; mqJogos = ligarRede();
+  mqJogos.ouvir('jogos/+/+', async (top, txt) => {
+    if (!txt) return; let d; try { d = JSON.parse(txt); } catch (e) { return; }
+    const dono = top.split('/')[1];
+    if (banido(dono) || await REDE.idDe(d.pub) !== dono || !await REDE.conferir(d.pub, [dono, d.jogo?.nome, d.t, JSON.stringify(d.jogo).length].join('|'), d.sig)) return;
+    d.topico = top; d.autor = REDE.filtrar(String(d.autor || '?').slice(0, 20)); d.jogo.nome = REDE.filtrar(String(d.jogo.nome).slice(0, 30)); d.jogo.desc = REDE.filtrar(String(d.jogo.desc || '').slice(0, 120));
+    JOGOS_COM.set(top, d); if (ST.on && abaST === 'comunidade') pintarST();
+  });
+}
+$('#stPublicar').onclick = async () => {
+  if (abaST === 'codigo') STJ.codigo = $('#stCod').value; salvarST();
+  if (!window.crypto?.subtle) return alert('Pra publicar, abra o jogo pelo app ou pelo site.');
+  let conta = await REDE.carregarConta(); if (!conta) { const n = prompt('Pra publicar você precisa de uma conta. Qual seu nome de criador?', meuNick() || ''); if (!n) return; conta = await REDE.criarConta(REDE.filtrar(n.slice(0, 16))); }
+  if (banido(conta.id)) return alert('Sua conta está banida.');
+  const desc = prompt('Uma frase sobre o seu jogo:', STJ.desc || ''); if (desc === null) return; STJ.desc = desc;
+  const jogo = JSON.parse(JSON.stringify(STJ)), t = Date.now(), slug = (jogo.nome.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').slice(0, 24) || 'jogo');
+  if (JSON.stringify(jogo).length > 200000) return alert('Seu jogo está grande demais pra publicar (muitas peças).');
+  const sig = await REDE.assinar(conta.priv, [conta.id, jogo.nome, t, JSON.stringify(jogo).length].join('|'));
+  const mq = ligarRede(); for (let i = 0; i < 30 && !mq.ok; i++) await new Promise(r => setTimeout(r, 150));
+  mq.pub(`jogos/${conta.id}/${slug}`, { jogo, autor: conta.nome, t, pub: conta.pub, sig }, true);
+  guardarMeuJogo(); aviso('🌎 Publicado! Tá na aba 🎮 Jogos pra todo mundo.', '#3ddc8a', 4);
+};
+function jogarComunidade(d) {
+  if (!d) return; ST.meuSalvo = JSON.parse(JSON.stringify({ ...STJ, partes: ST.partes.map(dadosParte) }));
+  STJ = JSON.parse(JSON.stringify(d.jogo)); carregarPartes(STJ.partes); iniciarTeste(true); msgST(`🎮 ${STJ.nome} — por ${d.autor}`, 4);
+}
+// botão no menu inicial e na pausa
+{ const b = document.createElement('button'); b.className = 'bm'; b.id = 'mStudio'; b.innerHTML = '<i>🛠️</i><span><b>Studio</b><small>crie seu próprio jogo</small></span>'; $('#mMulti').after(b); b.onclick = abrirStudio; }
+
 // ==================================================================== FOCO DO DAVI: câmera lenta dirigindo (Modo Normal)
 const FOCO = { on: false, carga: 1 };
 const barraFoco = document.createElement('div'); barraFoco.id = 'foco'; barraFoco.innerHTML = '<b>⏱ FOCO</b><span><i></i></span><small>X</small>'; document.body.appendChild(barraFoco);
@@ -7063,6 +7437,7 @@ function loop(agora) {
   if ((quadroN++ & 1) === 0) renderer.shadowMap.needsUpdate = true;
   atualizarStreaming(estado === 'jogando' ? 1 : 2); gerarMapaAosPoucos(3);
   atualizarRealismo(dt); atualizarGTA(dt); atualizarGTA2(dt);
+  if (ST.on && ST.modo === 'editar') cameraStudio(0);
   renderizar(); requestAnimationFrame(loop);
 }
 setClima('dia');
