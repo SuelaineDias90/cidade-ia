@@ -8057,9 +8057,58 @@ const barraFolego = document.createElement('div'); barraFolego.id = 'barraFolego
 window.__dbg.agua = { TIPOS_AGUA, AG, ver: t => agua_fx(t, jog.pos.clone().add(new THREE.Vector3(3, 0, 0)), new THREE.Vector3(1, 0, 0)), nivelAgua };
 
 for (const [x, z] of window.__chafarizes || []) AG.locais.push({ x, z, r: 4.7, y: .78, topo: 5.6, chafariz: true });
+
+// ==================================================================== MODO GRAVAÇÃO (?gravar=1): roda cenas bonitas sozinho e grava a tela (pra vídeo do YouTube)
+window.__dbg.hub = { JOGOS_OFICIAIS, jogarDoHub, executar: a => executar(a) };
+if (location.search.includes('gravar=1')) (async () => {
+  const esp = s => new Promise(r => setTimeout(r, s * 1000));
+  const tecla = (c, on) => dispatchEvent(new KeyboardEvent(on ? 'keydown' : 'keyup', { code: c, key: c }));
+  const soltarTudo = () => { for (const k of Object.keys(teclas)) teclas[k] = false; };
+  await esp(9);
+  const st = document.createElement('style'); st.textContent = 'body.gravando > *:not(canvas){visibility:hidden!important}'; document.head.appendChild(st);
+  $('#mNormal').click(); await esp(1.5); tecla('Space', true); tecla('Space', false); await esp(1); fimIntro?.();
+  document.body.classList.add('gravando'); try { aplicarQualidade(0); } catch (e) {}
+  const gravar = async (nome, seg, fazer) => {
+    const rec = new MediaRecorder(renderer.domElement.captureStream(30), { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 14e6 }), partes = [];
+    rec.ondataavailable = e => partes.push(e.data); rec.start(250);
+    try { await fazer(); } catch (e) { console.warn(e); }
+    await esp(seg); rec.stop(); await new Promise(r => rec.onstop = r); window.__cine = null; soltarTudo();
+    await fetch('http://localhost:8799/' + nome + '.webm', { method: 'POST', body: new Blob(partes, { type: 'video/webm' }) });
+  };
+  const orbita = (cx, cy, cz, raio, alt, vel, ang0 = 0, alvoY = 0) => { let a = ang0; window.__cine = dt => { a += vel * dt; camera.position.set(cx + Math.cos(a) * raio, cy + alt, cz + Math.sin(a) * raio); camera.lookAt(cx, cy + alvoY, cz); }; };
+  // 1) cidade vista do alto
+  hora = 10.5; jog.pos.set(30, 0, 50); await esp(3);
+  await gravar('01_cidade', 8, () => orbita(30, 0, 50, 140, 75, .1, 0, 0));
+  // 2) andando no parque
+  jog.pos.set(30, alturaChao(30, 30), 30); yaw = Math.PI; await esp(2);
+  await gravar('02_parque', 6, () => { tecla('KeyW', true); });
+  // 3) dirigindo um carro com o Foco (câmera lenta)
+  const v = veiculos.filter(v => v.g && !v.destruido).sort((a, b) => a.g.position.distanceTo(jog.pos) - b.g.position.distanceTo(jog.pos))[0];
+  jog.pos.set(v.g.position.x + 2, 0, v.g.position.z); entrarSair(); await esp(1.5);
+  await gravar('03_carro', 8, async () => { teclas.KeyW = true; teclas.ShiftLeft = true; await esp(3); teclas.ShiftLeft = false; alternarFoco(); await esp(2.5); teclas.KeyA = true; await esp(1.2); teclas.KeyA = false; });
+  if (dirigindo) entrarSair(); if (FOCO.on) pararFoco();
+  // 4) pôr do sol: personagem de perto
+  hora = 18.2; jog.pos.set(30, alturaChao(30, 40), 40); await esp(2.5);
+  await gravar('04_por_do_sol', 6, () => { const h = new THREE.Vector3(); let a = .3; window.__cine = dt => { a += dt * .18; bonecoJog.p.cabeca.getWorldPosition(h); camera.position.set(h.x + Math.sin(bonecoJog.g.rotation.y + a) * 2.4, h.y + .2, h.z + Math.cos(bonecoJog.g.rotation.y + a) * 2.4); camera.lookAt(h.x, h.y - .1, h.z); }; });
+  // 5) nadando no mar
+  hora = 14.5; jog.pos.set(6000, -1, 0); await esp(4);
+  await gravar('05_mar', 7, () => { tecla('KeyW', true); orbita(6000, -1, 0, 14, 5, .12, 0, 0); window.__cine0 = window.__cine; window.__cine = dt => { window.__cine0(dt); camera.position.x += jog.pos.x - 6000; camera.position.z += jog.pos.z; camera.lookAt(jog.pos.x, jog.pos.y + .5, jog.pos.z); }; });
+  // 6) cidade à noite com os postes acesos
+  hora = 21.5; jog.pos.set(40, 0, 55); yaw = -Math.PI / 2; await esp(3);
+  await gravar('06_noite', 6, () => { tecla('KeyW', true); });
+  // 7) poder: chuva de vacas
+  hora = 12; jog.pos.set(30, 0, 70); await esp(2.5);
+  await gravar('07_poder', 6, () => { executar([{ tipo: 'chuva_de_objetos', objeto: 'vaca', quantidade: 50, x: 30, z: 55, area: 40 }]); orbita(30, 0, 60, 34, 14, .12, 1, 4); });
+  try { limpar(); } catch (e) {}
+  // 8) um dos 10 jogos (Obby Arco-Íris)
+  document.body.classList.add('gravando'); jogarDoHub(JOGOS_OFICIAIS[0]); await esp(4); document.querySelectorAll('#stHud, #stMsg').forEach(e => e.style.visibility = 'hidden');
+  await gravar('08_obby', 7, () => { let a = 0; window.__cine = dt => { a += dt * .15; camera.position.set(jog.pos.x + Math.sin(a + 2.6) * 12, jog.pos.y + 7, jog.pos.z + Math.cos(a + 2.6) * 12); camera.lookAt(jog.pos.x, jog.pos.y + 1, jog.pos.z + 6); }; tecla('KeyW', true); });
+  await fetch('http://localhost:8799/fim.txt', { method: 'POST', body: 'ok' });
+})();
+
 // ==================================================================== FOCO DO DAVI: câmera lenta dirigindo (Modo Normal)
 const FOCO = { on: false, carga: 1 };
-const barraFoco = document.createElement('div'); barraFoco.id = 'foco'; barraFoco.innerHTML = '<b>⏱ FOCO</b><span><i></i></span><small>X</small>'; document.body.appendChild(barraFoco);
+const barraFoco = document.createElement('div'); barraFoco.id = 'foco'; barraFoco.innerHTML = '<b>⏱ FOCO ∞</b><span><i></i></span><small>X</small>'; document.body.appendChild(barraFoco);
 const telaFoco = document.createElement('div'); telaFoco.id = 'focoTela'; document.body.appendChild(telaFoco);
 function alternarFoco() {
   if (FOCO.on) return pararFoco();
@@ -8070,7 +8119,7 @@ function alternarFoco() {
 }
 function pararFoco() { FOCO.on = false; document.body.classList.remove('emFoco'); }
 function atualizarFoco(s) {
-  if (FOCO.on) { FOCO.carga -= s / 8; if (FOCO.carga <= 0 || !dirigindo || MODO !== 'normal' || estado !== 'jogando') { FOCO.carga = Math.max(0, FOCO.carga); pararFoco(); } }
+  if (FOCO.on) { FOCO.carga = 1; if (!dirigindo || MODO !== 'normal' || estado !== 'jogando') pararFoco(); }   // sem limite: dura o quanto você quiser
   else FOCO.carga = Math.min(1, FOCO.carga + s / 25);
   barraFoco.style.display = MODO === 'normal' && dirigindo && estado === 'jogando' ? 'flex' : 'none';
   barraFoco.querySelector('i').style.width = (FOCO.carga * 100).toFixed(1) + '%';
@@ -8118,6 +8167,7 @@ function loop(agora) {
   atualizarStreaming(estado === 'jogando' ? 1 : 2); gerarMapaAosPoucos(3);
   atualizarRealismo(dt); atualizarGTA(dt); atualizarGTA2(dt);
   if (ST.on && ST.modo === 'editar') cameraStudio(0);
+  if (window.__cine) window.__cine(dtReal);
   renderizar(); requestAnimationFrame(loop);
 }
 setClima('dia');
