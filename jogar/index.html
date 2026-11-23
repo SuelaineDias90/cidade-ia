@@ -8029,6 +8029,41 @@ const JOGOS_OFICIAIS = (() => {
   { id = 0; const p = [P('spawn', 0, 5.2, -14, 3, .3, 3, '#3ddc8a', 'Início'), P('lava', 0, -.5, 0, 60, .4, 60, '#ff3b1f', 'Lava')];
     for (let i = -3; i <= 3; i++) for (let k = -3; k <= 3; k++) p.push(P('bloco', i * 4, 4.5, k * 4, 3.8, .6, 3.8, (i + k) % 2 ? '#fef3c7' : '#fde68a', 'Piso'));
     lista.push(J('Chão que Some', 'Cada piso some logo depois que você pisa. Aguente 40 segundos!', '🧊', '#f59e0b', p, ["let resta = 40;", "jogo.ao_comecar(() => jogo.mensagem('🧊 O chão some! Fique vivo por 40 s', 3));", "jogo.ao_tocar('Piso', piso => { piso.cor = '#ef4444'; jogo.depois(0.7, () => piso.sumir()); jogo.depois(9, () => { piso.aparecer(); piso.cor = '#fde68a'; }); });", "jogo.repetir(1, () => { resta--; if (resta <= 0) jogo.ganhar('Você sobreviveu ao chão que some!'); });", "jogo.ao_morrer(() => jogo.perder('Caiu na lava! Faltavam ' + resta + ' s'));"])); }
+  // 11) ROUBE O BRAINROT
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('bloco', 0, -.5, 0, 90, 1, 90, '#1e293b', 'Chão')];
+    const cores = ['#ff00ff', '#00ff88', '#ffee00', '#ff6600', '#00ccff', '#ff0066'];
+    for (let i = 0; i < 6; i++) { const a = i * 1.05; p.push(P('esfera', Math.cos(a) * 22, 1.3, Math.sin(a) * 22, 2.2, 2.2, 2.2, cores[i], 'Brainrot')); }
+    for (let i = 0; i < 10; i++) p.push(P('arvore', Math.cos(i * .63) * 38, 0, Math.sin(i * .63) * 38, 1, 1, 1, '#3c7d32', 'Árvore'));
+    p.push(P('chegada', 0, .3, -42, 9, .4, 9, '#ffd700', 'Esconderijo'));
+    lista.push(J('Roube o Brainrot', 'Pegue os 6 brainrots fujões e corra pro esconderijo dourado!', '🧠', '#a855f7', p, [
+      "let t = 0;",
+      "jogo.ao_comecar(() => { jogo.mensagem('🧠 Roube os 6 brainrots e leve pro esconderijo dourado!', 4); jogo.jogador.vel = 14; });",
+      "jogo.a_cada_quadro(dt => { t += dt; let i = 0; for (const b of jogo.partes('Brainrot')) { b.y = 1.3 + Math.abs(Math.sin(t * 4 + i)) * .7; b.x = b.x + Math.sin(t * 2 + i * 3) * dt * 7; b.z = b.z + Math.cos(t * 1.7 + i * 2) * dt * 7; i++; } });",
+      "jogo.ao_tocar('Brainrot', b => { b.apagar(); jogo.somar_pontos(1); if (jogo.pontos() < 6) jogo.mensagem('🧠 Pegou ' + jogo.pontos() + '/6!', 1); else jogo.mensagem('✅ Pegou todos! Corra pro esconderijo dourado!', 3); });",
+      "jogo.ao_tocar('Esconderijo', () => { if (jogo.pontos() >= 6) jogo.ganhar('Roubou todos os brainrots! 🧠'); else jogo.mensagem('Faltam ' + (6 - jogo.pontos()) + ' brainrots!', 1.5); });"])); }
+  // 12) FUJA DO TSUNAMI
+  { id = 0; const p = [P('spawn', 0, .2, 0, 4, .3, 4, '#3ddc8a', 'Início')];
+    let z = 6, y = 0; for (let i = 0; i < 22; i++) { z += 6; y += i > 3 ? .45 : 0; p.push(P(i % 7 === 6 ? 'checkpoint' : 'bloco', Math.sin(i * .5) * 5, y, z, 8, 1, 7, i % 7 === 6 ? '#3a86ff' : '#64748b', i % 7 === 6 ? 'Checkpoint' : 'Fuga')); }
+    p.push(P('chegada', Math.sin(22 * .5) * 5, y + .6, z + 7, 11, .4, 11, '#ffd700', 'Terra Alta'));
+    p.push(P('lava', 0, 8, -34, 130, 28, 9, '#1d7fd6', 'Tsunami'));
+    lista.push(J('Fuja do Tsunami', 'Um tsunami gigante vem vindo! Corra pra frente e suba pra terra alta!', '🌊', '#0ea5e9', p, [
+      "let vel = 9, t = 0;",
+      "jogo.ao_comecar(() => { jogo.mensagem('🌊 TSUNAMI! Corra pra frente e suba! (Shift corre)', 4); jogo.jogador.vel = 15; jogo.jogador.pulo = 13; });",
+      "jogo.a_cada_quadro(dt => { t += dt; vel += dt * 0.5; const w = jogo.parte('Tsunami'); if (w) { w.z = w.z + vel * dt; if (w.z > jogo.jogador.z + 2.5) jogo.perder('O tsunami te alcançou! 🌊'); } });",
+      "jogo.ao_tocar('Tsunami', () => jogo.perder('O tsunami te engoliu! 🌊'));",
+      "jogo.ao_tocar('Terra Alta', () => jogo.ganhar('Você escapou do tsunami! 🏔️'));"])); }
+  // 13) PARKOUR DA VELOCIDADE
+  { id = 0; const p = [P('spawn', 0, .2, -8, 6, .3, 6, '#3ddc8a', 'Início'), P('bloco', 0, -.3, -8, 12, .6, 14, '#334155', 'Largada')];
+    let z = 0, gap = 4; for (let i = 0; i < 12; i++) { gap = 4 + i * 0.7; z += gap + 4; p.push(P(i % 4 === 3 ? 'checkpoint' : 'bloco', Math.sin(i * .4) * 3, 0, z, 6, .8, 4.5, i % 4 === 3 ? '#3a86ff' : '#8b5cf6', i % 4 === 3 ? 'Checkpoint' : 'Plataforma')); }
+    p.push(P('lava', 0, -3, 70, 40, .4, 220, '#ff3b1f', 'Abismo'));
+    p.push(P('chegada', Math.sin(12 * .4) * 3, .4, z + gap + 7, 9, .4, 9, '#ffd700', 'Fim'));
+    lista.push(J('Parkour da Velocidade', 'Corra sem parar pra ganhar velocidade e pular os vãos cada vez maiores!', '💨', '#06b6d4', p, [
+      "let mom = 0, lx = 0, lz = 0, t = 0, av = 0;",
+      "jogo.ao_comecar(() => { jogo.mensagem('💨 Corra sem parar! Quanto mais corre, mais rápido e mais longe você pula!', 5); lx = jogo.jogador.x; lz = jogo.jogador.z; });",
+      "jogo.a_cada_quadro(dt => { t += dt; const dx = jogo.jogador.x - lx, dz = jogo.jogador.z - lz, d = Math.sqrt(dx * dx + dz * dz); lx = jogo.jogador.x; lz = jogo.jogador.z; if (d > dt * 3) mom = Math.min(1, mom + dt * 0.3); else mom = Math.max(0, mom - dt * 0.7); jogo.jogador.vel = 10 + mom * 24; jogo.jogador.pulo = 12 + mom * 12; av += dt; if (av > 1) { av = 0; jogo.mensagem(mom > .75 ? '🔥 VELOCIDADE MÁXIMA!' : '💨 velocidade ' + Math.round(10 + mom * 24), 0.9); } });",
+      "jogo.ao_tocar('Checkpoint', () => jogo.mensagem('🚩 Checkpoint!', 1));",
+      "jogo.ao_tocar('Fim', () => jogo.ganhar('Chegou no fim voando! 💨'));",
+      "jogo.ao_morrer(() => jogo.perder('Caiu no abismo! Ganhe mais velocidade pra pular mais longe.'));"])); }
   return lista;
 })();
 
