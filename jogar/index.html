@@ -3395,7 +3395,7 @@ function limpar() {
   monstros.splice(0).forEach(m => cena.remove(m.g, m.tag));
   objetos.splice(0).forEach(o => cena.remove(o.m));
   criados.splice(0).forEach(o => cena.remove(o));
-  modelos.slice().forEach(removerModelo); quadros.length = 0; efeitos2d.length = 0;
+  modelos.slice().forEach(removerModelo); for (let i = quadros.length - 1; i >= 0; i--) if (!quadros[i].fixo) quadros.splice(i, 1); efeitos2d.length = 0;
   gravidade = 1; setClima('dia'); npcs.forEach(n => { n.medo = 0; n.congelado = 0; n.voo = null; n.modo = 'andar'; n.b.g.scale.setScalar(n.aparencia?.altura || 1); });
 }
 
@@ -3708,6 +3708,26 @@ function comecarModo(m) {
   $('#mBranco').style.display = m === 'livre' ? '' : 'none';
   aviso({ livre: '🌍 Modo Livre', normal: '🎮 Modo Normal', multi: '👥 Multiplayer' }[m] + (DONO && m !== 'livre' ? ' · 👑 IA de dono ligada' : ''), '#ffd166', 3);
 }
+// ---- MODOS SEPARADOS: cada modo guarda onde você estava; trocar de modo não leva carro, missão, procurado nem poderes junto
+const LUGAR_MODO = {}, INICIO_MODO = { normal: [30, 50], multi: [-150, 270] };
+{ const v0 = comecarModo; comecarModo = m => {
+  const ant = MODO, trocou = ant !== m && G.jaJogou;
+  if (trocou) {
+    if (dirigindo) entrarSair();
+    if (G.interior) sairLugar(); else if (G.assalto) fimAssalto(false);
+    if (G.missao) { if (G.missao.tipo === 'contrato') encerrarContrato(false, true); G.missao = null; }
+    if (ant !== 'livre' && !G.branco) LUGAR_MODO[ant] = { pos: jog.pos.clone(), rot: jog.rot, yaw };
+    G.nivel = 0; try { limpar(); } catch (e) {}
+    if (ant === 'multi') { MP.ligado = false; try { pararVoz(); } catch (e) {} for (const id of [...MP.outros.keys()]) removerOutro(id); }
+  }
+  v0(m); G.jaJogou = true;
+  if (trocou && m !== 'livre') {
+    const L = LUGAR_MODO[m];
+    if (L) { jog.pos.copy(L.pos); jog.rot = L.rot; yaw = L.yaw; }
+    else { const [x, z] = INICIO_MODO[m] || [30, 50]; jog.pos.set(x, alturaChao(x, z) + .2, z); desprender(jog.pos); }
+    jog.vy = 0; jog.mv?.set(0, 0, 0); bonecoJog.g.position.copy(jog.pos);
+  }
+}; }
 { const v = comecarModo; comecarModo = m => { const ant = MODO; v(m); if ((ant === 'normal') !== (m === 'normal')) { aplicarAvatarJogador().catch(() => {}); if (m === 'normal') aviso('🧢 Você é o DAVI, motorista de fuga · dirigindo, aperte X (ou ⏱) pro FOCO', '#ffd166', 5); } }; }
 $('#mNormal').onclick = () => comecarModo('normal');
 
@@ -5106,7 +5126,7 @@ function decal(x, y, z, r, cor, o = {}) {
   SG.decais.push({ x, y, z, r, cor, rx: o.parede ? 0 : -Math.PI / 2, ry: o.ry || 0, sx: o.sx || 1, idade: 0, max: o.max || 90, parede: !!o.parede });
 }
 function sangue(tipo, pos, dir, mult = 1) {
-  if (!SANGUE.on) return;
+  if (!SANGUE.on || (typeof ST !== 'undefined' && ST.on)) return;
   const T = TIPOS_SANGUE[tipo]; if (!T) return;
   const cor = corSg(T.cor), d = (dir ? dir.clone() : new THREE.Vector3(Math.random() - .5, 0, Math.random() - .5)).setY(0); if (d.lengthSq() < .001) d.set(1, 0, 0); d.normalize();
   if (T.atras === false) d.negate();
@@ -5235,7 +5255,7 @@ function atualizarSangue(dt) {
     if (E.tipo === 'rastro' && (!E.ult || E.ult.distanceTo(p) > .35)) { decal(p.x, alturaChao(p.x, p.z), p.z, rnd(.2, .35), CORES_SG.escuro, { sx: 2.2, ry: E.ult ? Math.atan2(p.x - E.ult.x, p.z - E.ult.z) : 0, max: 90 }); E.ult = p.clone(); }
   }
 }
-quadros.push(dt => { atualizarSangue(dt); return true; });
+quadros.push(Object.assign(dt => { atualizarSangue(dt); return true; }, { fixo: true }));
 window.__dbg.sangue = { TIPOS_SANGUE, SG, ver: t => sangue(t, jog.pos.clone().add(new THREE.Vector3(3, 0, 0)), new THREE.Vector3(1, 0, 0)) };
 // compatível com o jeito antigo
 function sangrar(pos, forca = 1, poca = false, tipo) {
@@ -5338,7 +5358,7 @@ function atualizarAlvos(dt) {
     if (a.tag) a.tag.position.set(a.pos.x, a.pos.y + 2.7, a.pos.z);
   }
 }
-quadros.push(dt => { atualizarAlvos(dt); return true; });
+quadros.push(Object.assign(dt => { atualizarAlvos(dt); return true; }, { fixo: true }));
 
 // ---- lista das missões
 const CAT_MISSAO = { matar: '🔪 Eliminar', espionar: '🕵️ Espionagem', foto: '📸 Fotos', coletar: '📦 Coleta', roubar: '🚗 Roubo de carro', fugir: '🚨 Fuga', corrida: '🏁 Corrida', destruir: '💥 Destruição', monstro: '👹 Absurdas', sobreviver: '🌪️ Sobrevivência' };
@@ -7371,11 +7391,12 @@ function comandoST([op, a, b, c2]) {
   else if (op === 'fim') { if (ST.fim) return; ST.fim = true; msgST((a ? '🏆 ' : '💀 ') + REDE.filtrar(b), 99); if (a) criarEfeito2d({ estilo: 'confete', duracao: 3 }); setTimeout(() => { if (ST.modo === 'testar') pararTeste(); }, 3500); }
   else if (op === 'log') logST('› ' + a); else if (op === 'erro') logST('⚠️ ' + a);
 }
-function morrerST() { ST.worker?.postMessage({ t: 'morreu' }); sangue('tiro_saida', jog.pos); jog.pos.copy(ST.checkpoint); jog.vy = 0; ST.vida = STJ.jogador.vida; msgST('💀 Você morreu! Voltando…', 1.5); }
+function morrerST() { ST.worker?.postMessage({ t: 'morreu' }); criarEfeito2d({ estilo: 'flash', cor: '#ff3b3b', duracao: .35, intensidade: .5 }); jog.pos.copy(ST.checkpoint); jog.vy = 0; ST.vida = STJ.jogador.vida; msgST('💀 Você morreu! Voltando…', 1.5); }
 function atualizarStudio(dt) {
   if (!ST.on) return;
   if (ST.modo === 'editar') { cameraStudio(dt); bonecoJog.g.visible = false; tagJog.visible = false; return; }
   if (ST.msgT > 0) { ST.msgT -= dt; if (ST.msgT <= 0) $('#stMsg').textContent = ''; }
+  ST.imune = Math.max(0, (ST.imune || 0) - dt);
   if (jog.pos.y < -30) morrerST();
   if (ST.vida <= 0) morrerST();
   // toques nas peças
@@ -7387,7 +7408,7 @@ function atualizarStudio(dt) {
     if (!dentro) continue; agora.add(p.id);
     if (ST.tocando.has(p.id)) continue;
     if (p.tipo === 'moeda') { apagarParte(p); if (ST.worker) ST.worker.postMessage({ t: 'moeda', id: p.id }); else { ST.pontos++; $('#stPts').textContent = '⭐ ' + ST.pontos; } criarEfeito2d({ estilo: 'flash', cor: '#ffd166', duracao: .2, intensidade: .3 }); }
-    else if (p.tipo === 'lava') morrerST();
+    else if (p.tipo === 'lava') { if (!ST.imune) { morrerST(); ST.imune = 1; } }
     else if (p.tipo === 'checkpoint') { ST.checkpoint = new THREE.Vector3(px, p.y + p.sy / 2 + .1, pz); msgST('🚩 Checkpoint!', 1.5); }
     else if (p.tipo === 'trampolim') { jog.vy = jog.pulo * 2.2; jog.chao = false; }
     else if (p.tipo === 'chegada') comandoST(['fim', true, 'Você chegou! ⭐ ' + ST.pontos]);
@@ -7400,7 +7421,7 @@ function atualizarStudio(dt) {
 }
 addEventListener('keydown', e => { if (ST.on && ST.modo === 'testar' && ['KeyN', 'KeyM', 'KeyK', 'Tab'].includes(e.code) && !digitando()) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
 addEventListener('keydown', e => { if (ST.on && ST.modo === 'testar' && ST.worker && e.code.startsWith('Key')) ST.worker.postMessage({ t: 'tecla', k: e.code.slice(3) }); if (ST.on && ST.modo === 'testar' && e.code === 'Escape') { e.stopImmediatePropagation(); pararTeste(); } }, true);
-quadros.push(dt => { atualizarStudio(dt); return true; }); window.__dbg.st = { ST, get STJ() { return STJ; } };
+quadros.push(Object.assign(dt => { atualizarStudio(dt); return true; }, { fixo: true })); window.__dbg.st = { ST, get STJ() { return STJ; } };
 // piso das peças flutuantes (plataformas de obby)
 function pisoStudio(p) { let piso = -Infinity; if (!ST.on) return piso; for (const q of ST.partes) { const s = q.s; if (!s) continue; if (p.x > s.minX - .3 && p.x < s.maxX + .3 && p.z > s.minZ - .3 && p.z < s.maxZ + .3 && p.y >= s.h - .6 && s.h > piso) piso = s.h; } return piso; }
 
@@ -7496,7 +7517,7 @@ addEventListener('keydown', async e => {
   if (!dono) return msgST('🛡️ Só o criador do jogo pode usar o admin.', 2);
   admBox.classList.toggle('on'); pintarAdmJogo(); if (admBox.classList.contains('on')) soltarMouse();
 });
-quadros.push(dt => {
+quadros.push(Object.assign(dt => {
   if (!ST.on || ST.modo !== 'testar') return true;
   G.nivel = 0; if (G.missao) G.missao = null;   // jogo do criador: sem polícia nem missões da cidade
   if (admJ.voar) { jog.vy = teclas.Space ? 12 : teclas.ShiftLeft ? -12 : 0; jog.chao = false; }
@@ -7504,7 +7525,7 @@ quadros.push(dt => {
   if (admJ.fantasma) for (const p of ST.partes) if (p.s) { p.sFant = p.s; const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); p.s = null; }
   if (!admJ.fantasma) for (const p of ST.partes) if (p.sFant && !p.s) { p.s = p.sFant; p.sFant = null; solidos.push(p.s); }
   return true;
-});
+}, { fixo: true }));
 // ==================================================================== MENU JOGOS: multiplayer, 10 jogos oficiais do Cidade IA e jogos da comunidade
 const JOGOS_OFICIAIS = (() => {
   let id = 0;
@@ -7513,7 +7534,7 @@ const JOGOS_OFICIAIS = (() => {
   const J = (nome, desc, ic, cor, partes, codigo, jogador = {}) => ({ nome, desc, ic, cor, oficial: true, lang: 'js', codigo: codigo.join('\n'), jogador: { vel: 10, pulo: 12, tamanho: 1, gravidade: 1, vida: 100, ...jogador }, partes });
   const lista = [];
   // 1) OBBY ARCO-ÍRIS — parkour sobre lava
-  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('lava', 0, -.3, 60, 70, .4, 150, '#ff3b1f', 'Lava')];
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('lava', 0, -1.6, 70, 70, .4, 150, '#ff3b1f', 'Lava')];
     let z = 5, y = 1, x = 0; for (let i = 0; i < 24; i++) { z += 4.5 + (i % 3); y += i % 2 ? .6 : 0; x = Math.sin(i * .9) * 6; p.push(P(i % 6 === 5 ? 'checkpoint' : 'bloco', x, y, z, i % 4 === 3 ? 1.6 : 2.6, 1, 2.6, ARCO[i % 8], i % 6 === 5 ? 'Checkpoint' : 'Degrau')); }
     p.push(P('chegada', x, y + .5, z + 5, 5, .4, 5, '#ffd700', 'Chegada'));
     lista.push(J('Obby Arco-Íris', 'Pule de bloco em bloco sobre a lava até a bandeira dourada.', '🌈', '#ec4899', p, ["jogo.ao_comecar(() => jogo.mensagem('🌈 Chegue na bandeira dourada sem cair na lava!', 4));", "jogo.ao_tocar('Checkpoint', () => jogo.mensagem('🚩 Checkpoint salvo!', 1.5));"])); }
@@ -7546,7 +7567,7 @@ const JOGOS_OFICIAIS = (() => {
     p.push(P('chegada', Math.cos(12 * 1.1) * 7, y + .3, Math.sin(12 * 1.1) * 7, 5, .4, 5, '#ffd700', 'Chegada'));
     lista.push(J('Torre de Trampolins', 'Quique de trampolim em trampolim até o topo da torre.', '🤸', '#ff70a6', p, ["jogo.ao_comecar(() => jogo.mensagem('🤸 Pule nos trampolins rosas até o topo!', 3));"])); }
   // 6) PLATAFORMAS MALUCAS — elas se mexem sobre a lava
-  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('lava', 0, -.3, 45, 50, .4, 100, '#ff3b1f', 'Lava')];
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('lava', 0, -1.6, 50, 50, .4, 100, '#ff3b1f', 'Lava')];
     for (let i = 0; i < 12; i++) p.push(P('bloco', 0, 1 + i * .3, 6 + i * 6.5, 3.5, .7, 3.5, ARCO[i % 8], 'Mov' + i));
     p.push(P('chegada', 0, 5, 6 + 12 * 6.5, 5, .4, 5, '#ffd700', 'Chegada'));
     lista.push(J('Plataformas Malucas', 'As plataformas não param de se mexer. Calcule o pulo!', '🛸', '#06b6d4', p, ["let t = 0;", "jogo.ao_comecar(() => jogo.mensagem('🛸 Pule nas plataformas que se mexem!', 3));", "jogo.a_cada_quadro(dt => { t += dt; for (let i = 0; i < 12; i++) { const p = jogo.parte('Mov' + i); if (i % 3 === 0) p.x = Math.sin(t * 1.2 + i) * 6; else if (i % 3 === 1) p.y = 1 + i * .3 + Math.sin(t * 1.5 + i) * 2; else p.x = Math.cos(t + i) * 4; } });"])); }
