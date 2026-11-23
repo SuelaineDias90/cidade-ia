@@ -567,6 +567,10 @@ const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x5a5040, 0.9); cena.add(hemi);
 // ---- LUZES FIXAS: o número de luzes na cena nunca muda. Cada luz nova obrigava o navegador a recompilar
 // TODOS os materiais (era isso que travava quando a IA criava algo ou quando você entrava no carro).
 const POOL_LUZ = Array.from({ length: 5 }, () => { const l = new THREE.PointLight(0xffffff, 0, 10, 2); l.userData.pool = true; l.position.set(0, -9999, 0); cena.add(l); return l; });
+// luz de verdade dos postes: 2 luzes fixas que vão pros postes mais perto de você à noite (quem pisa na luz fica iluminado)
+const LAMPADAS = new Map(), cLamp = (x, z) => Math.floor(x / 20) * 100003 + Math.floor(z / 20);
+function registrarLampada(x, z, y = 0) { const k = cLamp(x, z); if (!LAMPADAS.has(k)) LAMPADAS.set(k, []); const l = LAMPADAS.get(k); if (!l.some(p => Math.abs(p[0] - x) < .5 && Math.abs(p[1] - z) < .5)) l.push([x, z, y]); }
+const LUZ_POSTE = [0, 1].map(() => { const l = new THREE.PointLight(0xffc98a, 0, 15, 1.6); l.position.set(0, -9999, 0); cena.add(l); return l; });
 function luzDoPool(c, i, d) {
   const l = POOL_LUZ.find(l => !l.userData.usada) || POOL_LUZ.reduce((a, b) => (a.userData.desde || 0) < (b.userData.desde || 0) ? a : b);
   l.userData.usada = true; l.userData.desde = performance.now(); l.color.set(c); l.intensity = i; l.distance = d; return l;
@@ -1520,8 +1524,16 @@ const matPoca = new THREE.MeshBasicMaterial({
     pocas.push([i * BLOCO + 4.6, .08, k], [i * BLOCO - 4.6, .08, k + 15], [k, .081, i * BLOCO + 4.6], [k + 15, .081, i * BLOCO - 4.6]);
   }
   const im = instancias(new THREE.PlaneGeometry(11, 11).rotateX(-Math.PI / 2), matPoca, pocas); im.renderOrder = 1;
+  for (const [x, , z] of pocas) registrarLampada(x, z, 0);
+}
+setTimeout(() => { window.__dbg.postes = { LAMPADAS, LUZ_POSTE }; });
+function atualizarLuzPostes(dt) {
+  const noite = atualizarCeu.noite && !G.branco && !G.interior, alvo = dirigindo ? dirigindo.g.position : jog.pos, perto = [];
+  if (noite) { const cx = Math.floor(alvo.x / 20), cz = Math.floor(alvo.z / 20); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (const p of LAMPADAS.get((cx + a) * 100003 + cz + b) || []) { const d = Math.hypot(p[0] - alvo.x, p[1] - alvo.z); if (d < 16) perto.push([d, p]); } perto.sort((a, b) => a[0] - b[0]); }
+  LUZ_POSTE.forEach((l, i) => { const q = perto[i]; if (!q) { l.intensity = THREE.MathUtils.lerp(l.intensity, 0, Math.min(1, dt * 6)); if (l.intensity < .05) l.position.y = -9999; return; } const [x, z, y] = q[1]; if (l.position.y < -9000 || Math.hypot(l.position.x - x, l.position.z - z) > .5) { l.position.set(x, y + 6.6, z); l.intensity = 0; } l.intensity = THREE.MathUtils.lerp(l.intensity, 60, Math.min(1, dt * 5)); });
 }
 function atualizarRealismo(dt) {
+  atualizarLuzPostes(dt);
   texOndas.offset.x += dt * .0011; texOndas.offset.y += dt * .0006;
   matPoca.opacity = THREE.MathUtils.lerp(matPoca.opacity, atualizarCeu.noite ? 1 : 0, Math.min(1, dt * 2));
   uVento.value += dt;
@@ -1910,7 +1922,7 @@ function construirConteudo(ci, cj, grupo, solidosP) {
           const px = eixo === 'x' ? k + s * calc : v, pz = eixo === 'x' ? v : k + s * calc;
           if (!cidadeEm(px, pz) || noNucleo(px, pz)) continue;
           const hh = _hash(px * .13, pz * .71), y = alturaChao(px, pz);
-          if (r === 15 || r === 45) { postes.push([px, y, pz, 0, .22, 7, .22]); luzesP.push([px - (eixo === 'x' ? s * 1.2 : 0), y + 6.9, pz - (eixo === 'z' ? s * 1.2 : 0), 0, eixo === 'x' ? 2.6 : .5, .25, eixo === 'z' ? 2.6 : .5]); }
+          if (r === 15 || r === 45) { postes.push([px, y, pz, 0, .22, 7, .22]); registrarLampada(px - (eixo === 'x' ? s * 1.2 : 0), pz - (eixo === 'z' ? s * 1.2 : 0), y); luzesP.push([px - (eixo === 'x' ? s * 1.2 : 0), y + 6.9, pz - (eixo === 'z' ? s * 1.2 : 0), 0, eixo === 'x' ? 2.6 : .5, .25, eixo === 'z' ? 2.6 : .5]); }
           else if (r === 30) { if (hh < .55) arvRua.push([px, y, pz, hh * 6, .55, .5 + hh * .3, .55]); else if (hh < .7) { pontos.push([px, y, pz, eixo === 'x' ? 0 : Math.PI / 2, eixo === 'x' ? .15 : 4, 2.6, eixo === 'x' ? 4 : .15]); bancosR.push([px - (eixo === 'x' ? s * .7 : 0), y + .45, pz - (eixo === 'z' ? s * .7 : 0), 0, eixo === 'x' ? .6 : 2.4, .12, eixo === 'x' ? 2.4 : .6]); } }
           else if (hh < .3) lixeiras.push([px, y, pz, 0, .7, 1.05, .7]);
           else if (hh > .93) hidrantes.push([px, y, pz, 0, .4, .8, .4]);
