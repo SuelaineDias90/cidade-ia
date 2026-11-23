@@ -1563,7 +1563,7 @@ function atualizarLuzPostes(dt) {
   LUZ_POSTE.forEach((l, i) => { const q = perto[i]; if (!q) { l.intensity = THREE.MathUtils.lerp(l.intensity, 0, Math.min(1, dt * 6)); if (l.intensity < .05) l.position.y = -9999; return; } const [x, z, y] = q[1]; if (l.position.y < -9000 || Math.hypot(l.position.x - x, l.position.z - z) > .5) { l.position.set(x, y + 6.6, z); l.intensity = 0; } l.intensity = THREE.MathUtils.lerp(l.intensity, 60, Math.min(1, dt * 5)); });
 }
 function atualizarRealismo(dt) {
-  atualizarLuzPostes(dt);
+  atualizarLuzPostes(dt); atualizarMarOndas();
   texOndas.offset.x += dt * .0011; texOndas.offset.y += dt * .0006;
   matPoca.opacity = THREE.MathUtils.lerp(matPoca.opacity, atualizarCeu.noite ? 1 : 0, Math.min(1, dt * 2));
   uVento.value += dt;
@@ -1728,6 +1728,42 @@ const texOndas = (() => {
   g.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(900, 900); return t;
 })();
 mar.material = new THREE.MeshPhysicalMaterial({ color: 0x0b3f5e, roughness: .06, metalness: .05, normalMap: texOndas, normalScale: new THREE.Vector2(.55, .55), clearcoat: 1, clearcoatRoughness: .1, transparent: true, opacity: .9 });
+// ---- MAR ULTRA REALISTA: ondas de Gerstner de verdade perto de você (a malha anda junto com a câmera), espuma nas cristas, brilho do sol e reflexo do céu
+const MAR_Y = -.35, ONDAS = [[62, .42, .32, .35], [33, .26, .38, 1.45], [18, .13, .42, -.85], [9.5, .06, .5, 2.35], [5.2, .025, .55, -2.1]], ONDA_F = { v: 1 };
+function alturaOnda(x, z, t = relogio) { let y = 0; for (const [L, A, , ang] of ONDAS) { const k = 6.2832 / L, c = Math.sqrt(9.8 * 1.6 / k), dx = Math.cos(ang), dz = Math.sin(ang); y += A * ONDA_F.v * Math.sin(k * (dx * x + dz * z) - k * c * t); } return y; }
+const U_MAR = { uT: { value: 0 }, uC: { value: new THREE.Vector2() }, uF: { value: 1 } };
+const marOndas = new THREE.Mesh(new THREE.PlaneGeometry(900, 900, 240, 240).rotateX(-Math.PI / 2), mar.material.clone());
+marOndas.material.color.set(0x0a3a58); marOndas.material.opacity = .93; marOndas.frustumCulled = false; marOndas.renderOrder = 1; marOndas.receiveShadow = true;
+marOndas.material.onBeforeCompile = s => {
+  Object.assign(s.uniforms, U_MAR);
+  const ondas = ONDAS.map(([L, A, Q, ang]) => `onda(vec2(${Math.cos(ang).toFixed(4)}, ${Math.sin(ang).toFixed(4)}), ${L.toFixed(2)}, ${A.toFixed(3)} * uF * fade, ${Q.toFixed(2)}, pw, P, T, B, crista);`).join('\n');
+  s.vertexShader = s.vertexShader.replace('void main() {', `uniform float uT; uniform vec2 uC; uniform float uF; varying float vCrista;
+void onda(vec2 d, float L, float A, float Q, vec2 pw, inout vec3 P, inout vec3 T, inout vec3 B, inout float cr) {
+  float k = 6.2832 / L, c = sqrt(9.8 * 1.6 / k), f = k * dot(d, pw) - k * c * uT, s = sin(f), co = cos(f), qa = Q * A;
+  P.x += qa * d.x * co; P.z += qa * d.y * co; P.y += A * s;
+  T += vec3(-qa * d.x * d.x * k * s, A * d.x * k * co, -qa * d.x * d.y * k * s);
+  B += vec3(-qa * d.x * d.y * k * s, A * d.y * k * co, -qa * d.y * d.y * k * s);
+  cr += max(0., s) * A * k * 2.2;
+}
+void main() {`)
+    .replace('#include <beginnormal_vertex>', `vec2 pw = position.xz + uC; float fade = 1. - smoothstep(260., 440., length(position.xz));
+  vec3 P = position, T = vec3(1., 0., 0.), B = vec3(0., 0., 1.); float crista = 0.;
+  ${ondas}
+  vCrista = clamp(crista, 0., 1.);
+  vec3 objectNormal = normalize(cross(B, T));
+  #ifdef USE_TANGENT
+  vec3 objectTangent = vec3(1., 0., 0.);
+  #endif`)
+    .replace('#include <begin_vertex>', 'vec3 transformed = P;');
+  s.fragmentShader = s.fragmentShader.replace('void main() {', 'varying float vCrista;\nvoid main() {').replace('#include <color_fragment>', '#include <color_fragment>\n  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.93, .97, 1.), smoothstep(.35, .9, vCrista) * .75);\n  diffuseColor.a = mix(diffuseColor.a, 1., smoothstep(.35, .9, vCrista));');
+};
+marOndas.material.customProgramCacheKey = () => 'marOndas';
+marOndas.position.y = MAR_Y; cena.add(marOndas); mar.position.y = -.95;
+function atualizarMarOndas() {
+  ONDA_F.v = clima === 'tempestade' ? 2.3 : clima === 'chuva' ? 1.4 : 1; U_MAR.uF.value += (ONDA_F.v - U_MAR.uF.value) * .02; ONDA_F.v = U_MAR.uF.value;
+  U_MAR.uT.value = relogio; const passo = 900 / 240, cx = Math.round(camera.position.x / passo) * passo, cz = Math.round(camera.position.z / passo) * passo;
+  marOndas.position.x = cx; marOndas.position.z = cz; U_MAR.uC.value.set(cx, cz); marOndas.visible = !G.branco && !G.interior;
+}
 
 // ---- materiais do mundo
 const texChaoMundo = texGrama.clone(); texChaoMundo.needsUpdate = true; texChaoMundo.repeat.set(1, 1);
@@ -4180,7 +4216,7 @@ function atualizarJogador(dt) {
   const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), d = new THREE.Vector3(-f.z, 0, f.x);
   const m = new THREE.Vector3();
   if (!digitando()) { if (teclas.KeyW) m.add(f); if (teclas.KeyS) m.sub(f); if (teclas.KeyD) m.add(d); if (teclas.KeyA) m.sub(d); }
-  const correndo = teclas.ShiftLeft; const v = jog.vel * (correndo ? 1.8 : 1);
+  const correndo = teclas.ShiftLeft, nad = typeof AG !== 'undefined' && AG.estado.nadando; const v = jog.vel * (correndo ? 1.8 : 1) * (nad ? .5 : 1);
   jog.mv = jog.mv || new THREE.Vector3();
   if (m.lengthSq()) { m.normalize(); jog.rot = Math.atan2(m.x, m.z); }
   const alvoMv = m.clone().multiplyScalar(v), k = 1 - Math.exp(-(jog.chao ? (m.lengthSq() ? 11 : 14) : 1.6) * dt);
@@ -7814,7 +7850,7 @@ const AG = { MAX: 900, MAXA: 260, gotas: [], aneis: [], mol: [], estado: { dentr
 {
   AG.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.07, 6, 5), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .05, metalness: .1, transparent: true, opacity: .75, depthWrite: false }), AG.MAX);
   AG.mesh.count = 0; AG.mesh.frustumCulled = false; AG.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(AG.MAX * 3), 3); cena.add(AG.mesh);
-  AG.amesh = new THREE.InstancedMesh(new THREE.RingGeometry(.82, 1, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .32, depthWrite: false, blending: THREE.AdditiveBlending }), AG.MAXA);
+  AG.amesh = new THREE.InstancedMesh(new THREE.RingGeometry(.82, 1, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .2, depthWrite: false, blending: THREE.AdditiveBlending }), AG.MAXA);
   AG.amesh.count = 0; AG.amesh.frustumCulled = false; AG.amesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(AG.MAXA * 3), 3); AG.amesh.renderOrder = 3; cena.add(AG.amesh);
   AG.emesh = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 18).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .5, depthWrite: false, blending: THREE.AdditiveBlending }), AG.MAXA);
   AG.emesh.count = 0; AG.emesh.frustumCulled = false; AG.emesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(AG.MAXA * 3), 3); AG.emesh.renderOrder = 3; cena.add(AG.emesh);
@@ -7822,7 +7858,7 @@ const AG = { MAX: 900, MAXA: 260, gotas: [], aneis: [], mol: [], estado: { dentr
 // onde tem água: mar em volta da ilha, inundação (poder), bacias dos chafarizes
 function nivelAgua(x, z) {
   let n = -Infinity;
-  if (typeof mar !== 'undefined' && alturaChao(x, z) < mar.position.y) n = mar.position.y + Math.sin(x * .05 + relogio * 1.1) * .12 + Math.sin(z * .07 + relogio * .8) * .1;
+  if (alturaChao(x, z) < MAR_Y) n = MAR_Y + alturaOnda(x, z);
   if (agua) n = Math.max(n, agua.position.y);
   for (const L of AG.locais) if (Math.hypot(x - L.x, z - L.z) < L.r) n = Math.max(n, L.y);
   return n;
@@ -7872,7 +7908,7 @@ const TIPOS_AGUA = {
   agua_fervendo: { n: 0, bolhas: 40, vapor: 30 }, anti_gravidade: { n: 40, vel: 3, cone: 1, tam: .8, sobe: true },
 };
 function gotaAg(p, v, tam, cor, o = {}) { if (AG.gotas.length >= AG.MAX) AG.gotas.shift(); AG.gotas.push({ p: p.clone(), v, tam, cor, vida: 0, nevoa: !!o.nevoa, bolha: !!o.bolha, sobe: !!o.sobe, vapor: !!o.vapor }); }
-function anelAg(x, y, z, r, cor = 0xffffff, lento = false) { if (AG.aneis.length >= AG.MAXA) AG.aneis.shift(); AG.aneis.push({ x, y, z, r, cor, t: 0, max: lento ? 3 : 1.6, cresce: lento ? 1.2 : 3.2 }); }
+function anelAg(x, y, z, r, cor = 0xffffff, lento = false) { if (AG.aneis.length >= AG.MAXA) AG.aneis.shift(); AG.aneis.push({ x, y, z, r, cor, t: 0, max: lento ? 2.2 : 1.4, cresce: lento ? .6 : 2.6 }); }
 function espumaAg(x, y, z, r) { if (AG.mol.length >= AG.MAXA) AG.mol.shift(); AG.mol.push({ x, y, z, r, t: 0, max: rnd(2, 4) }); }
 function agua_fx(tipo, pos, dir, mult = 1) {
   const T = TIPOS_AGUA[tipo]; if (!T) return;
@@ -7918,9 +7954,9 @@ function atualizarAgua(dt) {
       S.dentro = dentro;
       if (prof > 1.6 || (S.nadando && prof > .9)) {   // fundo: nada na superfície (boia suave, sem pular)
         if (!S.nadando) { S.nadando = true; narrar('🏊 Nadando! Espaço = subir · Shift = nadar rápido · C = mergulhar'); }
-        const alvoY = nv - (teclas.KeyC ? 4.5 : .62); jog.pos.y += (alvoY - jog.pos.y) * Math.min(1, dt * (teclas.KeyC ? 1.5 : 3)); jog.vy = 0; jog.chao = true; if (teclas.Space && !teclas.KeyC) jog.pos.y = Math.max(jog.pos.y, nv - .45);
+        const alvoY = nv - (teclas.KeyC ? 4.5 : .62); const correnteza = .7 * ONDA_F.v * dt; jog.pos.x += Math.cos(ONDAS[0][3]) * correnteza; jog.pos.z += Math.sin(ONDAS[0][3]) * correnteza; bonecoJog.g.rotation.z = (alturaOnda(jog.pos.x + 1, jog.pos.z) - alturaOnda(jog.pos.x - 1, jog.pos.z)) * .5; jog.pos.y += (alvoY - jog.pos.y) * Math.min(1, dt * (teclas.KeyC ? 1.5 : 3)); jog.vy = 0; jog.chao = true; if (teclas.Space && !teclas.KeyC) jog.pos.y = Math.max(jog.pos.y, nv - .45);
         if (vel > .5) { S.rastro -= dt; if (S.rastro <= 0) { S.rastro = teclas.ShiftLeft ? .25 : .45; agua_fx(teclas.ShiftLeft ? 'nadar_rapido' : 'nadar_bracada', jog.pos, jog.mv); } }
-        else if (Math.random() < dt * .6) agua_fx('boiar', jog.pos);
+        else if (Math.random() < dt * .25) agua_fx('boiar', jog.pos);
         if (teclas.KeyC && Math.random() < dt * 2) agua_fx('respirar_embaixo', jog.pos);
       } else {
         if (S.nadando) { S.nadando = false; if (jog.emote === 'nadar') jog.emote = null; }
@@ -7946,7 +7982,7 @@ function atualizarAgua(dt) {
     // chuva caindo em água perto
     if (chuva && !chuva.userData.neve) for (let i = 0; i < (clima === 'tempestade' ? 8 : 4); i++) { const x = jog.pos.x + rnd(-25, 25), z = jog.pos.z + rnd(-25, 25), n = nivelAgua(x, z); if (isFinite(n) && n > alturaChao(x, z)) agua_fx(clima === 'tempestade' ? 'chuva_forte_agua' : 'chuva_na_agua', new THREE.Vector3(x, n, z)); }
     // ondas quebrando na praia perto
-    if (Math.random() < dt * .8) { const a = Math.random() * 6.283, x = jog.pos.x + Math.cos(a) * rnd(10, 40), z = jog.pos.z + Math.sin(a) * rnd(10, 40), h = alturaChao(x, z); if (typeof mar !== 'undefined' && h < mar.position.y && h > mar.position.y - 1.2) agua_fx(clima === 'tempestade' ? 'ressaca' : Math.random() < .5 ? 'onda_quebra' : 'espuma_praia', new THREE.Vector3(x, 0, z)); }
+    if (Math.random() < dt * .8) { const a = Math.random() * 6.283, x = jog.pos.x + Math.cos(a) * rnd(10, 40), z = jog.pos.z + Math.sin(a) * rnd(10, 40), h = alturaChao(x, z); if (h < MAR_Y && h > MAR_Y - 1.2) agua_fx(clima === 'tempestade' ? 'ressaca' : Math.random() < .5 ? 'onda_quebra' : 'espuma_praia', new THREE.Vector3(x, 0, z)); }
     // chafarizes perto ficam jorrando
     for (const L of AG.locais) if (L.chafariz && Math.hypot(L.x - jog.pos.x, L.z - jog.pos.z) < 70 && Math.random() < dt * 5) { agua_fx('chafariz_borda', new THREE.Vector3(L.x + rnd(-L.r, L.r) * .6, L.y, L.z + rnd(-L.r, L.r) * .6)); if (Math.random() < .3) gotaAg(new THREE.Vector3(L.x, L.topo, L.z), new THREE.Vector3(rnd(-1, 1), rnd(3, 5), rnd(-1, 1)), .6, C_AG.agua); }
     // gente e coisas que caem na água
