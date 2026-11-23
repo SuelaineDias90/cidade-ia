@@ -75,7 +75,7 @@ async function abrir(senha) {
 async function comecar() {
   $('#login').remove();
   for (const m of hist) mostrar(m, false); $('#msgs').scrollTop = 1e9;
-  if (!hist.length) dizer('bot', 'Oi, dono! 👋 Eu fico de olho nas denúncias. Quando uma for verdadeira, te mando aqui.\n\nComandos:\n/banir Nome#abcd 24h motivo  (tempos: 1h, 24h, 7d, perm)\n/desbanir Nome#abcd\n/banidos\n/online\n/ajuda');
+  if (!hist.length) dizer('bot', 'Oi, dono! 👋 Eu fico de olho nas denúncias. Quando uma for verdadeira, te mando aqui.\n\nComandos:\n/banir Nome#abcd 24h motivo  (tempos: 1h, 24h, 7d, perm)\n/desbanir Nome#abcd\n/dar Nome#abcd 500 diamantes\n/banidos\n/online\n/ajuda');
   if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
   mq = new R.MQ();
   mq.ouvintes.push(on => $('#st').textContent = on ? '🟢 online' : '🔴 reconectando…');
@@ -125,6 +125,13 @@ async function comando(txt) {
     const t = Date.now(); await publicarBan({ id, nome: (alvo.split('#')[0]), ate: 1, motivo: 'desbanido', t });
     return dizer('bot', `✅ ${alvo} foi desbanido.`);
   }
+  if (c === '/dar') {
+    const id = alvo && acharId(alvo), qtd = Math.floor(+tempo), moeda = /^di/i.test(resto[0] || '') ? 'diamantes' : 'dinheiro';
+    if (!id || !(qtd > 0)) return dizer('bot', 'Use assim: /dar Nome#abcd 500 diamantes   (ou: /dar Nome#abcd 20000 dinheiro)');
+    const t = Date.now(), d = { id, qtd, moeda, t }; d.sig = await R.assinar(chave, [id, qtd, moeda, t].join('|'));
+    mq.pub(`presentes/${id}/${t}`, d, true);
+    return dizer('bot', `🎁 Mandei ${qtd} ${moeda} pra ${alvo}. Chega quando ele abrir o jogo (com a conta do multiplayer).`);
+  }
   if (c === '/banidos') {
     const l = [...bans.values()].filter(R.banAtivo);
     return dizer('bot', l.length ? '🚫 Banidos agora:\n' + l.map(b => `• ${b.nome}#${b.id.slice(0, 4)} — ${b.ate ? 'até ' + new Date(b.ate).toLocaleString('pt-BR') : 'pra sempre'} (${b.motivo})`).join('\n') : 'Ninguém banido agora. 😇');
@@ -133,7 +140,7 @@ async function comando(txt) {
     const l = [...online].filter(([, o]) => Date.now() - o.t < 10000);
     return dizer('bot', l.length ? `👥 ${l.length} jogando agora:\n` + l.map(([id, o]) => `• ${o.n}#${id.slice(0, 4)}`).join('\n') : 'Ninguém jogando no multiplayer agora.');
   }
-  dizer('bot', 'Comandos:\n/banir Nome#abcd 24h motivo\n/desbanir Nome#abcd\n/banidos\n/online');
+  dizer('bot', 'Comandos:\n/banir Nome#abcd 24h motivo\n/desbanir Nome#abcd\n/dar Nome#abcd 500 diamantes (ou dinheiro)\n/banidos\n/online');
 }
 $('#env').onclick = () => { const v = $('#txt').value.trim(); if (v) { $('#txt').value = ''; comando(v); } };
 $('#txt').addEventListener('keydown', e => { if (e.key === 'Enter') $('#env').click(); });

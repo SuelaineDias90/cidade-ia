@@ -400,6 +400,19 @@ window.SEM_PC = true;
   .hbCard{text-align:left;display:grid;gap:5px;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(160deg,color-mix(in srgb,var(--c,#8b5cf6) 35%,transparent),rgba(255,255,255,.03));color:#fff;cursor:pointer;font-family:'Segoe UI';transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
   .hbCard:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(0,0,0,.4);border-color:var(--c,#8b5cf6)}.hbCard i{font-style:normal;font-size:34px}.hbCard b{font-size:16px}.hbCard small{color:#d7cff0;font-size:12px;line-height:1.35}
   .hbCard.com{--c:#22d3ee}.hbVazio{color:#a99fc8;font-size:13px;padding:10px}
+  #diamHud{position:fixed;right:16px;top:118px;z-index:6;display:none;align-items:center;gap:8px;padding:5px 6px 5px 12px;border-radius:999px;background:rgba(10,20,40,.72);border:1px solid rgba(103,232,249,.45);color:#a5f3fc;font:800 16px 'Segoe UI';box-shadow:0 0 18px rgba(34,211,238,.25)}
+  #diamHud b{color:#fff}#diamHud button{border:0;border-radius:50%;width:24px;height:24px;background:#22d3ee;color:#04202a;font:900 16px 'Segoe UI';cursor:pointer;line-height:1}
+  body.celular #diamHud{top:auto;bottom:auto;right:auto;left:8px;top:64px;font-size:13px}
+  #lojaReal{position:fixed;inset:0;z-index:45;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.8);backdrop-filter:blur(8px);font-family:'Segoe UI';color:#fff}#lojaReal.on{display:flex}
+  .lrCaixa{width:min(760px,94vw);max-height:90vh;overflow:auto;border-radius:22px;background:linear-gradient(160deg,#12203a,#120a26);border:1px solid rgba(103,232,249,.25);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .lrTopo{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08)}.lrTopo b{font:900 22px 'Segoe UI';letter-spacing:3px;color:#a5f3fc}.lrTopo span{flex:1;color:#cbd5e1;font-weight:700}
+  .lrTopo button{border:0;border-radius:10px;width:36px;height:36px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer}
+  .lrCorpo{padding:6px 20px 20px}.lrCorpo h4{color:#67e8f9;margin:16px 0 8px}
+  .lrGratis{display:grid;gap:8px}.lrGratis div{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+  .lrGrade{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .lrPac{display:grid;justify-items:center;gap:2px;padding:14px 8px;border-radius:16px;background:linear-gradient(160deg,rgba(34,211,238,.22),rgba(255,255,255,.03));border:1px solid rgba(103,232,249,.3)}.lrPac.dinheiro{background:linear-gradient(160deg,rgba(34,197,94,.22),rgba(255,255,255,.03));border-color:rgba(134,239,172,.3)}
+  .lrPac i{font-style:normal;font-size:34px}.lrPac b{font-size:20px}.lrPac small{color:#cbd5e1}.lrPac button{margin-top:8px;border:0;border-radius:10px;padding:8px 14px;background:linear-gradient(135deg,#22d3ee,#0891b2);color:#04202a;font:900 14px 'Segoe UI';cursor:pointer}
+  .lrAviso{margin-top:14px;font-size:13px;color:#fde68a;min-height:18px}.lrSeu{margin-top:8px;font-size:13px;color:#cbd5e1}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
   #mapaG canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;border:0;border-radius:0}
@@ -6700,8 +6713,8 @@ function mostrarAba(aba) {
       <h4>4 · Roupa</h4>
       <div class="pjRoupa"><span>Camisa</span><div>${sw(CORES_RP, R.roupa, 'roupa')}</div><span>Calça</span><div>${sw(CORES_RP, R.calca, 'calca')}</div><span>Sapato</span><div>${sw(CORES_RP.slice(0, 8), R.sapato, 'sapato')}</div><span>Cabelo</span><div>${sw(CABELOS_C, R.cabelo, 'cabelo')}</div></div>
       ${R.estilo === 'classico' ? `<div class="linha">Cabelo: ${['curto', 'comprido', 'coque', 'rabo', 'cacheado', 'moicano', 'careca', 'bone'].map(e => `<button class="op mini ${R.cabeloEstilo === e ? 'on' : ''}" data-cab="${e}">${e}</button>`).join('')}</div>` : ''}
-      ${R.estilo === 'realista' ? '<p class="miAviso">No realista as cores mudam a roupa; os estilos (terno, chef...) são do boneco clássico.</p>' : ''}<div class="linha" style="${R.estilo === 'realista' ? 'display:none' : ''}">Estilo: ${['casual', 'terno', 'esporte', 'jaleco', 'operario', 'praia', 'punk', 'inverno', 'vestido', 'chef', 'skatista'].map(e => `<button class="op mini ${R.estiloRoupa === e ? 'on' : ''}" data-er="${e}">${e}</button>`).join('')}</div>
-      <h4>5 · Acessórios</h4><div class="linha">${Object.entries(ACESSORIOS).map(([k, A]) => `<button class="op mini ${R.acessorios.some(a => a.tipo === k) ? 'on' : ''}" data-ac="${k}">${A.ic} ${A.nome}</button>`).join('')}</div>
+      ${R.estilo === 'realista' ? '<p class="miAviso">No realista as cores mudam a roupa; os estilos (terno, chef...) são do boneco clássico.</p>' : ''}<div class="linha" style="${R.estilo === 'realista' ? 'display:none' : ''}">Estilo: ${['casual', 'terno', 'esporte', 'jaleco', 'operario', 'praia', 'punk', 'inverno', 'vestido', 'chef', 'skatista'].map(e => `<button class="op mini ${R.estiloRoupa === e ? 'on' : ''}" data-er="${e}">${e}${PREMIUM['er:' + e] && !temPremium('er:' + e) ? ' 🔒💎' + PREMIUM['er:' + e] : ''}</button>`).join('')}</div>
+      <h4>5 · Acessórios</h4><div class="linha">${Object.entries(ACESSORIOS).map(([k, A]) => `<button class="op mini ${R.acessorios.some(a => a.tipo === k) ? 'on' : ''}" data-ac="${k}">${A.ic} ${A.nome}${PREMIUM[k] && !temPremium(k) ? ' 🔒💎' + PREMIUM[k] : ''}</button>`).join('')}</div>
       <div class="linha">Cor dos acessórios: ${sw(CORES_RP, R.corAcess || '#ffd166', 'cac')}</div>
       <div class="linha fim"><button class="sug grande" id="pjSalvar">✅ Usar este personagem</button><button class="sug" id="pjAleatorio">🎲 Aleatório</button></div>
       <p class="miAviso">Não quer montar? Vá na 🛍️ Loja e use um modelo pronto dos criadores.</p>`;
@@ -6729,10 +6742,10 @@ function mostrarAba(aba) {
     muda('[data-est]', b => R.estilo = b.dataset.est);
     for (const k of ['pele', 'roupa', 'calca', 'sapato', 'cabelo']) muda(`[data-${k}]`, b => R[k] = b.dataset[k]);
     muda('[data-cab]', b => R.cabeloEstilo = b.dataset.cab);
-    muda('[data-er]', b => R.estiloRoupa = b.dataset.er);
-    muda('[data-ac]', b => { const i = R.acessorios.findIndex(a => a.tipo === b.dataset.ac); if (i >= 0) R.acessorios.splice(i, 1); else R.acessorios.push({ tipo: b.dataset.ac, cor: R.corAcess || '#ffd166' }); });
+    muda('[data-er]', b => { if (comprarPremium('er:' + b.dataset.er, 'o estilo ' + b.dataset.er)) R.estiloRoupa = b.dataset.er; });
+    muda('[data-ac]', b => { const i = R.acessorios.findIndex(a => a.tipo === b.dataset.ac); if (i >= 0) R.acessorios.splice(i, 1); else if (comprarPremium(b.dataset.ac, ACESSORIOS[b.dataset.ac].nome)) R.acessorios.push({ tipo: b.dataset.ac, cor: R.corAcess || '#ffd166' }); });
     muda('[data-cac]', b => { R.corAcess = b.dataset.cac; R.acessorios.forEach(a => a.cor = R.corAcess); });
-    $('#pjAleatorio').onclick = () => { Object.assign(R, { fem: Math.random() < .5, pele: pega(PELES_AV), roupa: pega(CORES_RP), calca: pega(CORES_RP), cabelo: pega(CABELOS_C), estiloRoupa: pega(['casual', 'esporte', 'terno', 'punk', 'praia']), acessorios: Math.random() < .5 ? [{ tipo: pega(Object.keys(ACESSORIOS)), cor: pega(CORES_RP) }] : [], corpo: null }); mostrarAba('criar'); atualizarPrevia(); };
+    $('#pjAleatorio').onclick = () => { Object.assign(R, { fem: Math.random() < .5, pele: pega(PELES_AV), roupa: pega(CORES_RP), calca: pega(CORES_RP), cabelo: pega(CABELOS_C), estiloRoupa: pega(['casual', 'esporte', 'terno', 'punk', 'praia']), acessorios: Math.random() < .5 ? [{ tipo: pega(Object.keys(ACESSORIOS).filter(temPremium)), cor: pega(CORES_RP) }] : [], corpo: null }); mostrarAba('criar'); atualizarPrevia(); };
     $('#pjSalvar').onclick = () => { AVATAR = JSON.parse(JSON.stringify(R)); lsAv.set('cidadeia_avatar', AVATAR); aplicarAvatarJogador(); aviso('✅ Personagem salvo!', '#3ddc5a', 2); fecharPJ(); };
   }
   if (aba === 'loja') {
@@ -6821,7 +6834,7 @@ function formPublicar(tipo) {
   if (tipo === 'modelo') { D.innerHTML = `<h4>👤 Publicar o personagem que você está usando</h4><p class="miAviso">Monte ele antes na aba 👤 Criar (corpo, pele, roupa, acessórios).</p>${camposPreco()}`; pjRascunho = JSON.parse(JSON.stringify(AVATAR)); atualizarPrevia(); $('#pubIr').onclick = () => enviarPub('modelo', JSON.parse(JSON.stringify(AVATAR))); }
   if (tipo === 'roupa') {
     const R = { roupa: AVATAR.roupa, calca: AVATAR.calca, sapato: AVATAR.sapato, estiloRoupa: AVATAR.estiloRoupa };
-    const pinta = () => { D.innerHTML = `<h4>👕 Nova roupa</h4><div class="pjRoupa"><span>Camisa</span><div>${sw(CORES_RP, R.roupa, 'roupa')}</div><span>Calça</span><div>${sw(CORES_RP, R.calca, 'calca')}</div><span>Sapato</span><div>${sw(CORES_RP.slice(0, 8), R.sapato, 'sapato')}</div></div><div class="linha">Estilo: ${['casual', 'terno', 'esporte', 'jaleco', 'operario', 'praia', 'punk', 'inverno', 'vestido', 'chef', 'skatista'].map(e => `<button class="op mini ${R.estiloRoupa === e ? 'on' : ''}" data-er="${e}">${e}</button>`).join('')}</div>${camposPreco()}`;
+    const pinta = () => { D.innerHTML = `<h4>👕 Nova roupa</h4><div class="pjRoupa"><span>Camisa</span><div>${sw(CORES_RP, R.roupa, 'roupa')}</div><span>Calça</span><div>${sw(CORES_RP, R.calca, 'calca')}</div><span>Sapato</span><div>${sw(CORES_RP.slice(0, 8), R.sapato, 'sapato')}</div></div><div class="linha">Estilo: ${['casual', 'terno', 'esporte', 'jaleco', 'operario', 'praia', 'punk', 'inverno', 'vestido', 'chef', 'skatista'].map(e => `<button class="op mini ${R.estiloRoupa === e ? 'on' : ''}" data-er="${e}">${e}${PREMIUM['er:' + e] && !temPremium('er:' + e) ? ' 🔒💎' + PREMIUM['er:' + e] : ''}</button>`).join('')}</div>${camposPreco()}`;
       for (const k of ['roupa', 'calca', 'sapato']) D.querySelectorAll(`[data-${k}]`).forEach(b => b.onclick = () => { R[k] = b.dataset[k]; pinta(); });
       D.querySelectorAll('[data-er]').forEach(b => b.onclick = () => { R.estiloRoupa = b.dataset.er; pinta(); });
       pjRascunho = { ...AVATAR, ...R }; atualizarPrevia(); $('#pubIr').onclick = () => enviarPub('roupa', { ...R }); };
@@ -7624,6 +7637,104 @@ function voltarDoHub() {
 
 // botão no menu inicial e na pausa
 { const b = document.createElement('button'); b.className = 'bm'; b.id = 'mStudio'; b.innerHTML = '<i>🛠️</i><span><b>Studio</b><small>crie seu próprio jogo</small></span>'; $('#mMulti').after(b); b.onclick = abrirStudio; }
+
+
+// ==================================================================== ECONOMIA: progresso salvo, 💵 dinheiro do jogo e 💎 diamantes
+// 💵 Dinheiro: missões, assaltos, achar dinheiro... (cada modo tem o seu). Usado em armas e coisas da cidade.
+// 💎 Diamantes: moeda especial (vale em todos os modos). Achando os 30 SEGREDOS do Modo Normal ou comprando. Usada em roupas e acessórios exclusivos.
+const ECO = { diam: (() => { try { return +localStorage.getItem('cidadeia_diamantes') || 0; } catch (e) { return 0; } })(), seg: (() => { try { return new Set(JSON.parse(localStorage.getItem('cidadeia_segredos') || '[]')); } catch (e) { return new Set(); } })(), donos: (() => { try { return new Set(JSON.parse(localStorage.getItem('cidadeia_premium') || '[]')); } catch (e) { return new Set(); } })() };
+const salvarEco = () => { try { localStorage.setItem('cidadeia_diamantes', String(ECO.diam)); localStorage.setItem('cidadeia_segredos', JSON.stringify([...ECO.seg])); localStorage.setItem('cidadeia_premium', JSON.stringify([...ECO.donos])); } catch (e) {} pintarDiam(); };
+function darDiamantes(q, motivo) { ECO.diam = Math.max(0, ECO.diam + q); salvarEco(); if (q > 0) { aviso(`💎 +${q} diamantes${motivo ? ' — ' + motivo : ''}`, '#67e8f9', 3); criarEfeito2d({ estilo: 'estrelas', cores: ['#67e8f9', '#a5f3fc', '#ffffff'], duracao: 1.6, intensidade: .5 }); } }
+// ---- progresso salvo por modo (dinheiro, armas, arma na mão)
+const chaveSave = m => 'cidadeia_save_' + m;
+function salvarModo(m = MODO) { if (!['normal', 'multi'].includes(m)) return; try { localStorage.setItem(chaveSave(m), JSON.stringify({ dinheiro: Math.floor(G.dinheiro), armas: G.armas.filter(a => !String(a).startsWith('ia')), armaAtual: G.armaAtual, t: Date.now() })); } catch (e) {} }
+function carregarModo(m) {
+  if (!['normal', 'multi'].includes(m)) return; let s = null; try { s = JSON.parse(localStorage.getItem(chaveSave(m)) || 'null'); } catch (e) {}
+  G.dinheiro = s ? s.dinheiro : 500; G.armas = s?.armas?.length ? s.armas : ['soco']; G.armaAtual = 0; try { equipar(G.armas[Math.min(s?.armaAtual || 0, G.armas.length - 1)] || 'soco', true); } catch (e) {}
+}
+setInterval(() => { if (estado === 'jogando' && !(typeof ST !== 'undefined' && ST.on)) salvarModo(); }, 4000);
+addEventListener('beforeunload', () => { salvarModo(); salvarEco(); });
+{ const v = comecarModo; comecarModo = m => { const ant = MODO; if (G.jaCarregou) salvarModo(ant); v(m); if (!G.jaCarregou || ant !== m) carregarModo(m); G.jaCarregou = true; pintarDiam(); }; }
+// ---- 💎 no canto da tela
+const diamHud = document.createElement('div'); diamHud.id = 'diamHud'; document.body.appendChild(diamHud);
+function pintarDiam() { diamHud.innerHTML = `💎 <b>${ECO.diam}</b><button id="diamLoja" title="loja">+</button>`; diamHud.querySelector('#diamLoja').onclick = () => abrirLojaReal(); }
+setInterval(() => { diamHud.style.display = estado === 'jogando' && !(typeof ST !== 'undefined' && ST.on) ? 'flex' : 'none'; }, 300);
+pintarDiam();
+
+// ---- 30 SEGREDOS escondidos no Modo Normal (cada um dá diamantes, uma vez só)
+const SEGREDOS = []; let segredosProntos = false; window.__dbg.eco = { ECO, SEGREDOS, get G() { return G; } };
+function prepararSegredos() {
+  if (segredosProntos) return; segredosProntos = true;
+  let s = 20261123; const r = () => (s = (s * 48271) % 2147483647) / 2147483647;
+  const geo = new THREE.OctahedronGeometry(.45, 0), mat = new THREE.MeshStandardMaterial({ color: 0x67e8f9, emissive: 0x22d3ee, emissiveIntensity: .9, metalness: .3, roughness: .15 });
+  const fixos = [[MARCOS.farol?.[0] ?? 0, MARCOS.farol?.[1] ?? 0, 6]];
+  let n = 0;
+  for (let t = 0; t < 6000 && n < 30; t++) {
+    const x = (r() * 2 - 1) * ILHA.metade * .85, z = (r() * 2 - 1) * ILHA.metade * .85;
+    if (t > 0 && (!cidadeEm(x, z) || alturaChao(x, z) < -5)) continue;
+    const [gx, gz] = t === 0 && fixos[0][0] ? [fixos[0][0] + 7, fixos[0][1]] : [Math.round(x / 60) * 60 + (r() < .5 ? 13 : -13), Math.round(z / 60) * 60 + (r() < .5 ? 13 : -13)];   // num cantinho entre os prédios
+    if (alturaChao(gx, gz) < -5) continue;
+    const m = new THREE.Mesh(geo, mat); m.position.set(gx, alturaChao(gx, gz) + 1.1, gz); m.visible = false; cena.add(m);
+    SEGREDOS.push({ id: 's' + n, m, valor: [10, 15, 20, 25, 50][Math.floor(r() * 5)], base: m.position.y }); n++;
+  }
+}
+quadros.push(Object.assign(dt => {
+  if (MODO !== 'normal' || estado !== 'jogando' || G.branco) { for (const S of SEGREDOS) S.m.visible = false; return true; }
+  prepararSegredos();
+  for (const S of SEGREDOS) {
+    if (ECO.seg.has(S.id)) { S.m.visible = false; continue; }
+    const d = Math.hypot(S.m.position.x - jog.pos.x, S.m.position.z - jog.pos.z);
+    S.m.visible = d < 45; if (!S.m.visible) continue;
+    S.m.rotation.y += dt * 2; S.m.position.y = S.base + Math.sin(relogio * 2 + d) * .2;
+    if (d < 2.4 && Math.abs(jog.pos.y + 1 - S.m.position.y) < 3) { ECO.seg.add(S.id); darDiamantes(S.valor, `segredo ${ECO.seg.size}/30`); }
+  }
+  return true;
+}, { fixo: true }));
+
+// ---- itens exclusivos pagos em 💎 (acessórios e estilos de roupa)
+const PREMIUM = { coroa: 60, asas: 80, aureola: 50, chifres: 40, capa: 45, espada: 70, mascara: 30, colar: 25, 'er:terno': 25, 'er:punk': 30, 'er:skatista': 20, 'er:inverno': 20 };
+const temPremium = k => !PREMIUM[k] || ECO.donos.has(k) || DONO;
+function comprarPremium(k, nome) {
+  const preco = PREMIUM[k]; if (temPremium(k)) return true;
+  if (ECO.diam < preco) { if (confirm(`${nome} custa 💎 ${preco} e você tem 💎 ${ECO.diam}.\n\nAche os segredos no Modo Normal ou veja a loja. Abrir a loja?`)) abrirLojaReal(); return false; }
+  if (!confirm(`Comprar ${nome} por 💎 ${preco}?`)) return false;
+  ECO.diam -= preco; ECO.donos.add(k); salvarEco(); aviso(`✨ ${nome} é seu!`, '#67e8f9', 2.5); return true;
+}
+
+// ---- LOJA (dinheiro de verdade) — os pacotes são entregues pelo dono do jogo com /dar no app de moderação
+const PACOTES = [['💎', 100, 'diamantes', 'R$ 4,90'], ['💎', 300, 'diamantes', 'R$ 12,90'], ['💎', 800, 'diamantes', 'R$ 29,90'], ['💵', 25000, 'dinheiro', 'R$ 4,90'], ['💵', 100000, 'dinheiro', 'R$ 14,90']];
+const LOJA_REAL = document.createElement('div'); LOJA_REAL.id = 'lojaReal'; document.body.appendChild(LOJA_REAL);
+async function abrirLojaReal() {
+  soltarMouse(); const c = await REDE.carregarConta().catch(() => null);
+  LOJA_REAL.classList.add('on');
+  LOJA_REAL.innerHTML = `<div class="lrCaixa"><div class="lrTopo"><b>🛒 LOJA</b><span>💎 ${ECO.diam} · 💵 $${Math.floor(G.dinheiro)}</span><button id="lrFechar">✖</button></div>
+    <div class="lrCorpo"><h4>Ganhe de graça</h4><div class="lrGratis"><div>💎 <b>Diamantes</b>: ache os <b>30 segredos</b> escondidos no Modo Normal (já achou ${ECO.seg.size}/30). Eles brilham em azul nos cantinhos entre os prédios.</div><div>💵 <b>Dinheiro</b>: missões (tecla N), assaltos a lojas e bancos, corridas, entregas e táxi.</div></div>
+    <h4>Pacotes</h4><div class="lrGrade">${PACOTES.map(([ic, q, m, preco], i) => `<div class="lrPac ${m}"><i>${ic}</i><b>${q.toLocaleString('pt-BR')}</b><small>${m}</small><button data-pac="${i}">${preco}</button></div>`).join('')}</div>
+    <div class="lrAviso" id="lrAviso">${window.LINK_PAGAMENTO ? '' : '💳 A compra com dinheiro de verdade ainda não está aberta. Por enquanto ganhe jogando!'}</div>
+    <div class="lrSeu">Seu código de jogador: <b>${c ? escH(c.nome) + '#' + c.id.slice(0, 4) : '(crie uma conta no Multiplayer)'}</b></div></div></div>`;
+  $('#lrFechar').onclick = () => { LOJA_REAL.classList.remove('on'); if (estado === 'jogando') renderer.domElement.requestPointerLock()?.catch?.(() => {}); };
+  LOJA_REAL.querySelectorAll('[data-pac]').forEach(b => b.onclick = () => {
+    if (!window.LINK_PAGAMENTO) { $('#lrAviso').textContent = '💳 Compra com dinheiro de verdade ainda não está aberta. Peça pra um adulto e aguarde novidades!'; return; }
+    if (!c) return alert('Crie uma conta no Multiplayer primeiro: é por ela que o pacote chega.');
+    const [, q, m, preco] = PACOTES[+b.dataset.pac];
+    if (!confirm(`Comprar ${q} ${m} por ${preco}?\n\nPeça pra um adulto. Na página de pagamento, informe seu código ${c.nome}#${c.id.slice(0, 4)}. O pacote chega no jogo depois que o pagamento for confirmado.`)) return;
+    open(window.LINK_PAGAMENTO, '_blank', 'noopener');
+  });
+}
+// presentes do dono (pacotes comprados, prêmios): chegam assinados pela chave do dono e valem uma vez só
+(async () => {
+  const c = await REDE.carregarConta().catch(() => null); if (!c || !window.crypto?.subtle) return;
+  const usados = (() => { try { return new Set(JSON.parse(localStorage.getItem('cidadeia_presentes') || '[]')); } catch (e) { return new Set(); } })();
+  const mq = ligarRede();
+  mq.ouvir(`presentes/${c.id}/+`, async (top, txt) => {
+    if (!txt) return; let d; try { d = JSON.parse(txt); } catch (e) { return; }
+    const chave = top.split('/')[2]; if (usados.has(chave)) return mq.apagar(top);
+    if (d.id !== c.id || !await REDE.conferir(window.DONO_PUB, [d.id, d.qtd, d.moeda, d.t].join('|'), d.sig)) return;
+    usados.add(chave); try { localStorage.setItem('cidadeia_presentes', JSON.stringify([...usados])); } catch (e) {}
+    if (d.moeda === 'diamantes') darDiamantes(+d.qtd, 'presente do dono'); else { G.dinheiro += +d.qtd; salvarModo(); aviso(`💵 +$${(+d.qtd).toLocaleString('pt-BR')} — presente do dono`, '#7CFC8a', 3); }
+    mq.apagar(top);
+  });
+})();
 
 // ==================================================================== FOCO DO DAVI: câmera lenta dirigindo (Modo Normal)
 const FOCO = { on: false, carga: 1 };
