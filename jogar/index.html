@@ -4764,7 +4764,7 @@ function somBatida(f) {
 // caixa de um corpo qualquer (veículo do jogo ou carro do trânsito)
 function corpoCarro(o, transitoRef) {
   const g = o.g, u = g.userData, ang = transitoRef ? g.rotation.y : o.ang;
-  return { o, t: transitoRef, x: g.position.x, z: g.position.z, ang, L: (u.L || 6) * .92, W: (u.W || 2.6) * .9, m: (u.L || 6) * (u.W || 2.6) * (u.tipo === 'onibus' || u.tipo === 'caminhao' ? 2.2 : 1) * (transitoRef ? 4 : 1) };
+  return { o, t: transitoRef, x: g.position.x, z: g.position.z, y: g.position.y, ang, L: (u.L || 6) * .92, W: (u.W || 2.6) * .9, m: (u.L || 6) * (u.W || 2.6) * (u.tipo === 'onibus' || u.tipo === 'caminhao' ? 2.2 : 1) * (transitoRef ? 4 : 1) };
 }
 function satCaixas(A, B) {
   const ax = [[Math.sin(A.ang), Math.cos(A.ang)], [Math.cos(A.ang), -Math.sin(A.ang)], [Math.sin(B.ang), Math.cos(B.ang)], [Math.cos(B.ang), -Math.sin(B.ang)]];
@@ -4792,12 +4792,12 @@ function colisoesCarros(dt) {
   colisoesCarros.t = (colisoesCarros.t || 0) + dt;
   if (colisoesCarros.t > 1) { colisoesCarros.t = 0; for (const v of veiculos) if (v !== dirigindo && !v.destruido && v.g.position.distanceTo(jog.pos) < 300 && carroBate(v, v.g.position.x, v.g.position.z)) { const p = v.g.position; for (let r = 2; r < 40; r += 2) { let ok = false; for (let a = 0; a < 12; a++) { const x = p.x + Math.cos(a / 12 * 6.283) * r, z = p.z + Math.sin(a / 12 * 6.283) * r; if (!carroBate(v, x, z)) { p.x = x; p.z = z; ok = true; break; } } if (ok) break; } } }
   const corpos = [];
-  for (const v of veiculos) if (!v.voando && !v.destruido && v.g.position.distanceTo(jog.pos) < 260) corpos.push(corpoCarro(v));
+  for (const v of veiculos) if (!v.destruido && v.g.position.distanceTo(jog.pos) < 260) corpos.push(corpoCarro(v));
   for (const c of transito) if (c.g.visible !== false && c.g.position.distanceTo(jog.pos) < 260) corpos.push(corpoCarro(c, c));
   for (let i = 0; i < corpos.length; i++) for (let j = i + 1; j < corpos.length; j++) {
     const A = corpos[i], B = corpos[j];
     if (A.t && B.t) continue;
-    if (Math.abs(A.x - B.x) > 16 || Math.abs(A.z - B.z) > 16) continue;
+    if (Math.abs(A.x - B.x) > 16 || Math.abs(A.z - B.z) > 16 || Math.abs(A.y - B.y) > 2.6) continue;
     const r = satCaixas(A, B); if (!r) continue;
     const ia = A.t ? 0 : 1 / A.m, ib = B.t ? 0 : 1 / B.m, soma = ia + ib; if (!soma) continue;
     // separa (cada um proporcional à leveza)
