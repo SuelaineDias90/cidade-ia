@@ -139,7 +139,7 @@ footer { padding-block: 34px; padding-left: max(16px, env(safe-area-inset-left, 
     <h1 class="titulo">CIDADE<br><span>IA</span></h1>
     <p class="frase">Uma ilha inteira de mundo aberto onde você pede qualquer coisa e a IA faz acontecer.</p>
     <div class="botoes">
-      <a class="btn prin" id="btnBaixar" href="#como">⬇ Baixar pra Windows <small id="tamZip">CidadeIA.zip · 57 MB</small></a>
+      <a class="btn prin" id="btnBaixar" href="#como">⬇ Baixar pra Windows <small id="tamZip">instalador · 69 MB · não precisa de nada</small></a>
       <a class="btn prin" href="https://github.com/SuelaineDias90/cidade-ia/releases/download/v1.0/CidadeIA.apk">📱 Baixar pra Android <small>CidadeIA.apk · funciona em qualquer Android 7+</small></a>
       <a class="btn sec" href="https://suelainedias90.github.io/cidade-ia/jogar/">▶ Jogar no navegador <small>sem instalar nada</small></a>
     </div>
@@ -212,16 +212,16 @@ footer { padding-block: 34px; padding-left: max(16px, env(safe-area-inset-left, 
 <section class="faixa alt" id="como">
   <div class="dentro">
     <span class="olho">Instalar</span>
-    <h2>Do download ao jogo em 3 minutos</h2>
+    <h2>Do download ao jogo em 1 minuto</h2>
     <ol class="passos">
-      <li><div><h3>Instale o Python</h3><p>Baixe em <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org/downloads</a> (versão 3.10 ou mais nova). Na instalação, marque <b>"Add python.exe to PATH"</b>.</p></div></li>
-      <li><div><h3>Baixe e extraia o jogo</h3><p>Baixe o <span class="cod">CidadeIA.zip</span>, clique com o botão direito e escolha <b>Extrair tudo</b>. Coloque a pasta onde quiser.</p></div></li>
-      <li><div><h3>Clique em Jogar</h3><p>Abra a pasta e clique duas vezes em <span class="cod">Jogar.bat</span>. O jogo abre numa janela própria, em tela cheia. Se quiser, rode <span class="cod">Criar atalho na area de trabalho.bat</span>.</p></div></li>
+      <li><div><h3>Baixe o instalador</h3><p>Clique em <b>⬇ Baixar pra Windows</b>. Vem um arquivo só: <span class="cod">CidadeIA-Instalador.exe</span>.</p></div></li>
+      <li><div><h3>Clique duas vezes nele</h3><p>Responda <b>Sim</b>. Se o Windows mostrar "O Windows protegeu o computador", clique em <b>Mais informações → Executar assim mesmo</b> (aparece porque o jogo é novo e não tem assinatura paga). Não precisa instalar Python nem nada.</p></div></li>
+      <li><div><h3>Pronto: ícone na área de trabalho</h3><p>O jogo abre sozinho e o ícone <b>Cidade IA</b> fica na área de trabalho e no Menu Iniciar. Da próxima vez é só clicar nele. Pra remover: Menu Iniciar → Cidade IA → <b>Desinstalar</b>.</p></div></li>
       <li><div><h3>(Opcional) Coloque sua chave de IA</h3><p>No jogo, abra o painel <b>⚡ Poderes</b> e toque em <b>🔑 Minha chave</b>. Cole a chave da IA que você usa. Sem chave, tudo funciona com os poderes prontos.</p></div></li>
     </ol>
     <div class="req">
       <div><b>Sistema</b>Windows 10 ou 11</div>
-      <div><b>Precisa</b>Python 3.10+ e Edge ou Chrome</div>
+      <div><b>Precisa</b>só o Edge ou Chrome (já vem no Windows)</div>
       <div><b>Espaço</b>cerca de 200 MB depois de extrair</div>
       <div><b>Opcional</b>Blender 5, pra enviar skins próprias</div>
     </div>
@@ -243,7 +243,7 @@ footer { padding-block: 34px; padding-left: max(16px, env(safe-area-inset-left, 
 <section class="faixa alt baixar">
   <div class="dentro">
     <h2>Pronto pra entrar na cidade?</h2>
-    <a class="btn prin" id="btnBaixar2" href="#como">⬇ Baixar Cidade IA <small>Windows · 57 MB</small></a>
+    <a class="btn prin" id="btnBaixar2" href="#como">⬇ Baixar Cidade IA <small>Windows · instalador</small></a>
     <p class="nota" id="notaLink">O link de download vai aparecer aqui assim que o arquivo for publicado.</p>
   </div>
 </section>
@@ -255,7 +255,7 @@ footer { padding-block: 34px; padding-left: max(16px, env(safe-area-inset-left, 
 (() => { const p = document.querySelector('.predios'); const alturas = [38, 60, 30, 72, 48, 84, 40, 66, 92, 52, 70, 44, 80, 34, 58, 76, 46, 62]; for (const a of alturas) { const i = document.createElement('i'); i.style.height = a + '%'; p.appendChild(i); } })();
 if (matchMedia('(pointer:coarse)').matches) document.getElementById('avisoCel').style.display = 'block';
 // link oficial do download (preenchido quando o arquivo estiver publicado)
-const LINK_DOWNLOAD = 'https://github.com/SuelaineDias90/cidade-ia/releases/download/v1.0/CidadeIA.zip';
+const LINK_DOWNLOAD = 'https://github.com/SuelaineDias90/cidade-ia/releases/download/v1.0/CidadeIA-Instalador.exe';
 if (LINK_DOWNLOAD) {
   for (const id of ['btnBaixar', 'btnBaixar2']) { const a = document.getElementById(id); a.href = LINK_DOWNLOAD; a.target = '_blank'; a.rel = 'noopener'; }
   document.getElementById('notaLink').textContent = 'Baixe só por este link oficial.';
