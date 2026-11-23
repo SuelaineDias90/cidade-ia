@@ -2388,9 +2388,9 @@ const NOMES_EMOTE = { dancar: '💃 Dançar', samba: '🥁 Samba', robo: '🤖 R
 function poseBoneco(b, t, vel, modo) {
   const p = b.p;
   if (!p.be) { b.g.children[0].position.y = 1 + Math.abs(Math.sin(t * 8)) * vel * .05; return; }
-  const k = Math.min(1, vel / 3), corre = vel > 6.5, esc = b.g.scale.y || 1;
+  const k = Math.min(1, vel / 3), corre = vel > 12, esc = b.g.scale.y || 1;
   // fase da passada vem da DISTÂNCIA andada (pé não escorrega): um ciclo = 2 passos
-  const ciclo = (corre ? 3.9 + (vel - 6.5) * .18 : 2.3 + vel * .12) * esc;
+  const ciclo = (corre ? 3.9 + (vel - 12) * .18 : 2.6 + vel * .14) * esc;
   b.fase = ((b.fase || 0) + vel * (b.dtA || 0) / ciclo * Math.PI * 2) % (Math.PI * 200); const fase = b.fase;
   p.be.rotation.set(0, 0, .015); p.bd.rotation.set(0, 0, -.015); p.cE.rotation.set(-.15, 0, 0); p.cD.rotation.set(-.15, 0, 0);
   p.pe.rotation.set(0, 0, 0); p.pd.rotation.set(0, 0, 0); p.jE.rotation.set(0, 0, 0); p.jD.rotation.set(0, 0, 0);
@@ -2430,7 +2430,7 @@ function poseBoneco(b, t, vel, modo) {
   // quadril gira e cai pro lado da perna no ar; tronco gira ao contrário; inclina pra frente com a velocidade
   p.quadril.rotation.y = s * (corre ? .14 : .1) * k; p.quadril.rotation.z = -c2 * .05 * k;
   p.corpo.rotation.y = -s * (corre ? .22 : .14) * k; p.corpo.rotation.z = c2 * .035 * k;
-  p.corpo.rotation.x = (corre ? .16 + Math.min(.12, (vel - 6.5) * .015) : .03 + vel * .01) * k;
+  p.corpo.rotation.x = (corre ? .16 + Math.min(.12, (vel - 12) * .015) : .02 + vel * .006) * k;
   // cabeça compensa (olhar estável) e balança de leve
   p.cabeca.rotation.y += s * .1 * k; p.cabeca.rotation.x = -p.corpo.rotation.x * .6 + Math.cos(2 * fase) * .02 * k; p.cabeca.rotation.z = -p.corpo.rotation.z * .8;
   if (modo === 'medo') {
@@ -2463,7 +2463,7 @@ function animarBoneco(b, t, vel, modo) {
   if (!p.be) { poseBoneco(b, t, vel, modo); return; }
   const dt = Math.min(.1, Math.max(0, relogio - (b.tAnim ?? relogio))); b.tAnim = relogio; b.dtA = dt;
   const ant = b.ant;
-  const chave = (modo || '') + (vel > .3 ? (vel > 6.5 ? 'c' : 'a') : 'p'); if (chave !== b.chave) { b.chave = chave; b.trans = .3; } b.trans = Math.max(0, (b.trans || 0) - dt);
+  const chave = (modo || '') + (vel > .3 ? (vel > 12 ? 'c' : 'a') : 'p'); if (chave !== b.chave) { b.chave = chave; b.trans = .3; } b.trans = Math.max(0, (b.trans || 0) - dt);
   poseBoneco(b, t, vel, modo);
   // inclina pra dentro da curva (quem está virando)
   const rot = b.g.rotation.y, dr = b.rotAnt === undefined ? 0 : Math.atan2(Math.sin(rot - b.rotAnt), Math.cos(rot - b.rotAnt)); b.rotAnt = rot;
