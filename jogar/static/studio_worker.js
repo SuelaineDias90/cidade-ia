@@ -19,6 +19,13 @@ function proxy(id) {
     set(_, k, v) { if (['x', 'y', 'z', 'sx', 'sy', 'sz', 'ry', 'cor', 'visivel', 'texto', 'solido'].includes(k)) { P[k] = v; c('parte', id, { [k]: v }); } return true; },
   });
 }
+// peça que não existe: não quebra o jogo, só avisa uma vez
+const avisados = new Set();
+function vazio(nome) {
+  if (!avisados.has(nome)) { avisados.add(nome); c('erro', `Não existe peça chamada "${nome}". Dê esse nome a uma peça na aba Construir.`); }
+  const nada = () => {};
+  return new Proxy({}, { get: (_, k) => (['mover', 'girar', 'sumir', 'aparecer', 'apagar'].includes(k) ? nada : k === 'distancia' ? () => Infinity : k === 'existe' ? false : undefined), set: () => true });
+}
 const jogador = new Proxy({}, {
   get(_, k) {
     if (k === 'teleportar') return (x, y, z) => { c('tp', +x, +y, +z); jog.x = +x; jog.y = +y; jog.z = +z; };
@@ -34,7 +41,7 @@ const jogo = {
   ao_apertar: (tecla, f) => (H.tecla[String(tecla).toUpperCase()] = H.tecla[String(tecla).toUpperCase()] || []).push(f),
   depois: (seg, f) => H.timers.push({ t: tempo + +seg, f }),
   repetir: (seg, f) => H.timers.push({ t: tempo + +seg, f, rep: +seg }),
-  parte: nome => (nomes[nome] != null ? proxy(nomes[nome]) : null),
+  parte: nome => (nomes[nome] != null && partes[nomes[nome]] ? proxy(nomes[nome]) : vazio(nome)),
   partes: nome => Object.keys(partes).filter(id => !nome || partes[id].nome === nome).map(proxy),
   criar: (tipo, p = {}) => { const id = 'c' + proxId++; partes[id] = { tipo, x: 0, y: 1, z: 0, sx: 2, sy: 2, sz: 2, cor: '#ff5ca8', visivel: true, ...p, id }; if (p.nome) nomes[p.nome] = id; c('criar', id, partes[id]); return proxy(id); },
   mensagem: (t, seg = 3) => c('msg', fmt(t), +seg),
@@ -49,7 +56,7 @@ const jogo = {
 };
 jogo.jogador = jogador;
 self.jogo = jogo; self.print = jogo.print; self.console = { log: jogo.print, warn: jogo.print, error: jogo.print };
-const seguro = (f, ...a) => { try { f(...a); } catch (e) { c('erro', String(e && e.message || e)); } };
+const seguro = (f, ...a) => { try { f(...a); } catch (e) { const l = String(e && e.stack || '').match(/<anonymous>:(\d+)/); c('erro', (l ? `linha ${l[1] - 2}: ` : '') + String(e && e.message || e)); } };
 const LUA_PRELUDIO = `
 local js = require "js"
 local J = js.global.jogo

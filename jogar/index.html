@@ -379,6 +379,8 @@ window.SEM_PC = true;
   #stDica{position:absolute;left:12px;bottom:12px;max-width:calc(100% - 470px);font-size:12px;background:var(--vidro);backdrop-filter:blur(10px);border:1px solid var(--borda);padding:8px 12px;border-radius:12px;color:#d8cff0}
   #stDica kbd{background:rgba(255,255,255,.12);border-radius:5px;padding:1px 6px;font:700 11px Consolas,monospace}
   #stHud{position:fixed;inset:0;pointer-events:none;z-index:19;display:none;font-family:'Segoe UI'}#stHud.on{display:block}
+  body.stJogando #hud,body.stJogando #hudG,body.stJogando #radar,body.stJogando #missao,body.stJogando #foco,body.stJogando #caixaMp,body.stJogando #narra,body.stJogando #aviso{display:none!important}
+  body.stJogando:not(.donoIA) #poderes,body.stJogando:not(.donoIA) #chat{display:none!important}
   #stPts{position:absolute;top:16px;left:50%;transform:translateX(-50%);font:900 28px 'Segoe UI';color:#fde047;text-shadow:0 3px 12px rgba(0,0,0,.7);background:rgba(17,12,34,.55);padding:2px 18px;border-radius:999px}#stPts:empty{display:none}
   #stMsg{position:absolute;top:72px;left:50%;transform:translateX(-50%);font:800 22px 'Segoe UI';color:#fff;text-shadow:0 2px 12px #000;text-align:center;max-width:80vw}
   #stLog{position:absolute;left:14px;bottom:80px;white-space:pre;font:12px Consolas,monospace;color:#fde68a;text-shadow:0 1px 3px #000;max-width:50vw;overflow:hidden;background:rgba(10,7,22,.5);border-radius:8px;padding:4px 8px}#stLog:empty{display:none}
@@ -7317,7 +7319,7 @@ addEventListener('keyup', e => { if (ST.on) teclas[e.code] = false; });
 function iniciarTeste(soJogar = false) {
   if (abaST === 'codigo') STJ.codigo = $('#stCod')?.value ?? STJ.codigo;
   salvarST(); ST.copia = ST.partes.map(dadosParte);
-  ST.modo = 'testar'; ST.soJogar = soJogar; SP.classList.remove('on'); stHud.classList.add('on'); selecionar(null); gradeST.visible = false; if (fantasma) fantasma.visible = false;
+  ST.modo = 'testar'; ST.soJogar = soJogar; SP.classList.remove('on'); stHud.classList.add('on'); document.body.classList.add('stJogando'); document.body.classList.toggle('donoIA', !!DONO); G.nivel = 0; selecionar(null); gradeST.visible = false; if (fantasma) fantasma.visible = false;
   $('#stPts').textContent = ''; $('#stMsg').textContent = ''; $('#stLog').textContent = '';
   ST.salvoJog = { vel: jog.vel, pulo: jog.pulo, tam: jog.tam, grav: gravidade };
   const J = STJ.jogador; jog.vel = J.vel; jog.pulo = J.pulo; jog.tam = J.tamanho; gravidade = J.gravidade; bonecoJog.g.scale.setScalar(J.tamanho); ST.vida = J.vida; ST.pontos = 0;
@@ -7336,7 +7338,7 @@ async function luaPronta() { if (LUA_URL) return LUA_URL; const txt = await (awa
 function pararTeste() {
   if (ST.modo !== 'testar') return;
   try { ST.worker?.terminate(); } catch (e) {} ST.worker = null;
-  ST.modo = 'editar'; stHud.classList.remove('on');
+  ST.modo = 'editar'; stHud.classList.remove('on'); document.body.classList.remove('stJogando', 'donoIA');
   if (ST.salvoJog) { jog.vel = ST.salvoJog.vel; jog.pulo = ST.salvoJog.pulo; jog.tam = ST.salvoJog.tam; gravidade = ST.salvoJog.grav; bonecoJog.g.scale.setScalar(1); }
   carregarPartes(ST.copia || []);
   if (ST.soJogar) { ST.soJogar = false; STJ = ST.meuSalvo || STJ; carregarPartes(STJ.partes); }
@@ -7344,7 +7346,7 @@ function pararTeste() {
 }
 $('#stTestar').onclick = () => iniciarTeste(false);
 $('#stParar').onclick = pararTeste;
-function logST(t) { const l = $('#stLog'); l.textContent = (l.textContent + '\n' + t).split('\n').slice(-5).join('\n'); }
+function logST(t) { const l = $('#stLog'); if (l.textContent.endsWith(t)) return; l.textContent = (l.textContent + '\n' + t).split('\n').slice(-5).join('\n'); }
 function msgST(t, seg = 3) { $('#stMsg').textContent = t; ST.msgT = seg; }
 function comandoST([op, a, b, c2]) {
   if (op === 'msg') msgST(REDE.filtrar(a).slice(0, 140), b);
@@ -7385,6 +7387,7 @@ function atualizarStudio(dt) {
   if (ST.worker && !ST.esperando) { ST.esperando = true; ST.worker.postMessage({ t: 'quadro', dt, jog: { x: jog.pos.x - ST.ox, y: jog.pos.y, z: jog.pos.z - ST.oz, vida: ST.vida } }); }
   else if (ST.worker && performance.now() - ST.respondeu > 3000) { ST.worker.terminate(); ST.worker = null; logST('⚠️ O código travou (loop infinito?) e foi parado.'); }
 }
+addEventListener('keydown', e => { if (ST.on && ST.modo === 'testar' && ['KeyN', 'KeyM', 'KeyK', 'Tab'].includes(e.code) && !digitando()) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
 addEventListener('keydown', e => { if (ST.on && ST.modo === 'testar' && ST.worker && e.code.startsWith('Key')) ST.worker.postMessage({ t: 'tecla', k: e.code.slice(3) }); if (ST.on && ST.modo === 'testar' && e.code === 'Escape') { e.stopImmediatePropagation(); pararTeste(); } }, true);
 quadros.push(dt => { atualizarStudio(dt); return true; }); window.__dbg.st = { ST, get STJ() { return STJ; } };
 // piso das peças flutuantes (plataformas de obby)
@@ -7418,7 +7421,7 @@ $('#stPublicar').onclick = async () => {
 async function jogarComunidade(d) {
   if (!d) return; ouvirAdmin();
   const c = await REDE.carregarConta().catch(() => null), k = d.topico;
-  if (c) { const b = banDoJogo(k, c.id); if (b) return alert(`🚫 O criador deste jogo te baniu ${b.ate ? 'até ' + new Date(b.ate).toLocaleString('pt-BR') : 'pra sempre'}.\nMotivo: ${b.motivo}`); }
+  if (c && !DONO) { const b = banDoJogo(k, c.id); if (b) return alert(`🚫 O criador deste jogo te baniu ${b.ate ? 'até ' + new Date(b.ate).toLocaleString('pt-BR') : 'pra sempre'}.\nMotivo: ${b.motivo}`); }
   const [, dono, slug] = k.split('/'); ST.donoJogo = dono;
   try { ligarRede().pub(`visitas/${dono}/${slug}`, { id: c?.id || 'anonimo' + Math.random().toString(36).slice(2, 8), nome: c?.nome || 'Visitante', t: Date.now() }); } catch (e) {} ST.meuSalvo = JSON.parse(JSON.stringify({ ...STJ, partes: ST.partes.map(dadosParte) }));
   STJ = JSON.parse(JSON.stringify(d.jogo)); carregarPartes(STJ.partes); iniciarTeste(true); msgST(`🎮 ${STJ.nome} — por ${d.autor}`, 4);
@@ -7478,12 +7481,13 @@ function pintarAdmJogo() {
 }
 addEventListener('keydown', async e => {
   if (e.code !== 'F2' || !ST.on || ST.modo !== 'testar') return; e.preventDefault();
-  const c = await REDE.carregarConta().catch(() => null), dono = !ST.soJogar || (c && ST.donoJogo === c.id);
+  const c = await REDE.carregarConta().catch(() => null), dono = !ST.soJogar || DONO || (c && ST.donoJogo === c.id);
   if (!dono) return msgST('🛡️ Só o criador do jogo pode usar o admin.', 2);
   admBox.classList.toggle('on'); pintarAdmJogo(); if (admBox.classList.contains('on')) soltarMouse();
 });
 quadros.push(dt => {
   if (!ST.on || ST.modo !== 'testar') return true;
+  G.nivel = 0; if (G.missao) G.missao = null;   // jogo do criador: sem polícia nem missões da cidade
   if (admJ.voar) { jog.vy = teclas.Space ? 12 : teclas.ShiftLeft ? -12 : 0; jog.chao = false; }
   if (admJ.deus) ST.vida = Math.max(ST.vida, 1e6);
   if (admJ.fantasma) for (const p of ST.partes) if (p.s) { p.sFant = p.s; const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); p.s = null; }
