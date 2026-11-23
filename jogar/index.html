@@ -341,31 +341,52 @@ window.SEM_PC = true;
   .mmItem:hover{background:#ffffff1a;border-color:#ffd16688}.mmItem b{font-size:14px}.mmItem small{color:#b9aed0;font-size:12px}.mmItem i{color:#7CFC8a;font-style:normal;font-weight:800;font-size:12px}
   .mmItem.ok{opacity:.7}
   #telaSangue{position:fixed;inset:0;pointer-events:none;z-index:5;display:none}
-  #studio{position:fixed;inset:0;pointer-events:none;z-index:20;display:none;font-family:'Segoe UI';color:#fff}#studio.on{display:block}
-  .stTopo{pointer-events:auto;position:absolute;left:0;right:0;top:0;display:flex;gap:8px;align-items:center;padding:8px 12px;background:rgba(14,10,26,.92);border-bottom:1px solid #ffffff22;flex-wrap:wrap}
-  .stTopo b{letter-spacing:1px;margin-right:6px}.stTopo input{background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:8px;padding:7px 10px;font:600 14px 'Segoe UI';width:200px}
-  .stTopo button,.stLado button,.stJogo button{border:0;border-radius:9px;padding:8px 12px;background:#ffffff1c;color:#fff;font:700 13px 'Segoe UI';cursor:pointer}
-  .stTopo button:hover,.stLado button:hover{background:#ffffff30}.stVerde{background:#2f9e5a!important}
-  .stLado{pointer-events:auto;position:absolute;right:0;top:52px;bottom:0;width:min(400px,92vw);background:rgba(14,10,26,.93);border-left:1px solid #ffffff22;display:flex;flex-direction:column}
-  .stAbas{display:flex;flex-wrap:wrap;gap:4px;padding:8px}.stAbas button{padding:7px 9px;font-size:12px}.stAbas button.on{background:#7b5cff}
-  #stCorpo{flex:1;overflow-y:auto;padding:4px 12px 16px}
-  .stFerr{display:grid;grid-template-columns:1fr 1fr;gap:5px}.stFerr button{text-align:left;font-size:12px}.stFerr button.on{background:#ffd166;color:#1a1026}
-  .stCorL{display:flex;gap:8px;align-items:center;margin:10px 0;font-size:13px}.stCorL input[type=text],.stCorL input:not([type]){flex:1;background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:8px;padding:6px}
-  .stSel{display:flex;gap:6px;align-items:center;font-size:20px;margin:10px 0 6px}.stSel input{flex:1;background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:8px;padding:7px;font:700 14px 'Segoe UI'}
-  .stGrade{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.stGrade label,.stProps label{display:grid;gap:3px;font-size:11px;color:#c9bfe0}
-  .stGrade input{width:100%;background:#1f1733;border:1px solid #ffffff2a;color:#fff;border-radius:7px;padding:5px;font:600 13px 'Segoe UI'}
-  .stProps label{grid-template-columns:110px 1fr 40px;align-items:center;margin:8px 0;font-size:13px;color:#fff}
-  .stLinha{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0;align-items:center;font-size:13px}.stLinha select{background:#1f1733;color:#fff;border:1px solid #ffffff2a;border-radius:7px;padding:6px}
-  #stCod{width:100%;height:calc(100vh - 260px);min-height:240px;background:#0b0816;color:#d7f7c8;border:1px solid #ffffff2a;border-radius:10px;padding:10px;font:13px/1.45 Consolas,'Courier New',monospace;resize:vertical;tab-size:2}
-  .stObs{font-size:12.5px;color:#b9aed0;margin:8px 0;line-height:1.45}.stObs code,.stAjuda code{background:#ffffff14;padding:1px 5px;border-radius:5px}
-  .stAjuda{font-size:13px;line-height:1.5}.stAjuda pre{background:#0b0816;border-radius:10px;padding:10px;font-size:11.5px;white-space:pre-wrap;color:#d7f7c8}.stAjuda h4,#stCorpo h4{color:#ffd166;margin:12px 0 4px}
-  .stJogo{display:grid;gap:3px;background:#ffffff0c;border:1px solid #ffffff18;border-radius:10px;padding:9px;margin:7px 0}.stJogo small{color:#b9aed0}.stJogo span{font-size:12px}.stJogo button{justify-self:start;margin-top:4px}
-  #stDica{position:absolute;left:12px;bottom:12px;max-width:calc(100% - 440px);font-size:12px;background:rgba(14,10,26,.75);padding:7px 10px;border-radius:9px;color:#d8cff0}
+  #studio{position:fixed;inset:0;pointer-events:none;z-index:20;display:none;font-family:'Segoe UI',system-ui;color:#f2eefe;--ac:#8b5cf6;--ac2:#22d3ee;--vd:#22c55e;--vidro:rgba(17,12,34,.86);--borda:rgba(255,255,255,.1)}#studio.on{display:block}
+  .stTopo{pointer-events:auto;position:absolute;left:12px;right:12px;top:10px;display:flex;gap:8px;align-items:center;padding:8px 10px 8px 14px;background:var(--vidro);backdrop-filter:blur(14px);border:1px solid var(--borda);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.45);flex-wrap:wrap}
+  .stTopo b{font:900 15px 'Segoe UI';letter-spacing:2px;background:linear-gradient(90deg,#c4b5fd,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent;margin-right:4px;white-space:nowrap}
+  .stTopo input{background:rgba(255,255,255,.06);border:1px solid var(--borda);color:#fff;border-radius:10px;padding:8px 12px;font:700 14px 'Segoe UI';width:190px;outline:none;transition:border-color .2s}.stTopo input:focus{border-color:var(--ac)}
+  .stTopo .stEsp{flex:1}
+  .stTopo button,.stLado button,.stJogo button,.stAdm button{border:1px solid var(--borda);border-radius:10px;padding:8px 13px;background:rgba(255,255,255,.06);color:#fff;font:700 13px 'Segoe UI';cursor:pointer;transition:transform .12s,background .15s,box-shadow .15s}
+  .stTopo button:hover,.stLado button:hover,.stJogo button:hover,.stAdm button:hover{background:rgba(255,255,255,.14);transform:translateY(-1px)}
+  .stVerde{background:linear-gradient(135deg,#22c55e,#16a34a)!important;border-color:transparent!important;box-shadow:0 6px 18px rgba(34,197,94,.35)}
+  .stRoxo{background:linear-gradient(135deg,#8b5cf6,#6d28d9)!important;border-color:transparent!important;box-shadow:0 6px 18px rgba(139,92,246,.35)}
+  .stVerm{background:linear-gradient(135deg,#ef4444,#b91c1c)!important;border-color:transparent!important}
+  .stLado{pointer-events:auto;position:absolute;right:12px;top:72px;bottom:12px;width:min(420px,92vw);background:var(--vidro);backdrop-filter:blur(14px);border:1px solid var(--borda);border-radius:18px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.45);overflow:hidden}
+  .stAbas{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:8px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--borda)}
+  .stAbas button{padding:8px 4px;font-size:11.5px;border-radius:9px;border:0;background:transparent;color:#cbc3e3}.stAbas button.on{background:linear-gradient(135deg,var(--ac),#6d28d9);color:#fff;box-shadow:0 4px 14px rgba(139,92,246,.4)}
+  #stCorpo{flex:1;overflow-y:auto;padding:10px 14px 18px;scrollbar-width:thin}
+  .stTit{font:800 12px 'Segoe UI';letter-spacing:1.5px;text-transform:uppercase;color:#a78bfa;margin:12px 0 8px}
+  .stFerr{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .stFerr button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 8px!important;font-size:11px!important;border-radius:12px!important;position:relative;overflow:hidden}
+  .stFerr button i{font-style:normal;font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}.stFerr button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--c,#8b5cf6)}
+  .stFerr button.on{background:linear-gradient(160deg,rgba(139,92,246,.45),rgba(34,211,238,.2))!important;border-color:#a78bfa!important;box-shadow:0 0 0 2px rgba(167,139,250,.35)}
+  .stCorL{display:flex;gap:10px;align-items:center;margin:10px 0;font-size:13px}.stCorL input[type=color]{width:42px;height:30px;border:0;border-radius:8px;background:none;cursor:pointer}
+  .stCorL input:not([type]),.stCorL input[type=text]{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--borda);color:#fff;border-radius:9px;padding:7px}
+  .stCard{background:rgba(255,255,255,.045);border:1px solid var(--borda);border-radius:14px;padding:12px;margin:10px 0}
+  .stSel{display:flex;gap:8px;align-items:center;font-size:22px;margin-bottom:8px}.stSel input{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--borda);color:#fff;border-radius:9px;padding:8px;font:800 14px 'Segoe UI'}
+  .stGrade{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.stGrade label,.stProps label{display:grid;gap:4px;font-size:10.5px;font-weight:700;letter-spacing:.5px;color:#a99fc8;text-transform:uppercase}
+  .stGrade input{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--borda);color:#fff;border-radius:8px;padding:6px;font:700 13px 'Segoe UI'}
+  .stProps label{grid-template-columns:120px 1fr 44px;align-items:center;margin:10px 0;font-size:13px;color:#fff;text-transform:none;letter-spacing:0}.stProps input[type=range]{accent-color:#8b5cf6}
+  .stLinha{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;align-items:center;font-size:13px}.stLinha select{background:rgba(0,0,0,.35);color:#fff;border:1px solid var(--borda);border-radius:9px;padding:7px}
+  .stEd{position:relative;height:calc(100vh - 290px);min-height:260px;border:1px solid var(--borda);border-radius:12px;overflow:hidden;background:#0a0716;display:flex}
+  .stNums{width:38px;padding:10px 6px 10px 0;text-align:right;color:#4b4370;font:13px/1.5 Consolas,monospace;background:rgba(0,0,0,.3);user-select:none;overflow:hidden;white-space:pre}
+  .stCampo{position:relative;flex:1}.stHl,#stCod{position:absolute;inset:0;margin:0;padding:10px;font:13px/1.5 Consolas,'Courier New',monospace;white-space:pre;overflow:auto;tab-size:2;border:0}
+  .stHl{color:#e2e8f0;pointer-events:none}#stCod{background:transparent;color:transparent;caret-color:#fff;resize:none;outline:none}#stCod::selection{background:rgba(139,92,246,.45)}
+  .hk{color:#c084fc;font-weight:700}.hs{color:#86efac}.hc{color:#64748b;font-style:italic}.hn{color:#fbbf24}.hj{color:#67e8f9;font-weight:700}
+  .stObs{font-size:12.5px;color:#b3a9cf;margin:8px 0;line-height:1.5}.stObs code,.stAjuda code{background:rgba(139,92,246,.18);color:#e9d5ff;padding:1px 6px;border-radius:6px}
+  .stAjuda{font-size:13px;line-height:1.55}.stAjuda pre{background:#0a0716;border:1px solid var(--borda);border-radius:12px;padding:12px;font-size:11.5px;white-space:pre-wrap;color:#a5f3fc}.stAjuda h4,#stCorpo h4{color:#c4b5fd;margin:14px 0 6px;font-size:13px;letter-spacing:.5px}
+  .stJogo{display:grid;gap:4px;background:linear-gradient(160deg,rgba(139,92,246,.14),rgba(34,211,238,.05));border:1px solid var(--borda);border-radius:14px;padding:12px;margin:8px 0}.stJogo b{font-size:15px}.stJogo small{color:#b3a9cf}.stJogo span{font-size:12.5px}.stJogo div{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  #stDica{position:absolute;left:12px;bottom:12px;max-width:calc(100% - 470px);font-size:12px;background:var(--vidro);backdrop-filter:blur(10px);border:1px solid var(--borda);padding:8px 12px;border-radius:12px;color:#d8cff0}
+  #stDica kbd{background:rgba(255,255,255,.12);border-radius:5px;padding:1px 6px;font:700 11px Consolas,monospace}
   #stHud{position:fixed;inset:0;pointer-events:none;z-index:19;display:none;font-family:'Segoe UI'}#stHud.on{display:block}
-  #stPts{position:absolute;top:14px;left:50%;transform:translateX(-50%);font:900 26px 'Segoe UI';color:#ffd166;text-shadow:0 2px 8px #000}
-  #stMsg{position:absolute;top:60px;left:50%;transform:translateX(-50%);font:800 22px 'Segoe UI';color:#fff;text-shadow:0 2px 10px #000;text-align:center;max-width:80vw}
-  #stLog{position:absolute;left:12px;bottom:70px;white-space:pre;font:12px Consolas,monospace;color:#ffd6a5;text-shadow:0 1px 3px #000;max-width:50vw;overflow:hidden}
-  #stParar{pointer-events:auto;position:absolute;top:12px;right:12px;border:0;border-radius:10px;padding:10px 14px;background:#e63946;color:#fff;font:800 14px 'Segoe UI';cursor:pointer}
+  #stPts{position:absolute;top:16px;left:50%;transform:translateX(-50%);font:900 28px 'Segoe UI';color:#fde047;text-shadow:0 3px 12px rgba(0,0,0,.7);background:rgba(17,12,34,.55);padding:2px 18px;border-radius:999px}#stPts:empty{display:none}
+  #stMsg{position:absolute;top:72px;left:50%;transform:translateX(-50%);font:800 22px 'Segoe UI';color:#fff;text-shadow:0 2px 12px #000;text-align:center;max-width:80vw}
+  #stLog{position:absolute;left:14px;bottom:80px;white-space:pre;font:12px Consolas,monospace;color:#fde68a;text-shadow:0 1px 3px #000;max-width:50vw;overflow:hidden;background:rgba(10,7,22,.5);border-radius:8px;padding:4px 8px}#stLog:empty{display:none}
+  #stParar{pointer-events:auto;position:absolute;top:14px;right:14px;border:0;border-radius:12px;padding:10px 16px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font:800 14px 'Segoe UI';cursor:pointer;box-shadow:0 6px 18px rgba(239,68,68,.4)}
+  #stAdmJogo{pointer-events:auto;position:absolute;top:64px;right:14px;width:250px;background:var(--vidro,rgba(17,12,34,.88));border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px;display:none;color:#fff;font-size:13px}#stAdmJogo.on{display:grid;gap:6px}
+  #stAdmJogo button{border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:7px;background:rgba(255,255,255,.07);color:#fff;font:700 12px 'Segoe UI';cursor:pointer;text-align:left}#stAdmJogo button.on{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+  .stAdm{display:grid;gap:6px}.stAdm input,.stAdm select{background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:7px;font:600 13px 'Segoe UI'}
+  .stVis{display:flex;gap:6px;align-items:center;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.04);margin:4px 0;font-size:13px}.stVis span{flex:1}.stVis small{color:#9d93bd}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
   #mapaG canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;border:0;border-radius:0}
@@ -7130,28 +7151,29 @@ function carregarPartes(lista) { for (const p of [...ST.partes]) apagarParte(p);
 
 // ---- interface
 const SP = document.createElement('div'); SP.id = 'studio'; document.body.appendChild(SP);
-SP.innerHTML = `<div class="stTopo"><b>🛠️ STUDIO CIDADE IA</b><input id="stNome" maxlength="30"><button id="stTestar" class="stVerde">▶ Testar</button><button id="stSalvar">💾 Salvar</button><button id="stPublicar">🌎 Publicar</button><button id="stNovo">📄 Novo</button><button id="stSair">✖ Sair</button></div>
-<div class="stLado"><div class="stAbas"><button data-ab="construir" class="on">🧱 Construir</button><button data-ab="codigo">📜 Código</button><button data-ab="pers">🧍 Personagem</button><button data-ab="animar">🎬 Animar</button><button data-ab="comunidade">🎮 Jogos</button><button data-ab="ajuda">❓ Ajuda</button></div><div id="stCorpo"></div></div>
-<div id="stDica">Clique no chão pra colocar · clique numa peça pra escolher · botão direito arrasta a câmera · rodinha: zoom · WASD move a câmera · Del apaga · Ctrl+D duplica</div>`;
+SP.innerHTML = `<div class="stTopo"><b>🛠️ STUDIO CIDADE IA</b><input id="stNome" maxlength="30" title="nome do jogo"><span class="stEsp"></span><button id="stNovo" title="jogo novo">📄 Novo</button><button id="stSalvar">💾 Salvar</button><button id="stPublicar" class="stRoxo">🌎 Publicar</button><button id="stTestar" class="stVerde">▶ Testar</button><button id="stSair" title="sair do Studio">✖</button></div>
+<div class="stLado"><div class="stAbas"><button data-ab="construir" class="on">🧱 Construir</button><button data-ab="codigo">📜 Código</button><button data-ab="pers">🧍 Jogador</button><button data-ab="animar">🎬 Animar</button><button data-ab="comunidade">🎮 Jogos</button><button data-ab="admin">🛡️ Admin</button><button data-ab="ajuda">❓ Ajuda</button></div><div id="stCorpo"></div></div>
+<div id="stDica">🖱️ clique pra colocar · botão direito gira a câmera · rodinha zoom · <kbd>WASD</kbd> anda · <kbd>Q</kbd><kbd>E</kbd> desce/sobe · <kbd>R</kbd> gira peça · <kbd>Del</kbd> apaga · <kbd>Ctrl+D</kbd> duplica</div>`;
 const stHud = document.createElement('div'); stHud.id = 'stHud'; stHud.innerHTML = '<div id="stPts"></div><div id="stMsg"></div><div id="stLog"></div><button id="stParar">■ Parar teste</button>'; document.body.appendChild(stHud);
 let abaST = 'construir';
 function pintarST() {
-  const C = $('#stCorpo'); $('#stNome').value = STJ.nome;
+  const C = $('#stCorpo'); $('#stNome').value = STJ.nome; requestAnimationFrame(() => { const tp = SP.querySelector('.stTopo'); SP.querySelector('.stLado').style.top = (tp.offsetTop + tp.offsetHeight + 10) + 'px'; });
   SP.querySelectorAll('[data-ab]').forEach(b => b.classList.toggle('on', b.dataset.ab === abaST));
   if (abaST === 'construir') {
-    C.innerHTML = `<div class="stFerr"><button data-f="selecionar" class="${ST.ferr === 'selecionar' ? 'on' : ''}">👆 Selecionar</button>${Object.entries(TIPOS_PARTE).map(([k, T]) => `<button data-f="${k}" class="${ST.ferr === k ? 'on' : ''}">${T.ic} ${T.nome}</button>`).join('')}</div>
-      <label class="stCorL">Cor das novas peças <input type="color" id="stCor" value="${ST.cor}"></label><div id="stProps"></div>`;
+    C.innerHTML = `<div class="stTit">Ferramentas</div><div class="stFerr"><button data-f="selecionar" class="${ST.ferr === 'selecionar' ? 'on' : ''}" style="--c:#e2e8f0"><i>👆</i>Selecionar</button>${Object.entries(TIPOS_PARTE).map(([k, T]) => `<button data-f="${k}" class="${ST.ferr === k ? 'on' : ''}" style="--c:${T.cor || ST.cor}" title="${T.nome}"><i>${T.ic}</i>${T.nome.replace(/ \(.*\)/, '')}</button>`).join('')}</div>
+      <label class="stCorL">🎨 Cor das novas peças <input type="color" id="stCor" value="${ST.cor}"></label><div class="stTit">Peça escolhida</div><div id="stProps" class="stCard"></div>`;
     C.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { ST.ferr = b.dataset.f; pintarST(); });
     $('#stCor').oninput = e => ST.cor = e.target.value;
     pintarProps();
   } else if (abaST === 'codigo') {
     C.innerHTML = `<div class="stLinha">Linguagem: <select id="stLang"><option value="js">JavaScript</option><option value="lua">Lua (igual Roblox)</option></select><button id="stExemplo">Exemplo</button></div>
-      <textarea id="stCod" spellcheck="false"></textarea><div class="stObs">O código roda isolado do jogo: não consegue ver a sua conta nem mexer em nada fora do seu jogo. Erros aparecem no canto da tela no teste.</div>`;
-    $('#stLang').value = STJ.lang; $('#stCod').value = STJ.codigo;
+      <div class="stEd"><div class="stNums"></div><div class="stCampo"><pre class="stHl"></pre><textarea id="stCod" spellcheck="false" autocomplete="off"></textarea></div></div><div class="stObs">O código roda isolado do jogo: não consegue ver a sua conta nem mexer em nada fora do seu jogo. Erros aparecem no canto da tela no teste.</div>`;
+    $('#stLang').value = STJ.lang; $('#stCod').value = STJ.codigo; colorirCod();
+    $('#stCod').addEventListener('input', colorirCod); $('#stCod').addEventListener('scroll', () => { const t = $('#stCod'); $('.stHl').scrollTop = t.scrollTop; $('.stHl').scrollLeft = t.scrollLeft; $('.stNums').scrollTop = t.scrollTop; });
     $('#stLang').onchange = e => { STJ.lang = e.target.value; if (confirm('Trocar pelo exemplo em ' + (STJ.lang === 'lua' ? 'Lua' : 'JavaScript') + '?')) { STJ.codigo = EXEMPLOS_ST[STJ.lang]; $('#stCod').value = STJ.codigo; } };
     $('#stCod').oninput = e => STJ.codigo = e.target.value;
     $('#stCod').onkeydown = e => { e.stopPropagation(); if (e.key === 'Tab') { e.preventDefault(); const t = e.target, s = t.selectionStart; t.value = t.value.slice(0, s) + '  ' + t.value.slice(t.selectionEnd); t.selectionStart = t.selectionEnd = s + 2; STJ.codigo = t.value; } };
-    $('#stExemplo').onclick = () => { STJ.codigo = EXEMPLOS_ST[STJ.lang]; $('#stCod').value = STJ.codigo; };
+    $('#stExemplo').onclick = () => { STJ.codigo = EXEMPLOS_ST[STJ.lang]; $('#stCod').value = STJ.codigo; colorirCod(); };
   } else if (abaST === 'pers') {
     const J = STJ.jogador, campo = (k, n, min, max, passo) => `<label>${n}<input type="range" min="${min}" max="${max}" step="${passo}" data-j="${k}" value="${J[k]}"><b>${J[k]}</b></label>`;
     C.innerHTML = `<div class="stProps">${campo('vel', '🏃 Velocidade', 2, 40, 1)}${campo('pulo', '⤒ Pulo', 4, 40, 1)}${campo('tamanho', '📏 Tamanho', .3, 4, .1)}${campo('gravidade', '🌍 Gravidade', .1, 3, .1)}${campo('vida', '❤️ Vida', 1, 500, 1)}</div>
@@ -7164,13 +7186,14 @@ function pintarST() {
   } else if (abaST === 'comunidade') {
     const lista = [...JOGOS_COM.values()].sort((a, b) => b.t - a.t);
     C.innerHTML = `<div class="stObs">Jogos publicados por criadores. O código deles roda isolado, sem acesso à sua conta.</div>` +
-      (lista.length ? lista.map(j => `<div class="stJogo"><b>${escH(j.jogo.nome)}</b><small>por ${escH(j.autor)} · ${j.jogo.partes.length} peças · ${j.jogo.lang === 'lua' ? 'Lua' : 'JS'}</small><span>${escH(j.jogo.desc || '')}</span><button data-jg="${j.topico}">▶ Jogar</button><button data-cp="${j.topico}">📥 Copiar pro meu Studio</button></div>`).join('') : '<div class="stObs">Carregando… (ninguém publicou ainda? Seja o primeiro!)</div>') +
+      (lista.length ? lista.map(j => `<div class="stJogo"><b>${escH(j.jogo.nome)}</b><small>por ${escH(j.autor)} · ${j.jogo.partes.length} peças · ${j.jogo.lang === 'lua' ? 'Lua' : 'JS'}</small><span>${escH(j.jogo.desc || '')}</span><div><button data-jg="${j.topico}" class="stVerde">▶ Jogar</button><button data-cp="${j.topico}">📥 Copiar</button></div></div>`).join('') : '<div class="stObs">Carregando… (ninguém publicou ainda? Seja o primeiro!)</div>') +
       `<h4>Meus jogos salvos</h4>` + meusJogosST().map((j, i) => `<div class="stJogo"><b>${escH(j.nome)}</b><small>${j.partes.length} peças</small><button data-abrir="${i}">Abrir</button><button data-apg="${i}">🗑</button></div>`).join('');
     C.querySelectorAll('[data-jg]').forEach(b => b.onclick = () => jogarComunidade(JOGOS_COM.get(b.dataset.jg)));
     C.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { if (!confirm('Copiar esse jogo pro seu Studio? (o jogo atual vai pros seus jogos salvos)')) return; guardarMeuJogo(); STJ = JSON.parse(JSON.stringify(JOGOS_COM.get(b.dataset.cp).jogo)); STJ.nome += ' (cópia)'; carregarPartes(STJ.partes); abaST = 'construir'; pintarST(); });
     C.querySelectorAll('[data-abrir]').forEach(b => b.onclick = () => { guardarMeuJogo(); STJ = meusJogosST()[+b.dataset.abrir]; carregarPartes(STJ.partes); abaST = 'construir'; pintarST(); });
     C.querySelectorAll('[data-apg]').forEach(b => b.onclick = () => { if (!confirm('Apagar esse jogo salvo?')) return; const l = meusJogosST(); l.splice(+b.dataset.apg, 1); try { localStorage.setItem('cidadeia_studio_meus', JSON.stringify(l)); } catch (e) {} pintarST(); });
     ouvirComunidade();
+  } else if (abaST === 'admin') { pintarAdmin(C);
   } else {
     C.innerHTML = `<div class="stAjuda"><h4>Como fazer um jogo</h4><ol><li>🧱 <b>Construir</b>: escolha uma peça e clique no chão. Coloque um 🏁 Início (onde o jogador nasce) e uma 🏆 Chegada.</li><li>📜 <b>Código</b>: dê nome às peças e programe o que acontece.</li><li>▶ <b>Testar</b>: joga na hora. ■ volta a editar.</li><li>🌎 <b>Publicar</b>: todo mundo pode jogar na aba 🎮 Jogos.</li></ol>
       <h4>Peças especiais (funcionam sem código)</h4><p>🪙 Moeda = +1 ponto · 🔥 Lava = morre · 🚩 Checkpoint = renasce ali · 🤸 Trampolim = pula alto · 🏆 Chegada = ganha</p>
@@ -7188,6 +7211,15 @@ jogo.jogador.vel / .pulo / .tamanho / .gravidade / .vida / .x .y .z
 jogo.jogador.teleportar(x,y,z) · jogo.jogador.animacao('samba')
 jogo.aleatorio(1, 10) · jogo.tempo() · print('debug')</pre><p>Em Lua os métodos da peça usam dois-pontos: <code>peca:mover(0,1,0)</code>.</p></div>`;
   }
+}
+function colorirCod() {
+  const t = $('#stCod'); if (!t) return; const lua = STJ.lang === 'lua', src = t.value;
+  const kw = lua ? 'local|function|end|if|then|else|elseif|for|in|do|while|repeat|until|return|and|or|not|nil|true|false' : 'const|let|var|function|return|if|else|for|while|of|in|new|true|false|null|undefined|break|continue';
+  const rx = new RegExp(`(${lua ? '--[^\\n]*' : '\\/\\/[^\\n]*'})|("(?:[^"\\\\\\n]|\\\\.)*"|'(?:[^'\\\\\\n]|\\\\.)*'|\`[^\`]*\`)|\\b(${kw})\\b|\\b(jogo)\\b|\\b(\\d+(?:\\.\\d+)?)\\b`, 'g');
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  let out = '', i = 0; src.replace(rx, (m, com, str, k, j, num, pos) => { out += esc(src.slice(i, pos)) + `<span class="${com ? 'hc' : str ? 'hs' : k ? 'hk' : j ? 'hj' : 'hn'}">${esc(m)}</span>`; i = pos + m.length; return m; });
+  $('.stHl').innerHTML = out + esc(src.slice(i)) + '\n';
+  $('.stNums').textContent = Array.from({ length: src.split('\n').length }, (_, k) => k + 1).join('\n');
 }
 function pintarProps() {
   const B = $('#stProps'); if (!B) return; const p = ST.sel;
@@ -7208,6 +7240,19 @@ function pintarProps() {
   $('#stDup').onclick = () => duplicar(p); $('#stApg').onclick = () => apagarParte(p);
 }
 const caixaSel = new THREE.BoxHelper(undefined, 0xffd166); caixaSel.visible = false; cena.add(caixaSel);
+const gradeST = new THREE.GridHelper(240, 120, 0x8b5cf6, 0xc9c3e6); gradeST.position.set(ST.ox, .02, ST.oz); gradeST.material.transparent = true; gradeST.material.opacity = .55; gradeST.visible = false; cena.add(gradeST);
+let fantasma = null, tipoFant = null;
+function mostrarFantasma(e) {
+  if (!ST.on || ST.modo !== 'editar' || ST.ferr === 'selecionar' || arrastST) { if (fantasma) fantasma.visible = false; return; }
+  if (tipoFant !== ST.ferr) { if (fantasma) cena.remove(fantasma); const T = TIPOS_PARTE[ST.ferr]; fantasma = malhaParte({ tipo: ST.ferr, cor: T.cor || ST.cor, sx: T.sx, sy: T.sy, sz: T.sz, texto: T.texto }); fantasma.traverse(o => { if (o.isMesh) { o.material = (Array.isArray(o.material) ? o.material[0] : o.material).clone(); o.material.transparent = true; o.material.opacity = .45; o.material.depthWrite = false; o.userData.parte = null; o.castShadow = false; } }); cena.add(fantasma); tipoFant = ST.ferr; }
+  mouseST.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); rayST.setFromCamera(mouseST, camera);
+  const hits = rayST.intersectObjects(ST.partes.map(p => p.mesh), true); let y0 = 0, pt;
+  if (hits[0]) { pt = hits[0].point; const P = hits[0].object.userData.parte; if (P) y0 = P.y + P.sy / 2; } else { const t = -rayST.ray.origin.y / rayST.ray.direction.y; if (!(t > 0)) { fantasma.visible = false; return; } pt = rayST.ray.origin.clone().addScaledVector(rayST.ray.direction, t); }
+  const T = TIPOS_PARTE[ST.ferr], esc = !['boneco', 'arvore'].includes(ST.ferr);
+  fantasma.position.set(ST.ox + Math.round((pt.x - ST.ox) * 2) / 2, y0 + T.sy / 2, ST.oz + Math.round((pt.z - ST.oz) * 2) / 2);
+  if (esc) { if (ST.ferr === 'moeda') fantasma.scale.set(T.sx, T.sz, T.sy); else fantasma.scale.set(T.sx, T.sy, T.sz); } fantasma.visible = true;
+}
+addEventListener('pointermove', mostrarFantasma);
 function selecionar(p) { ST.sel = p; caixaSel.visible = !!p; if (p) caixaSel.setFromObject(p.mesh); pintarProps(); }
 function duplicar(p) { const d = dadosParte(p); delete d.id; const n = novaParte(p.tipo, { ...d, x: p.x + p.sx + .5 }); selecionar(n); }
 SP.querySelectorAll('[data-ab]').forEach(b => b.onclick = () => { if (abaST === 'codigo') STJ.codigo = $('#stCod')?.value ?? STJ.codigo; abaST = b.dataset.ab; pintarST(); });
@@ -7218,12 +7263,12 @@ function abrirStudio() {
   if (G.interior) sairLugar(); if (dirigindo) entrarSair();
   ST.on = true; ST.modo = 'editar'; estado = 'studio';
   $('#menuInicio').classList.remove('on'); $('#menuPausa').classList.remove('on'); interfaceJogo(false); soltarMouse();
-  irMundoBranco(true); BRANCO.domo.visible = true; ST.camAlvo.set(ST.ox, 0, ST.oz);
+  irMundoBranco(true); BRANCO.domo.visible = true; ST.camAlvo.set(ST.ox, 0, ST.oz); aviso('🛠️ Studio Cidade IA', '#c4b5fd', 1.5);
   if (!ST.partes.length) carregarPartes(STJ.partes?.length ? STJ.partes : [{ id: 'p1', tipo: 'spawn', nome: 'Início', x: 0, y: .15, z: 0, sx: 3, sy: .3, sz: 3, cor: '#3ddc8a' }, { id: 'p2', tipo: 'bloco', nome: 'Chão', x: 0, y: -.5, z: 10, sx: 30, sy: 1, sz: 40, cor: '#8d99ae' }]);
-  SP.classList.add('on'); stHud.classList.remove('on'); bonecoJog.g.visible = false; tagJog.visible = false; pintarST();
+  SP.classList.add('on'); stHud.classList.remove('on'); bonecoJog.g.visible = false; tagJog.visible = false; gradeST.visible = true; pintarST();
 }
 function sairStudio() {
-  pararTeste(); salvarST(); ST.on = false; SP.classList.remove('on'); caixaSel.visible = false;
+  pararTeste(); salvarST(); ST.on = false; SP.classList.remove('on'); caixaSel.visible = false; gradeST.visible = false; if (fantasma) fantasma.visible = false;
   for (const p of [...ST.partes]) { cena.remove(p.mesh); if (p.s) { const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); } } ST.partes.length = 0;
   bonecoJog.g.visible = true; irMundoBranco(false); irParaInicio();
 }
@@ -7272,7 +7317,7 @@ addEventListener('keyup', e => { if (ST.on) teclas[e.code] = false; });
 function iniciarTeste(soJogar = false) {
   if (abaST === 'codigo') STJ.codigo = $('#stCod')?.value ?? STJ.codigo;
   salvarST(); ST.copia = ST.partes.map(dadosParte);
-  ST.modo = 'testar'; ST.soJogar = soJogar; SP.classList.remove('on'); stHud.classList.add('on'); selecionar(null);
+  ST.modo = 'testar'; ST.soJogar = soJogar; SP.classList.remove('on'); stHud.classList.add('on'); selecionar(null); gradeST.visible = false; if (fantasma) fantasma.visible = false;
   $('#stPts').textContent = ''; $('#stMsg').textContent = ''; $('#stLog').textContent = '';
   ST.salvoJog = { vel: jog.vel, pulo: jog.pulo, tam: jog.tam, grav: gravidade };
   const J = STJ.jogador; jog.vel = J.vel; jog.pulo = J.pulo; jog.tam = J.tamanho; gravidade = J.gravidade; bonecoJog.g.scale.setScalar(J.tamanho); ST.vida = J.vida; ST.pontos = 0;
@@ -7295,7 +7340,7 @@ function pararTeste() {
   if (ST.salvoJog) { jog.vel = ST.salvoJog.vel; jog.pulo = ST.salvoJog.pulo; jog.tam = ST.salvoJog.tam; gravidade = ST.salvoJog.grav; bonecoJog.g.scale.setScalar(1); }
   carregarPartes(ST.copia || []);
   if (ST.soJogar) { ST.soJogar = false; STJ = ST.meuSalvo || STJ; carregarPartes(STJ.partes); }
-  estado = 'studio'; interfaceJogo(false); soltarMouse(); bonecoJog.g.visible = false; tagJog.visible = false; SP.classList.add('on'); pintarST();
+  estado = 'studio'; interfaceJogo(false); soltarMouse(); bonecoJog.g.visible = false; tagJog.visible = false; gradeST.visible = true; SP.classList.add('on'); pintarST(); $('#stAdmJogo')?.classList.remove('on'); admJ.voar = admJ.deus = admJ.rapido = admJ.fantasma = false;
 }
 $('#stTestar').onclick = () => iniciarTeste(false);
 $('#stParar').onclick = pararTeste;
@@ -7316,7 +7361,7 @@ function comandoST([op, a, b, c2]) {
 function morrerST() { sangue('tiro_saida', jog.pos); jog.pos.copy(ST.checkpoint); jog.vy = 0; ST.vida = STJ.jogador.vida; msgST('💀 Você morreu! Voltando…', 1.5); }
 function atualizarStudio(dt) {
   if (!ST.on) return;
-  if (ST.modo === 'editar') { cameraStudio(dt); return; }
+  if (ST.modo === 'editar') { cameraStudio(dt); bonecoJog.g.visible = false; tagJog.visible = false; return; }
   if (ST.msgT > 0) { ST.msgT -= dt; if (ST.msgT <= 0) $('#stMsg').textContent = ''; }
   if (jog.pos.y < -30) morrerST();
   if (ST.vida <= 0) morrerST();
@@ -7363,17 +7408,88 @@ $('#stPublicar').onclick = async () => {
   let conta = await REDE.carregarConta(); if (!conta) { const n = prompt('Pra publicar você precisa de uma conta. Qual seu nome de criador?', meuNick() || ''); if (!n) return; conta = await REDE.criarConta(REDE.filtrar(n.slice(0, 16))); }
   if (banido(conta.id)) return alert('Sua conta está banida.');
   const desc = prompt('Uma frase sobre o seu jogo:', STJ.desc || ''); if (desc === null) return; STJ.desc = desc;
-  const jogo = JSON.parse(JSON.stringify(STJ)), t = Date.now(), slug = (jogo.nome.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').slice(0, 24) || 'jogo');
+  const jogo = JSON.parse(JSON.stringify(STJ)), t = Date.now(), slug = slugDe(jogo.nome);
   if (JSON.stringify(jogo).length > 200000) return alert('Seu jogo está grande demais pra publicar (muitas peças).');
   const sig = await REDE.assinar(conta.priv, [conta.id, jogo.nome, t, JSON.stringify(jogo).length].join('|'));
   const mq = ligarRede(); for (let i = 0; i < 30 && !mq.ok; i++) await new Promise(r => setTimeout(r, 150));
-  mq.pub(`jogos/${conta.id}/${slug}`, { jogo, autor: conta.nome, t, pub: conta.pub, sig }, true);
+  mq.pub(`jogos/${conta.id}/${slug}`, { jogo, autor: conta.nome, t, pub: conta.pub, sig }, true); ST.admSlug = slug; ouvirAdmin();
   guardarMeuJogo(); aviso('🌎 Publicado! Tá na aba 🎮 Jogos pra todo mundo.', '#3ddc8a', 4);
 };
-function jogarComunidade(d) {
-  if (!d) return; ST.meuSalvo = JSON.parse(JSON.stringify({ ...STJ, partes: ST.partes.map(dadosParte) }));
+async function jogarComunidade(d) {
+  if (!d) return; ouvirAdmin();
+  const c = await REDE.carregarConta().catch(() => null), k = d.topico;
+  if (c) { const b = banDoJogo(k, c.id); if (b) return alert(`🚫 O criador deste jogo te baniu ${b.ate ? 'até ' + new Date(b.ate).toLocaleString('pt-BR') : 'pra sempre'}.\nMotivo: ${b.motivo}`); }
+  const [, dono, slug] = k.split('/'); ST.donoJogo = dono;
+  try { ligarRede().pub(`visitas/${dono}/${slug}`, { id: c?.id || 'anonimo' + Math.random().toString(36).slice(2, 8), nome: c?.nome || 'Visitante', t: Date.now() }); } catch (e) {} ST.meuSalvo = JSON.parse(JSON.stringify({ ...STJ, partes: ST.partes.map(dadosParte) }));
   STJ = JSON.parse(JSON.stringify(d.jogo)); carregarPartes(STJ.partes); iniciarTeste(true); msgST(`🎮 ${STJ.nome} — por ${d.autor}`, 4);
 }
+// ==================================================================== ADMIN DO CRIADOR
+// Cada criador cuida do próprio jogo: vê quem jogou, bane (por tempo ou pra sempre, ex.: hack) e usa comandos de admin quando joga.
+// O ban do criador vale só pro jogo dele e é assinado pela conta dele (ninguém mais consegue banir no jogo dos outros).
+const BANS_JOGO = new Map(), VISITAS = new Map(); let ouvindoAdm = false;
+const slugDe = nome => (String(nome || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'jogo');
+const textoBansJogo = d => JSON.stringify([d.lista, d.t]);
+async function ouvirAdmin() {
+  if (ouvindoAdm) return; ouvindoAdm = true; const mq = ligarRede(); ouvirComunidade();
+  mq.ouvir('jogos/+/+/bans', async (top, txt) => {
+    if (!txt) return; let d; try { d = JSON.parse(txt); } catch (e) { return; }
+    const [, dono, slug] = top.split('/');
+    if (await REDE.idDe(d.pub) !== dono || !await REDE.conferir(d.pub, textoBansJogo(d), d.sig)) return;
+    const k = `jogos/${dono}/${slug}`; if ((BANS_JOGO.get(k)?.t || 0) <= d.t) BANS_JOGO.set(k, d);
+    if (ST.on && abaST === 'admin') pintarST();
+  });
+  const c = await REDE.carregarConta(); if (!c) return;
+  mq.ouvir(`visitas/${c.id}/+`, (top, txt) => { try { const v = JSON.parse(txt), slug = top.split('/')[2]; if (!VISITAS.has(slug)) VISITAS.set(slug, new Map()); VISITAS.get(slug).set(v.id, { ...v, nome: REDE.filtrar(String(v.nome).slice(0, 16)), visto: Date.now() }); if (ST.on && abaST === 'admin') pintarST(); } catch (e) {} });
+}
+const banDoJogo = (k, id) => { const L = BANS_JOGO.get(k)?.lista || []; const b = L.find(x => x.id === id); return b && (b.ate === 0 || b.ate > Date.now()) ? b : null; };
+async function salvarBansJogo(slug, lista) {
+  const c = await REDE.carregarConta(); if (!c) return alert('Você precisa de uma conta (publique um jogo primeiro).');
+  const d = { lista, t: Date.now(), pub: c.pub }; d.sig = await REDE.assinar(c.priv, textoBansJogo(d));
+  const mq = ligarRede(); mq.pub(`jogos/${c.id}/${slug}/bans`, d, true); BANS_JOGO.set(`jogos/${c.id}/${slug}`, d); pintarST();
+}
+async function pintarAdmin(C) {
+  ouvirAdmin(); const c = await REDE.carregarConta().catch(() => null);
+  if (!c) { C.innerHTML = '<div class="stObs">🛡️ Aqui você vira o ADMIN dos seus jogos: vê quem jogou, bane quem atrapalha (hack, xingamento...) e usa comandos de admin. Publique um jogo pra começar.</div>'; return; }
+  const meus = [...JOGOS_COM.values()].filter(j => j.topico.split('/')[1] === c.id);
+  const opJogos = meus.map(j => `<option value="${j.topico.split('/')[2]}">${escH(j.jogo.nome)}</option>`).join('') || `<option value="${slugDe(STJ.nome)}">${escH(STJ.nome)} (ainda não publicado)</option>`;
+  const slug = ST.admSlug && (meus.some(j => j.topico.endsWith('/' + ST.admSlug)) || !meus.length) ? ST.admSlug : (meus[0]?.topico.split('/')[2] || slugDe(STJ.nome)); ST.admSlug = slug;
+  const k = `jogos/${c.id}/${slug}`, bans = (BANS_JOGO.get(k)?.lista || []).filter(b => b.ate === 0 || b.ate > Date.now()), vis = [...(VISITAS.get(slug)?.values() || [])].sort((a, b) => b.visto - a.visto);
+  C.innerHTML = `<div class="stTit">🛡️ Painel de admin</div><div class="stAdm stCard"><label class="stObs">Jogo: <select id="admJogo">${opJogos}</select></label>
+      <div class="stObs">Você é o dono deste jogo. Os bans valem só aqui, não no Cidade IA inteiro.</div></div>
+    <div class="stTit">Banir jogador</div><div class="stAdm stCard"><input id="admAlvo" placeholder="Nome#abcd (copie da lista abaixo)"><div class="stLinha"><select id="admTempo"><option value="3600000">1 hora</option><option value="86400000" selected>24 horas</option><option value="604800000">7 dias</option><option value="0">Pra sempre</option></select><select id="admMotivo"><option>hack / trapaça</option><option>xingamento</option><option>atrapalhando</option><option>nome impróprio</option><option>outro</option></select></div><button id="admBanir" class="stVerm">🔨 Banir do meu jogo</button></div>
+    <div class="stTit">Quem jogou (${vis.length})</div>${vis.map(v => `<div class="stVis"><span>${escH(v.nome)} <small>#${v.id.slice(0, 4)} · ${new Date(v.visto).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small></span><button data-ban="${v.id}" data-n="${escH(v.nome)}">🔨</button></div>`).join('') || '<div class="stObs">Ninguém jogou ainda (a lista aparece enquanto o Studio está aberto).</div>'}
+    <div class="stTit">Banidos (${bans.length})</div>${bans.map(b => `<div class="stVis"><span>${escH(b.nome)} <small>#${b.id.slice(0, 4)} · ${b.ate ? 'até ' + new Date(b.ate).toLocaleString('pt-BR') : 'pra sempre'} · ${escH(b.motivo)}</small></span><button data-des="${b.id}">✅ Desbanir</button></div>`).join('') || '<div class="stObs">Ninguém banido. 😇</div>'}
+    <div class="stTit">Comandos de admin</div><div class="stObs">Quando você joga o seu próprio jogo (▶ Testar ou pela aba Jogos), aperte <b>F2</b> pra abrir: voar, super velocidade, invencível, atravessar paredes, ir pro início, matar todos os inimigos (lava some), dar pontos.</div>`;
+  $('#admJogo').value = slug; $('#admJogo').onchange = e => { ST.admSlug = e.target.value; pintarST(); };
+  C.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => e.stopPropagation()));
+  const banir = async (id, nome) => { const L = (BANS_JOGO.get(k)?.lista || []).filter(b => b.id !== id && (b.ate === 0 || b.ate > Date.now())); const t = +$('#admTempo').value; L.push({ id, nome, ate: t ? Date.now() + t : 0, motivo: $('#admMotivo').value, t: Date.now() }); await salvarBansJogo(slug, L); aviso(`🔨 ${nome} banido do seu jogo`, '#ff6060', 2.5); };
+  $('#admBanir').onclick = () => { const v = $('#admAlvo').value.trim(), tag = (v.split('#')[1] || '').toLowerCase(); const achou = vis.filter(x => x.id.startsWith(tag) || x.nome.toLowerCase() === v.split('#')[0].toLowerCase()); if (achou.length !== 1) return alert('Não achei esse jogador. Use Nome#abcd de quem jogou.'); banir(achou[0].id, achou[0].nome); };
+  C.querySelectorAll('[data-ban]').forEach(b => b.onclick = () => banir(b.dataset.ban, b.dataset.n));
+  C.querySelectorAll('[data-des]').forEach(b => b.onclick = async () => { const L = (BANS_JOGO.get(k)?.lista || []).filter(x => x.id !== b.dataset.des); await salvarBansJogo(slug, L); });
+}
+// comandos de admin (F2) — só o dono do jogo
+const admJ = { voar: false, deus: false, rapido: false, fantasma: false };
+const admBox = document.createElement('div'); admBox.id = 'stAdmJogo'; stHud.appendChild(admBox);
+function pintarAdmJogo() {
+  admBox.innerHTML = '<b>🛡️ Admin do jogo</b>' + [['voar', '🕊️ Voar (Espaço sobe, Shift desce)'], ['rapido', '⚡ Super velocidade'], ['deus', '🛡️ Invencível'], ['fantasma', '👻 Atravessar paredes']].map(([k, n]) => `<button data-a="${k}" class="${admJ[k] ? 'on' : ''}">${n}</button>`).join('') +
+    '<button data-x="inicio">🏁 Ir pro início</button><button data-x="lava">🧯 Apagar lava</button><button data-x="pontos">⭐ +10 pontos</button><button data-x="ganhar">🏆 Ganhar agora</button>';
+  admBox.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { admJ[b.dataset.a] = !admJ[b.dataset.a]; if (b.dataset.a === 'rapido') jog.vel = admJ.rapido ? jog.vel * 3 : jog.vel / 3; pintarAdmJogo(); });
+  admBox.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { const x = b.dataset.x; if (x === 'inicio') jog.pos.copy(ST.checkpoint); if (x === 'lava') for (const p of [...ST.partes]) if (p.tipo === 'lava') apagarParte(p); if (x === 'pontos') comandoST(['pontos', (ST.pontos || 0) + 10]); if (x === 'ganhar') comandoST(['fim', true, 'Admin ganhou 😎']); });
+}
+addEventListener('keydown', async e => {
+  if (e.code !== 'F2' || !ST.on || ST.modo !== 'testar') return; e.preventDefault();
+  const c = await REDE.carregarConta().catch(() => null), dono = !ST.soJogar || (c && ST.donoJogo === c.id);
+  if (!dono) return msgST('🛡️ Só o criador do jogo pode usar o admin.', 2);
+  admBox.classList.toggle('on'); pintarAdmJogo(); if (admBox.classList.contains('on')) soltarMouse();
+});
+quadros.push(dt => {
+  if (!ST.on || ST.modo !== 'testar') return true;
+  if (admJ.voar) { jog.vy = teclas.Space ? 12 : teclas.ShiftLeft ? -12 : 0; jog.chao = false; }
+  if (admJ.deus) ST.vida = Math.max(ST.vida, 1e6);
+  if (admJ.fantasma) for (const p of ST.partes) if (p.s) { p.sFant = p.s; const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); p.s = null; }
+  if (!admJ.fantasma) for (const p of ST.partes) if (p.sFant && !p.s) { p.s = p.sFant; p.sFant = null; solidos.push(p.s); }
+  return true;
+});
 // botão no menu inicial e na pausa
 { const b = document.createElement('button'); b.className = 'bm'; b.id = 'mStudio'; b.innerHTML = '<i>🛠️</i><span><b>Studio</b><small>crie seu próprio jogo</small></span>'; $('#mMulti').after(b); b.onclick = abrirStudio; }
 
