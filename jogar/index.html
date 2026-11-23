@@ -413,6 +413,8 @@ window.SEM_PC = true;
   .lrPac{display:grid;justify-items:center;gap:2px;padding:14px 8px;border-radius:16px;background:linear-gradient(160deg,rgba(34,211,238,.22),rgba(255,255,255,.03));border:1px solid rgba(103,232,249,.3)}.lrPac.dinheiro{background:linear-gradient(160deg,rgba(34,197,94,.22),rgba(255,255,255,.03));border-color:rgba(134,239,172,.3)}
   .lrPac i{font-style:normal;font-size:34px}.lrPac b{font-size:20px}.lrPac small{color:#cbd5e1}.lrPac button{margin-top:8px;border:0;border-radius:10px;padding:8px 14px;background:linear-gradient(135deg,#22d3ee,#0891b2);color:#04202a;font:900 14px 'Segoe UI';cursor:pointer}
   .lrAviso{margin-top:14px;font-size:13px;color:#fde68a;min-height:18px}.lrSeu{margin-top:8px;font-size:13px;color:#cbd5e1}
+  #barraFolego{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);width:220px;height:16px;border-radius:9px;background:rgba(0,30,60,.6);border:1px solid rgba(160,220,255,.5);display:none;z-index:6;overflow:hidden}
+  #barraFolego i{display:block;height:100%;background:linear-gradient(90deg,#38bdf8,#a5f3fc)}#barraFolego b{position:absolute;inset:0;text-align:center;font:800 11px 'Segoe UI';color:#fff;line-height:16px}
   #tintaAgua{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;transition:opacity .25s;background:radial-gradient(ellipse at 50% 20%,rgba(60,150,200,.35),rgba(8,40,80,.72));mix-blend-mode:multiply}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
@@ -4235,7 +4237,7 @@ function atualizarJogador(dt) {
   } else if (jog.pos.y > piso + .25) jog.chao = false;
   bonecoJog.g.position.copy(jog.pos); virarSuave(bonecoJog.g, jog.rot, dt * 11);
   if (m.lengthSq() || !jog.chao || G.socoT > 0) jog.emote = null;
-  animarBoneco(bonecoJog, relogio, jog.mv.length() > .3 ? jog.mv.length() : 0, (typeof AG !== 'undefined' && AG.estado.nadando) ? 'nadar' : !jog.chao ? 'pulo' : G.socoT > 0 ? G.socoTipo : G.assalto ? 'mirar' : (jog.emote || ''));
+  animarBoneco(bonecoJog, relogio, jog.mv.length() > .3 ? jog.mv.length() : 0, (typeof AG !== 'undefined' && AG.estado.nadando) ? (AG.estado.animNado || 'nadar') : !jog.chao ? 'pulo' : G.socoT > 0 ? G.socoTipo : G.assalto ? 'mirar' : (jog.emote || ''));
   if (bonecoJog.altTag === undefined) { const bb = new THREE.Box3().setFromObject(bonecoJog.g); bonecoJog.altTag = isFinite(bb.max.y) ? Math.max(1, bb.max.y - bonecoJog.g.position.y) : 3; }
   tagJog.position.set(jog.pos.x, jog.pos.y + bonecoJog.altTag - .05, jog.pos.z);
   if (mouseBaixo) atirar();
@@ -7952,14 +7954,33 @@ function atualizarAgua(dt) {
       if (dentro && !S.dentro) agua_fx(jog.vy < -18 ? 'cair_de_alto' : jog.vy < -6 ? (Math.random() < .2 ? 'barrigada' : 'pulo_na_agua') : 'entrar_andando', jog.pos, jog.mv);
       if (!dentro && S.dentro && S.nadando) agua_fx('sair_da_agua', jog.pos);
       S.dentro = dentro;
-      if (prof > 1.6 || (S.nadando && prof > .9)) {   // fundo: nada na superfície (boia suave, sem pular)
-        if (!S.nadando) { S.nadando = true; narrar('🏊 Nadando! Espaço = subir · Shift = nadar rápido · C = mergulhar'); }
-        const alvoY = nv - (teclas.KeyC ? 4.5 : .62); const correnteza = .7 * ONDA_F.v * dt; jog.pos.x += Math.cos(ONDAS[0][3]) * correnteza; jog.pos.z += Math.sin(ONDAS[0][3]) * correnteza; bonecoJog.g.rotation.z = (alturaOnda(jog.pos.x + 1, jog.pos.z) - alturaOnda(jog.pos.x - 1, jog.pos.z)) * .5; jog.pos.y += (alvoY - jog.pos.y) * Math.min(1, dt * (teclas.KeyC ? 1.5 : 3)); jog.vy = 0; jog.chao = true; if (teclas.Space && !teclas.KeyC) jog.pos.y = Math.max(jog.pos.y, nv - .45);
-        if (vel > .5) { S.rastro -= dt; if (S.rastro <= 0) { S.rastro = teclas.ShiftLeft ? .25 : .45; agua_fx(teclas.ShiftLeft ? 'nadar_rapido' : 'nadar_bracada', jog.pos, jog.mv); } }
-        else if (Math.random() < dt * .25) agua_fx('boiar', jog.pos);
-        if (teclas.KeyC && Math.random() < dt * 2) agua_fx('respirar_embaixo', jog.pos);
+      const fundoAgua = nv - alturaChao(jog.pos.x, jog.pos.z);   // profundidade da água ali (não do jogador)
+      if (fundoAgua > 2.2 && jog.pos.y < nv + .4) {   // ÁGUA FUNDA: nadar / mergulhar
+        if (!S.nadando) { S.nadando = true; S.folego = S.folego ?? 25; narrar('🏊 Nadando! W nada · Shift mais rápido · segure C pra mergulhar · Espaço sobe'); }
+        const mexendo = vel > .4, sub = nv - jog.pos.y;   // quanto está embaixo da superfície
+        S.mergulho = teclas.KeyC || (S.mergulho && sub > 2.4 && !teclas.Space);
+        let alvoY;
+        if (teclas.KeyC) alvoY = Math.max(alturaChao(jog.pos.x, jog.pos.z) + .4, jog.pos.y - 3.2 * dt * 8);      // desce
+        else if (S.mergulho) alvoY = jog.pos.y + (teclas.Space ? 3.4 : .9) * dt * 8;                                // embaixo: boia devagar, Espaço sobe rápido
+        else alvoY = nv - (mexendo ? .35 : 2.25);                                                                     // na superfície: deitado nadando ou em pé batendo perna
+        if (teclas.KeyC) jog.pos.y = Math.max(alturaChao(jog.pos.x, jog.pos.z) + .4, jog.pos.y - 3.6 * dt);
+        else if (S.mergulho) jog.pos.y = Math.min(nv - .35, jog.pos.y + (teclas.Space ? 4.2 : 1) * dt);
+        else jog.pos.y += (alvoY - jog.pos.y) * Math.min(1, dt * 3);
+        jog.vy = 0; jog.chao = true;
+        const correnteza = .7 * ONDA_F.v * dt * (S.mergulho ? .3 : 1); jog.pos.x += Math.cos(ONDAS[0][3]) * correnteza; jog.pos.z += Math.sin(ONDAS[0][3]) * correnteza;
+        // corpo: deitado nadando, de cabeça pra baixo mergulhando, em pé parado
+        const alvoInc = teclas.KeyC ? 2.1 : S.mergulho ? (teclas.Space ? .3 : 1.45) : mexendo ? 1.32 : .12;
+        bonecoJog.g.rotation.order = 'YXZ'; S.inc = THREE.MathUtils.lerp(S.inc || 0, alvoInc, Math.min(1, dt * 4)); bonecoJog.g.rotation.x = S.inc;
+        bonecoJog.g.rotation.z = S.mergulho ? 0 : (alturaOnda(jog.pos.x + 1, jog.pos.z) - alturaOnda(jog.pos.x - 1, jog.pos.z)) * .5;
+        S.animNado = mexendo || S.mergulho ? 'nadar' : 'boiar_agua';
+        // fôlego embaixo d'água
+        if (sub > 2.8) { S.folego = Math.max(0, S.folego - dt); if (S.folego <= 0 && Math.random() < dt * 2) danoJogador(4, 'afogando'); if (Math.random() < dt * 1.5) agua_fx('respirar_embaixo', jog.pos.clone().setY(jog.pos.y + 1.6)); }
+        else S.folego = Math.min(25, (S.folego ?? 25) + dt * 6);
+        barraFolego.style.display = S.folego < 24.5 ? 'block' : 'none'; barraFolego.firstChild.style.width = (S.folego / 25 * 100) + '%';
+        if (mexendo && !S.mergulho) { S.rastro -= dt; if (S.rastro <= 0) { S.rastro = teclas.ShiftLeft ? .3 : .5; agua_fx(teclas.ShiftLeft ? 'nadar_rapido' : 'nadar_bracada', jog.pos, jog.mv); } }
+        else if (!mexendo && !S.mergulho && Math.random() < dt * .25) agua_fx('boiar', jog.pos);
       } else {
-        if (S.nadando) { S.nadando = false; if (jog.emote === 'nadar') jog.emote = null; }
+        if (S.nadando) { S.nadando = false; S.mergulho = false; if (jog.emote === 'nadar') jog.emote = null; bonecoJog.g.rotation.x = 0; bonecoJog.g.rotation.z = 0; barraFolego.style.display = 'none'; }
         if (dentro && vel > .5 && (!S.ultPasso || S.ultPasso.distanceTo(jog.pos) > (teclas.ShiftLeft ? 1.1 : .8))) { S.ultPasso = jog.pos.clone(); agua_fx(teclas.ShiftLeft ? 'correr_raso' : 'passo_raso', jog.pos, jog.mv); }
       }
       // chuva molha: passos fazem respingo na rua
@@ -7979,6 +8000,8 @@ function atualizarAgua(dt) {
     const cy = nivelAgua(camera.position.x, camera.position.z);
     const embaixo = camera.position.y < cy - .05; tintaAgua.style.opacity = embaixo ? 1 : 0;
     if (embaixo !== S.embaixo) { S.embaixo = embaixo; if (!embaixo) agua_fx('emergir', jog.pos); else agua_fx('afundar', jog.pos); }
+    if (embaixo) { if (!S.nevoaAntes) S.nevoaAntes = [cena.fog.color.getHex(), cena.fog.near, cena.fog.far, cena.background?.isColor ? cena.background.getHex() : null]; const fundo = Math.min(1, (cy - camera.position.y) / 25); cena.fog.color.setHex(0x0e5a78).lerp(new THREE.Color(0x03202e), fundo); cena.fog.near = 1; cena.fog.far = 55 - fundo * 25; if (cena.background?.isColor) cena.background.copy(cena.fog.color); }
+    else if (S.nevoaAntes) { const [c, n, fa, bg] = S.nevoaAntes; cena.fog.color.setHex(c); cena.fog.near = n; cena.fog.far = fa; if (bg !== null && cena.background?.isColor) cena.background.setHex(bg); S.nevoaAntes = null; }
     // chuva caindo em água perto
     if (chuva && !chuva.userData.neve) for (let i = 0; i < (clima === 'tempestade' ? 8 : 4); i++) { const x = jog.pos.x + rnd(-25, 25), z = jog.pos.z + rnd(-25, 25), n = nivelAgua(x, z); if (isFinite(n) && n > alturaChao(x, z)) agua_fx(clima === 'tempestade' ? 'chuva_forte_agua' : 'chuva_na_agua', new THREE.Vector3(x, n, z)); }
     // ondas quebrando na praia perto
@@ -8016,7 +8039,14 @@ function atualizarAgua(dt) {
 }
 quadros.push(Object.assign(dt => { atualizarAgua(dt); return true; }, { fixo: true }));
 // nadar: pose de braçada
-EMOTES.nadar = (p, t, q) => { const s = Math.sin(t * 5); p.quadril.position.y = q - .9; p.corpo.rotation.x = 1.25; p.cabeca.rotation.x = -1; p.be.rotation.set(-2.4 + s * 1.4, 0, .3); p.bd.rotation.set(-2.4 - s * 1.4, 0, -.3); p.pe.rotation.x = .9 + Math.sin(t * 9) * .35; p.pd.rotation.x = .9 - Math.sin(t * 9) * .35; };
+EMOTES.nadar = (p, t, q) => { const s = t * 4.2; p.corpo.rotation.x = .05; p.cabeca.rotation.x = -.55 + Math.sin(s) * .08; p.cabeca.rotation.y = Math.sin(s) * .35;
+  p.be.rotation.set(-1.6 + Math.sin(s) * 1.6, 0, .25 + Math.max(0, Math.cos(s)) * .4); p.bd.rotation.set(-1.6 - Math.sin(s) * 1.6, 0, -.25 - Math.max(0, -Math.cos(s)) * .4);
+  if (p.cE) { p.cE.rotation.x = -.3 - Math.max(0, Math.cos(s)) * .6; p.cD.rotation.x = -.3 - Math.max(0, -Math.cos(s)) * .6; }
+  p.pe.rotation.x = Math.sin(t * 11) * .38; p.pd.rotation.x = -Math.sin(t * 11) * .38; if (p.jE) { p.jE.rotation.x = .25 + Math.max(0, Math.sin(t * 11)) * .3; p.jD.rotation.x = .25 + Math.max(0, -Math.sin(t * 11)) * .3; } };
+EMOTES.boiar_agua = (p, t, q) => { const s = t * 2.4; p.corpo.rotation.x = .05; p.cabeca.rotation.x = -.1;
+  p.be.rotation.set(-.35 + Math.sin(s) * .3, 0, .9 + Math.sin(s) * .35); p.bd.rotation.set(-.35 - Math.sin(s) * .3, 0, -.9 - Math.sin(s) * .35);
+  p.pe.rotation.x = -.35 + Math.sin(t * 3.5) * .5; p.pd.rotation.x = -.35 - Math.sin(t * 3.5) * .5; if (p.jE) { p.jE.rotation.x = .6 + Math.sin(t * 3.5) * .3; p.jD.rotation.x = .6 - Math.sin(t * 3.5) * .3; } };
+const barraFolego = document.createElement('div'); barraFolego.id = 'barraFolego'; barraFolego.innerHTML = '<i></i><b>🫧 fôlego</b>'; document.body.appendChild(barraFolego);
 window.__dbg.agua = { TIPOS_AGUA, AG, ver: t => agua_fx(t, jog.pos.clone().add(new THREE.Vector3(3, 0, 0)), new THREE.Vector3(1, 0, 0)), nivelAgua };
 
 for (const [x, z] of window.__chafarizes || []) AG.locais.push({ x, z, r: 4.7, y: .78, topo: 5.6, chafariz: true });
