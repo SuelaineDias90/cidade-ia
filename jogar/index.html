@@ -4220,6 +4220,7 @@ function desprender(p) {
   return false;
 }
 function atualizarJogador(dt) {
+  if (typeof pilotando !== 'undefined' && pilotando) { bonecoJog.g.visible = false; tagJog.visible = false; return; }
   if (estado === 'jogando' && !dirigindo && !G.interior) { G.presoT = colide(new THREE.Vector3(jog.pos.x, jog.pos.y + 1, jog.pos.z), .35) ? (G.presoT || 0) + dt : 0; if (G.presoT > .25) { desprender(jog.pos); G.presoT = 0; } }
   if (estado !== 'jogando' || dirigindo || G.morto) { if (G.morto) animarBoneco(bonecoJog, relogio, 0, ''); return; }
   const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), d = new THREE.Vector3(-f.z, 0, f.x);
@@ -4250,6 +4251,14 @@ function atualizarJogador(dt) {
   if (mouseBaixo) atirar();
   atualizarArmaMao();
 }
+function poseRagdollNPC(b, t) {
+  const p = b.p; if (!p || !p.be) return; const w = Math.sin(t * 9), w2 = Math.cos(t * 11);
+  p.be.rotation.set(-.3 + w * 1.6, 0, 1.2 + w2 * .6); p.bd.rotation.set(-.3 - w * 1.6, 0, -1.2 - w2 * .6);
+  if (p.cE) { p.cE.rotation.x = -1 + w * .8; p.cD.rotation.x = -1 - w * .8; }
+  p.pe.rotation.set(.4 + w2, 0, .3); p.pd.rotation.set(.4 - w2, 0, -.3);
+  if (p.jE) { p.jE.rotation.x = .7 + w; p.jD.rotation.x = .7 - w; }
+  p.corpo.rotation.x = w * .25; p.cabeca.rotation.set(w2 * .5, w * .5, 0);
+}
 function atualizarNPCs(dt) {
   for (const n of npcs) {
     if (!n.dentro && !n.voo && Math.random() < dt && colide(new THREE.Vector3(n.pos.x, n.pos.y + 1, n.pos.z), .3)) { desprender(n.pos); n.alvo = null; }
@@ -4261,7 +4270,7 @@ function atualizarNPCs(dt) {
       if (colide(new THREE.Vector3(nx, n.pos.y + 1, n.pos.z), .4)) n.voo.x *= -.35; else n.pos.x = nx;   // bate na parede e volta
       if (colide(new THREE.Vector3(n.pos.x, n.pos.y + 1, nz), .4)) n.voo.z *= -.35; else n.pos.z = nz;
       n.pos.y += n.voo.y * dt; n.voo.y -= 20 * gravidade * dt; const ar = 1 - .25 * dt; n.voo.x *= ar; n.voo.z *= ar;
-      n.b.g.rotation.x += n.giro.x * dt; n.b.g.rotation.z += n.giro.z * dt;
+      n.b.g.rotation.x += n.giro.x * dt; n.b.g.rotation.z += n.giro.z * dt; poseRagdollNPC(n.b, relogio);
       const chaoN = Math.max(-1.2, alturaChao(n.pos.x, n.pos.z));
       if (n.pos.y <= chaoN && n.voo.y < 0) {
         n.pos.y = chaoN;
@@ -4480,24 +4489,29 @@ function lancarCarro(v, vx, vz, subir, giro) {
   const s = Math.sin(v.ang), c = Math.cos(v.ang); v.vel = vx * s + vz * c; v.lat = vx * c - vz * s;
 }
 function tombarCarro(v, dt) {
-  const p = v.g.position; v.vy -= 26 * dt; p.y += v.vy * dt;
+  const p = v.g.position; v.voandoT = (v.voandoT || 0) + dt;
+  v.vy -= 26 * dt; p.y += v.vy * dt;
   const s = Math.sin(v.ang), c = Math.cos(v.ang), vx = s * v.vel + c * (v.lat || 0), vz = c * v.vel - s * (v.lat || 0);
-  const nx = p.x + vx * dt, nz = p.z + vz * dt, arX = p.y > alturaChao(nx, p.z) + 1.5, arZ = p.y > alturaChao(p.x, nz) + 1.5;
-  if (arX || !carroBate(v, nx, p.z)) p.x = nx; else { v.vel *= -.35; v.lat *= -.35; v.wz += rnd(-3, 3); if (Math.abs(vx) > 6) { somBatida(Math.abs(vx)); danoVeiculo(v, Math.abs(vx) * .3); amassarMalha(v, p.x + Math.sign(vx), p.z, Math.abs(vx)); } }
-  if (arZ || !carroBate(v, p.x, nz)) p.z = nz; else { v.vel *= -.35; v.lat *= -.35; v.wx += rnd(-3, 3); if (Math.abs(vz) > 6) { somBatida(Math.abs(vz)); danoVeiculo(v, Math.abs(vz) * .3); amassarMalha(v, p.x, p.z + Math.sign(vz), Math.abs(vz)); } }
-  v.ang += (v.spin || 0) * dt; v.spin *= (1 - Math.min(1, dt * .9));
+  const noAr = p.y > alturaChao(p.x, p.z) + 1.2, nx = p.x + vx * dt, nz = p.z + vz * dt;
+  if (noAr || !carroBate(v, nx, p.z)) p.x = nx; else { v.vel *= -.35; v.lat *= -.35; v.wz = (v.wz || 0) + rnd(-3, 3); if (Math.abs(vx) > 6) { somBatida(Math.abs(vx)); danoVeiculo(v, Math.abs(vx) * .3); amassarMalha(v, p.x + Math.sign(vx), p.z, Math.abs(vx)); } }
+  if (noAr || !carroBate(v, p.x, nz)) p.z = nz; else { v.vel *= -.35; v.lat *= -.35; v.wx = (v.wx || 0) + rnd(-3, 3); if (Math.abs(vz) > 6) { somBatida(Math.abs(vz)); danoVeiculo(v, Math.abs(vz) * .3); amassarMalha(v, p.x, p.z + Math.sign(vz), Math.abs(vz)); } }
+  v.ang += (v.spin || 0) * dt; v.spin *= (1 - Math.min(1, dt * 1.4));
   v.rx += (v.wx || 0) * dt; v.rz += (v.wz || 0) * dt;
-  const chao = Math.max(-1.2, alturaChao(p.x, p.z));
-  if (p.y <= chao) {
-    const bateu = -v.vy; p.y = chao;
-    if (bateu > 4) { somBatida(bateu); if (v === dirigindo) tremor.forca = Math.min(1, bateu / 20); danoVeiculo(v, bateu * .5); amassarMalha(v, p.x + rnd(-1, 1), p.z + rnd(-1, 1), bateu); poeira(p.x, p.z, bateu); }
-    v.vy = bateu > 3 ? bateu * .32 : 0; v.vel *= .6; v.lat *= .6; v.wx *= .55; v.wz *= .55; v.spin *= .6;
-    // assentou: pouca energia -> endireita devagar e volta a dirigir
-    if (Math.abs(v.vy) < 1.5 && Math.abs(v.wx) < 1 && Math.abs(v.wz) < 1 && Math.abs(v.vel) < 4) {
-      v.rx *= (1 - Math.min(1, dt * 4)); v.rz *= (1 - Math.min(1, dt * 4));
-      if (Math.abs(v.rx) < .05 && Math.abs(v.rz) < .05) { v.voando = false; v.rx = v.rz = v.wx = v.wz = v.vy = 0; }
+  const chao = Math.max(-1.2, alturaChao(p.x, p.z)), forcaSettle = v.voandoT > 3;
+  v.jaChao = Math.max(0, (v.jaChao || 0) - dt);
+  if (p.y <= chao || forcaSettle) {
+    const bateu = Math.max(0, -v.vy); if (p.y < chao) p.y = chao;
+    if (bateu > 4 && !v.jaChao) { v.jaChao = .25; somBatida(bateu); if (v === dirigindo) tremor.forca = Math.min(1, bateu / 20); danoVeiculo(v, bateu * .5); amassarMalha(v, p.x + rnd(-1, 1), p.z + rnd(-1, 1), bateu); poeira(p.x, p.z, bateu); }
+    v.vy = (bateu > 3 && !forcaSettle) ? bateu * .3 : 0; v.vel *= .7; v.lat *= .7; v.wx *= .4; v.wz *= .4; v.spin *= .5;
+    const quase = forcaSettle || (Math.abs(v.vy) < 1.5 && Math.abs(v.wx) < 1.5 && Math.abs(v.wz) < 1.5 && Math.abs(v.vel) < 5);
+    if (quase) {
+      const k = Math.min(1, dt * (forcaSettle ? 10 : 6)); v.rx += -v.rx * k; v.rz += -v.rz * k; v.wx *= .5; v.wz *= .5;
+      if (Math.abs(v.rx) < .05 && Math.abs(v.rz) < .05) { v.voando = false; v.voandoT = 0; v.rx = v.rz = v.wx = v.wz = v.vy = 0; v.g.rotation.set(0, v.ang, 0); p.y = chao; v.g.position.copy(p); return; }
     }
   }
+  // nunca abaixo do chão; tombado perto do chão, levanta pra não afundar girando
+  const tombado = (Math.abs(Math.sin(v.rx)) * v.L + Math.abs(Math.sin(v.rz)) * v.W) * .5;
+  p.y = Math.max(p.y, chao + (p.y <= chao + .1 ? Math.min(1.3, tombado) : 0));
   v.g.position.copy(p); v.g.rotation.set(v.rx, v.ang, v.rz);
   if (v.g.userData.rodas) try { efeitosDirecao(v, dt, { giro: 0 }); } catch (e) {}
 }
@@ -4506,13 +4520,21 @@ function cacosVidro(x, y, z, n) { criarEfeito({ forma: 'explosao', particula: 'b
 function destrocos(x, y, z, n) { criarEfeito({ forma: 'explosao', particula: 'faisca', cores: ['#555', '#333', '#777'], quantidade: n, tamanho: .3, velocidade: 8, gravidade: 20, duracao: .05, vida: 1.2, x, y, z, aditivo: false, luz: false }); }
 
 // decide e aplica a física da batida (escolhe entre empurrar, girar, lançar, capotar... conforme força/massa/ângulo)
+function promoverTransito(C) {
+  const c = C.t, i = transito.indexOf(c); if (i >= 0) transito.splice(i, 1);
+  try { tirarMotorista(c.g); } catch (e) {}
+  const nv = novoVeiculo(c.g, { vel: (c.vel || 0) * (c.sentido || 1), ang: c.g.rotation.y });
+  C.o = nv; C.t = null; return nv;
+}
 function fisicaBatida(A, B, forca, nx, nz, px, pz) {
+  if (A.t && forca > 6) promoverTransito(A);   // o carro batido vira carro de física: amassa e pode ser lançado
+  if (B.t && forca > 6) promoverTransito(B);
   const dono = A.o === dirigindo ? A : B.o === dirigindo ? B : null;
-  const vnome = n => { if (dono && forca > 8) narrar('💥 ' + n); };
+  const vnome = n => { if (dono && forca > 6) narrar('💥 ' + n); };
   for (const C of [A, B]) {
     if (C.t) continue; const v = C.o, massaRel = C.m * (C === A ? (B.t ? 1 : B.m) : (A.t ? 1 : A.m));
     const r = resistDe(v), dano = Math.max(0, forca - 4 * r) * 1.1 / r;
-    if (forca > 5) { amassarMalha(v, px, pz, forca); danoVeiculo(v, dano); }
+    if (forca > 2) { amassarMalha(v, px, pz, forca); danoVeiculo(v, dano); }
     if (v === dirigindo) tremor.forca = Math.min(1.3, .15 + forca / 26);
   }
   // faíscas, vidros, destroços conforme a força
@@ -4521,18 +4543,18 @@ function fisicaBatida(A, B, forca, nx, nz, px, pz) {
   somBatida(forca);
   // direção do empurrão (normal da batida, no mundo)
   const dx = nx, dz = nz;
-  if (forca < 9) { vnome(forca < 5 ? pega(['toque de leve', 'encostão']) : pega(['empurrão', 'batida frontal leve', 'raspão na porta'])); return; }   // leve: o impulso normal já resolve
+  if (forca < 5) { vnome(forca < 3 ? pega(['toque de leve', 'encostão']) : pega(['empurrão', 'batida frontal leve', 'raspão na porta'])); return; }   // leve: o impulso normal já resolve
   // batida forte: pode lançar / capotar
   const livreA = !A.t, livreB = !B.t, leve = (C) => C.m < 3.2;
-  if (forca > 26) {   // violenta
+  if (forca > 18) {   // violenta
     if (livreA && livreB) {   // carro contra carro: os dois reagem (um mais que o outro)
       vnome(pega(['os dois lançados', 'capotou de lado', 'tonel (rolou de lado)', 'explosão em cadeia']));
       lancarCarro(A.o, -dx * forca * .25, -dz * forca * .25, 6 + forca * .3, 3 + forca * .06);
       lancarCarro(B.o, dx * forca * .25, dz * forca * .25, 5 + forca * .25, 3 + forca * .06);
     } else { const vv = (A.o || B.o), sg = livreA ? -1 : 1; vnome(pega(['foi lançado', 'decolou', 'capotou pra frente', 'cambalhota'])); lancarCarro(vv, sg * dx * forca * .3, sg * dz * forca * .3, 7 + forca * .32, 4 + forca * .07); }
-  } else if (forca > 15) {   // forte: empurra forte + gira; carro leve pode saltar
+  } else if (forca > 9) {   // forte: empurra forte + gira; carro leve pode saltar
     vnome(pega(['T-bone forte', 'girou o outro', 'rodopio 360', 'empurrado pro lado', 'bateu e quicou', 'para-choque caiu', 'capô amassado']));
-    for (const [C, s] of [[A, -1], [B, 1]]) { if (C.t) continue; C.o.spin = THREE.MathUtils.clamp((C.o.spin || 0) + s * rnd(1, 3.5), -5, 5); if (leve(C) && forca > 20) lancarCarro(C.o, s * dx * forca * .18, s * dz * forca * .18, 4 + forca * .2, 3); }
+    for (const [C, s] of [[A, -1], [B, 1]]) { if (C.t) continue; C.o.spin = THREE.MathUtils.clamp((C.o.spin || 0) + s * rnd(1, 3.5), -5, 5); if (leve(C) && forca > 13) lancarCarro(C.o, s * dx * forca * .22, s * dz * forca * .22, 4 + forca * .25, 3); }
     if (forca > 16 && Math.random() < .5) cacosVidro(px, (A.o || B.o).g.position.y + 1.2, pz, 20);
   } else {   // média: empurra e gira de leve
     vnome(pega(['empurrão duplo', 'rodou na pista', 'spin-out', 'porta amassada', 'traseira amassada', 'bateu e voltou']));
@@ -4567,6 +4589,11 @@ function veiculoPerto(raio = 5) {
   return melhor;
 }
 function entrarSair() {
+  if (pilotando) { sairAeronave(); return; }
+  if (!dirigindo) { const a = aeronavePerto(); if (a) { entrarAeronave(a); return; } }
+  entrarSairCarro();
+}
+function entrarSairCarro() {
   if (dirigindo) {   // sai pela porta do motorista
     const v = dirigindo, lado = new THREE.Vector3(Math.cos(v.ang), 0, -Math.sin(v.ang));
     jog.pos.copy(v.g.position).addScaledVector(lado, v.W * .5 + 1.2); jog.pos.y = alturaChao(jog.pos.x, jog.pos.z) + .2;
@@ -4816,6 +4843,141 @@ function empurrarDeCarro(p, C, r) {
   if (hl - Math.abs(lf) < hw - Math.abs(ll)) { const nl = Math.sign(lf) * hl; p.x += s * (nl - lf); p.z += c * (nl - lf); }
   else { const nl = Math.sign(ll) * hw; p.x += c * (nl - ll); p.z -= s * (nl - ll); }
 }
+// ==================================================================== AERONAVES: 10 aviões + 7 helicópteros, aeroporto, voo e 6 estrelas ao roubar
+const AERONAVES = []; let pilotando = null;
+const _am = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: o.r ?? .45, metalness: o.m ?? .4, emissive: o.e || 0x000000, emissiveIntensity: o.ei || 0 });
+const MAT_VIDRO_A = new THREE.MeshPhysicalMaterial({ color: 0x0a141c, roughness: .05, metalness: .3, clearcoat: 1 });
+function helice(n, raio, cor = 0x1a1a1a) { const g = new THREE.Group(); for (let i = 0; i < n; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(raio, .04, .12), _am(cor)); b.position.x = 0; b.rotation.y = i / n * Math.PI * 2; b.geometry.translate(raio / 2, 0, 0); g.add(b); } const cubo = new THREE.Mesh(new THREE.SphereGeometry(.12, 10, 8), _am(0x333)); g.add(cubo); return g; }
+// 10 AVIÕES: [nome, cor, comprimento, envergadura, jato?, cor2]
+const AVIOES = [
+  ['Teco-Teco', '#e63946', 7, 9, false], ['Monomotor', '#457b9d', 7.5, 10, false], ['Biplano', '#f4a261', 6.5, 9, false, '#e76f51'],
+  ['Caça a Jato', '#5c6770', 11, 8, true, '#2b2d42'], ['Caça Furtivo', '#1a1a22', 12, 9, true, '#0a0a10'], ['Jato Executivo', '#f1faee', 13, 11, true, '#a8dadc'],
+  ['Avião de Linha', '#ffffff', 20, 20, true, '#1d3557'], ['Cargueiro', '#6b705c', 18, 22, true, '#3a3f2e'], ['Hidroavião', '#2a9d8f', 9, 12, false, '#264653'],
+  ['Acrobático', '#ffd166', 7, 8.5, false, '#ef476f'],
+];
+// 7 HELICÓPTEROS: [nome, cor, tamanho, cor2]
+const HELIS = [
+  ['Helicóptero', '#3a86ff', 1, '#1d3557'], ['Heli Polícia', '#1b1b2f', 1, '#e63946'], ['Heli Notícias', '#ff006e', 1, '#ffffff'],
+  ['Heli Resgate', '#ffd60a', 1.05, '#d00000'], ['Heli Militar', '#4a5240', 1.15, '#2e3326'], ['Heli de Ataque', '#2b2b2b', 1.1, '#5a1a1a'], ['Heli Pequeno', '#06d6a0', .85, '#118ab2'],
+];
+function malhaAviao(def) {
+  const [nome, cor, L, env, jato, cor2] = def, g = new THREE.Group(), mat = _am(cor, { m: jato ? .7 : .3 }), mat2 = _am(cor2 || cor, { m: .6 });
+  const fus = new THREE.Mesh(new THREE.CylinderGeometry(L * .09, L * .055, L, 16), mat); fus.rotation.x = Math.PI / 2; g.add(fus);
+  const nariz = new THREE.Mesh(new THREE.ConeGeometry(L * .09, L * .3, 16), jato ? mat2 : mat); nariz.rotation.x = -Math.PI / 2; nariz.position.z = L * .62; g.add(nariz);
+  const cabine = new THREE.Mesh(new THREE.SphereGeometry(L * .085, 14, 10, 0, 6.3, 0, 1.4), MAT_VIDRO_A); cabine.position.set(0, L * .06, L * .2); cabine.scale.set(1, .8, 1.6); g.add(cabine);
+  // asas
+  const asa = new THREE.Mesh(new THREE.BoxGeometry(env, L * .035, L * (jato ? .22 : .28)), mat2); asa.position.z = jato ? -L * .05 : L * .05; if (jato) asa.rotation.y = 0, asa.geometry.translate(0, 0, 0); g.add(asa);
+  if (jato) { asa.scale.z = 1; asa.rotation.x = 0; const dir = new THREE.Mesh(new THREE.BoxGeometry(env, L * .035, L * .5), mat2); }
+  if (def[2] && def[0] === 'Biplano') { const asa2 = asa.clone(); asa2.position.y = L * .22; g.add(asa2); for (const s of [-1, 1]) { const esc = new THREE.Mesh(new THREE.BoxGeometry(.05, L * .22, .05), mat2); esc.position.set(s * env * .3, L * .11, L * .05); g.add(esc); } }
+  // cauda
+  const estV = new THREE.Mesh(new THREE.BoxGeometry(L * .03, L * .22, L * .18), mat2); estV.position.set(0, L * .11, -L * .45); g.add(estV);
+  const estH = new THREE.Mesh(new THREE.BoxGeometry(env * .4, L * .03, L * .14), mat2); estH.position.set(0, 0, -L * .45); g.add(estH);
+  let helG = null;
+  if (jato) { for (const s of [-1, 1]) { const turb = new THREE.Mesh(new THREE.CylinderGeometry(L * .055, L * .055, L * .22, 12), _am(0x22262c, { m: .8 })); turb.rotation.x = Math.PI / 2; turb.position.set(s * env * .18, -L * .04, -L * .25); g.add(turb); const fogo = new THREE.Mesh(new THREE.ConeGeometry(L * .045, L * .12, 10), _am(0xff7a1a, { e: 0xff5500, ei: 1.2 })); fogo.rotation.x = Math.PI / 2; fogo.position.set(s * env * .18, -L * .04, -L * .38); fogo.visible = false; g.add(fogo); g.userData.chamas = g.userData.chamas || []; g.userData.chamas.push(fogo); } }
+  else { helG = helice(def[0] === 'Hidroavião' ? 3 : 2, L * .16, 0x222); helG.position.z = L * .78; helG.rotation.x = Math.PI / 2; g.add(helG); }
+  if (def[0] === 'Hidroavião') for (const s of [-1, 1]) { const boia = new THREE.Mesh(new THREE.CapsuleGeometry(L * .05, L * .5, 6, 10), mat2); boia.rotation.x = Math.PI / 2; boia.position.set(s * env * .14, -L * .14, L * .05); g.add(boia); }
+  else for (const [x, z] of [[-env * .16, L * .1], [env * .16, L * .1], [0, -L * .25]]) { const perna = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, L * .12), _am(0x222)); perna.position.set(x, -L * .11, z); g.add(perna); const roda = new THREE.Mesh(new THREE.CylinderGeometry(L * .04, L * .04, .08, 12), _am(0x111)); roda.rotation.z = Math.PI / 2; roda.position.set(x, -L * .17, z); g.add(roda); }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+  g.userData = { nome, heli: false, jato, velMax: jato ? 95 : 45, alturaRoda: L * .17 + .1, helice: helG };
+  return g;
+}
+function malhaHeli(def) {
+  const [nome, cor, s, cor2] = def, g = new THREE.Group(), mat = _am(cor, { m: .5 }), mat2 = _am(cor2 || cor, { m: .5 });
+  const corpo = new THREE.Mesh(new THREE.SphereGeometry(s * .9, 16, 12), mat); corpo.scale.set(1, .95, 1.5); corpo.position.y = s; g.add(corpo);
+  const vidro = new THREE.Mesh(new THREE.SphereGeometry(s * .7, 14, 10), MAT_VIDRO_A); vidro.scale.set(1, .9, 1.2); vidro.position.set(0, s * 1.05, s * .7); g.add(vidro);
+  const boom = new THREE.Mesh(new THREE.CylinderGeometry(s * .14, s * .07, s * 2.4, 12), mat); boom.rotation.x = Math.PI / 2; boom.position.set(0, s * 1.1, -s * 1.9); g.add(boom);
+  const estab = new THREE.Mesh(new THREE.BoxGeometry(s * .06, s * .5, s * .35), mat2); estab.position.set(0, s * 1.3, -s * 2.9); g.add(estab);
+  // patins
+  for (const x of [-s * .7, s * .7]) { const pat = new THREE.Mesh(new THREE.CylinderGeometry(s * .05, s * .05, s * 2.2, 8), _am(0x222)); pat.rotation.x = Math.PI / 2; pat.position.set(x, s * .05, s * .1); g.add(pat); for (const z of [s * .7, -s * .7]) { const li = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, s * .9), _am(0x222)); li.position.set(x, s * .5, z); g.add(li); } }
+  // rotor principal (gira)
+  const mastro = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, s * .4), _am(0x333)); mastro.position.y = s * 1.7; g.add(mastro);
+  const rotor = helice(def[0].includes('Ataque') || def[0].includes('Militar') ? 4 : 3, s * 2.6, 0x15151a); rotor.position.y = s * 1.9; g.add(rotor);
+  const rtras = helice(2, s * .6, 0x15151a); rtras.position.set(s * .1, s * 1.3, -s * 3.05); rtras.rotation.y = Math.PI / 2; g.add(rtras);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  g.userData = { nome, heli: true, velMax: 40, alturaRoda: s * .05 + .05, rotor, rtras };
+  return g;
+}
+function criarAeronave(def, heli) { const g = heli ? malhaHeli(def) : malhaAviao(def); cena.add(g); const a = { g, ...g.userData, vel: 0, vy: 0, ang: 0, rotor: g.userData.rotor, rtras: g.userData.rtras, helice: g.userData.helice }; AERONAVES.push(a); return a; }
+
+// ---- AEROPORTO
+const AERO_LOC = { x: 240, z: 230 };
+function criarAeroporto() {
+  const L = AERO_LOC, y = Math.max(0, alturaChao(L.x, L.z));
+  const tarmac = new THREE.Mesh(new THREE.BoxGeometry(130, .4, 90), _am(0x3a3f45, { r: .95, m: 0 })); tarmac.position.set(L.x, y + .1, L.z); tarmac.receiveShadow = true; cena.add(tarmac);
+  solidos.push({ minX: L.x - 65, maxX: L.x + 65, minZ: L.z - 45, maxZ: L.z + 45, h: y + .2, minY: y - 1 });
+  // pista com faixas
+  for (let i = -5; i <= 5; i++) { const fx = new THREE.Mesh(new THREE.BoxGeometry(5, .02, 1.6), _am(0xf2f2f2)); fx.position.set(L.x - 50 + i * 10, y + .32, L.z + 25); cena.add(fx); }
+  // helipontos
+  for (const [dx, dz] of [[-40, -25], [40, -25]]) { const h = new THREE.Mesh(new THREE.CircleGeometry(6, 24), _am(0xffd60a, { e: 0x443300, ei: .2 })); h.rotation.x = -Math.PI / 2; h.position.set(L.x + dx, y + .32, L.z + dz); cena.add(h); }
+  // torre de controle
+  const torre = new THREE.Mesh(new THREE.CylinderGeometry(3, 4, 18, 12), _am(0xcfd6dd, { m: .1 })); torre.position.set(L.x + 55, y + 9, L.z - 35); torre.castShadow = true; cena.add(torre);
+  const topo = new THREE.Mesh(new THREE.CylinderGeometry(6, 5, 4, 12), MAT_VIDRO_A); topo.position.set(L.x + 55, y + 20, L.z - 35); cena.add(topo);
+  solidos.push({ minX: L.x + 51, maxX: L.x + 59, minZ: L.z - 39, maxZ: L.z - 31, h: y + 22 });
+  // hangar
+  const hangar = new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 40, 20, 1, true, 0, Math.PI), _am(0x8a9199, { m: .3 })); hangar.rotation.z = Math.PI / 2; hangar.position.set(L.x - 48, y + 0, L.z - 30); hangar.scale.set(1, 1, .9); cena.add(hangar);
+  // aeronaves estacionadas: 2 aviões, 1 jato (6 estrelas), 2 helis
+  const parar = (a, dx, dz, ang) => { a.g.position.set(L.x + dx, y + .3 + a.alturaRoda, L.z + dz); a.ang = ang; a.g.rotation.y = ang; a.roubavel = true; };
+  parar(criarAeronave(AVIOES[0], false), -30, 10, 0);
+  parar(criarAeronave(AVIOES[9], false), 0, 10, 0);
+  const jato = criarAeronave(AVIOES[3], false); parar(jato, 30, 10, 0); jato.jato6 = true;
+  parar(criarAeronave(HELIS[0], true), -40, -25, 0);
+  parar(criarAeronave(HELIS[1], true), 40, -25, 0);
+  // GPS/mapa
+  if (typeof LUGARES !== 'undefined') LUGARES.aeroporto = [L.x, L.z];
+  if (typeof MARCOS !== 'undefined') MARCOS.aeroporto = [L.x, L.z];
+}
+
+// ---- entrar / sair / voar
+function aeronavePerto(raio = 7) { let melhor = null, md = raio; for (const a of AERONAVES) { if (a === pilotando || a.destruida) continue; const d = a.g.position.distanceTo(jog.pos); if (d < md) { md = d; melhor = a; } } return melhor; }
+function entrarAeronave(a) {
+  pilotando = a; a.vel = 0; a.vy = 0; if (dirigindo) entrarSairCarro();
+  bonecoJog.g.visible = false; tagJog.visible = false;
+  if (a.roubavel && !a.roubada) { a.roubada = true; G.nivel = 6; G.semVer = 0; if (typeof surgirViatura === 'function') for (let i = 0; i < 2; i++) surgirViatura(); aviso('🚨 PROCURADO ★★★★★★ — você roubou uma aeronave!', '#ff3b3b', 4.5); }
+  aviso((a.heli ? '🚁 ' : '✈️ ') + a.nome + ' · W acelera · A/D vira · ESPAÇO sobe · SHIFT desce · F sai', '#9fe0ff', 6);
+}
+function sairAeronave() {
+  const a = pilotando; const alto = a.g.position.y - (alturaChao(a.g.position.x, a.g.position.z) + a.alturaRoda);
+  if (alto > 5) return aviso('⚠️ Muito alto! Desça pra sair (SHIFT).', '#ffd166', 2);
+  pilotando = null; a.vel = 0; a.vy = 0;
+  jog.pos.set(a.g.position.x + 2.5, alturaChao(a.g.position.x + 2.5, a.g.position.z), a.g.position.z); jog.vy = 0; desprender(jog.pos);
+  bonecoJog.g.visible = true; tagJog.visible = true;
+}
+function explodirAeronave(a) {
+  explosao(a.g.position.x, a.g.position.z, 14, a.g.position.y); a.destruida = true;
+  a.g.traverse(o => { if (o.isMesh && o.material.color) o.material = _am(0x1a1a1a, { r: .9 }); });
+  if (a === pilotando) { pilotando = null; jog.pos.copy(a.g.position); jog.pos.y = alturaChao(jog.pos.x, jog.pos.z); jog.vy = 0; bonecoJog.g.visible = true; tagJog.visible = true; danoJogador(70, 'queda de aeronave'); }
+}
+function atualizarAeronaves(dt) {
+  for (const a of AERONAVES) { if (a.destruida) continue; const lig = a === pilotando; if (a.rotor) a.rotor.rotation.y += (lig ? 45 : 1.5) * dt; if (a.rtras) a.rtras.rotation.x += (lig ? 55 : 2) * dt; if (a.helice) a.helice.rotation.z += (lig ? 60 : 1) * dt; if (a.g.userData.chamas) for (const f of a.g.userData.chamas) { f.visible = lig && a.vel > 15; if (f.visible) f.scale.z = .6 + Math.random(); } }
+  if (!pilotando) return;
+  const a = pilotando, g = a.g, c = !digitando() && estado === 'jogando';
+  const acel = a.heli ? 16 : 24, max = a.velMax;
+  if (c && teclas.KeyW) a.vel = Math.min(max, a.vel + acel * dt);
+  else if (c && teclas.KeyS) a.vel = Math.max(a.heli ? -10 : 0, a.vel - acel * 1.3 * dt);
+  else a.vel *= (1 - dt * (a.heli ? 1.3 : .22));
+  const gi = c ? (teclas.KeyA ? 1 : 0) - (teclas.KeyD ? 1 : 0) : 0;
+  a.ang += gi * (a.heli ? 1.5 : 1.1) * dt * (a.heli ? 1 : Math.min(1, Math.abs(a.vel) / 7));
+  const subir = (c && teclas.Space ? 1 : 0) - (c && (teclas.ShiftLeft || teclas.KeyC) ? 1 : 0), climb = a.heli ? 13 : 18;
+  if (subir) a.vy += (subir * climb - a.vy) * Math.min(1, dt * 3); else a.vy += (0 - a.vy) * Math.min(1, dt * 2);
+  if (!a.heli && a.vel < 9 && g.position.y > alturaChao(g.position.x, g.position.z) + a.alturaRoda + 3) a.vy -= (9 - a.vel) * .7 * dt;   // avião sem velocidade perde altura
+  const dir = new THREE.Vector3(Math.sin(a.ang), 0, Math.cos(a.ang));
+  const nx = g.position.x + dir.x * a.vel * dt, nz = g.position.z + dir.z * a.vel * dt;
+  if (!colide(new THREE.Vector3(nx, g.position.y, nz), 1.2) || g.position.y > alturaChao(nx, nz) + 6) { g.position.x = nx; g.position.z = nz; } else { if (a.vel > 25) explodirAeronave(a); a.vel *= -.2; }
+  g.position.y += a.vy * dt;
+  const chao = Math.max(-1.2, alturaChao(g.position.x, g.position.z)) + a.alturaRoda;
+  if (g.position.y <= chao) { const dura = -a.vy; g.position.y = chao; if (dura > 16 && !a.heli || dura > 22) { explodirAeronave(a); return; } a.vy = Math.max(0, a.vy); a.vel *= a.heli ? .96 : .99; }
+  const pitch = THREE.MathUtils.clamp(-a.vy * .035, -.45, .45), roll = THREE.MathUtils.clamp(-gi * .55, -.6, .6);
+  a.pitch = (a.pitch || 0) + (pitch - (a.pitch || 0)) * Math.min(1, dt * 4); a.roll = (a.roll || 0) + (roll - (a.roll || 0)) * Math.min(1, dt * 4);
+  g.rotation.set(a.pitch, a.ang, a.roll);
+  jog.pos.copy(g.position);
+  // câmera atrás e acima da aeronave
+  yaw = a.ang + Math.PI; pitch2cam(); distCam = 16 + a.vel * .25 + (a.heli ? 2 : 6);
+  if (SOM.motorG) { SOM.motorG.gain.value = .06 + Math.min(.12, Math.abs(a.vel) / 200); if (SOM.motor) SOM.motor.frequency.value = (a.heli ? 20 : 60) + Math.abs(a.vel) * (a.heli ? 2 : 3); }
+}
+function pitch2cam() { pitch = THREE.MathUtils.clamp(.32, -.4, 1.2); }
+window.__dbg.aero = { AERONAVES, AVIOES, HELIS, get pilotando() { return pilotando; }, entrar: a => entrarAeronave(a), AERO_LOC };
+quadros.push(Object.assign(dt => { atualizarAeronaves(dt); return true; }, { fixo: true }));
+try { criarAeroporto(); } catch (e) { console.warn('aeroporto', e); }
 function atualizarVeiculos(dt) {
   for (const v of veiculos) {
     if (v.destruido) continue;
