@@ -4206,7 +4206,7 @@ function colide(p, r) {
 function mover(p, d, r) {
   const nx = p.clone(); nx.x += d.x; if (!colide(nx, r)) p.x = nx.x;
   const nz = p.clone(); nz.z += d.z; if (!colide(nz, r)) p.z = nz.z;
-  if (!G.interior && alturaChao(p.x, p.z) < -.9) { p.x -= d.x; p.z -= d.z; }   // mar fundo: não entra
+  if (!G.interior && alturaChao(p.x, p.z) < -.9 && p !== jog.pos) { p.x -= d.x; p.z -= d.z; }   // mar fundo: moradores não entram (você nada)
 }
 
 // ============================================================ loop
@@ -7969,16 +7969,16 @@ function atualizarAgua(dt) {
         let alvoY;
         if (teclas.KeyC) alvoY = Math.max(alturaChao(jog.pos.x, jog.pos.z) + .4, jog.pos.y - 3.2 * dt * 8);      // desce
         else if (S.mergulho) alvoY = jog.pos.y + (teclas.Space ? 3.4 : .9) * dt * 8;                                // embaixo: boia devagar, Espaço sobe rápido
-        else alvoY = nv - (mexendo ? .35 : 2.25);                                                                     // na superfície: deitado nadando ou em pé batendo perna
+        else alvoY = nv - (mexendo ? .62 : 2.25);                                                                     // na superfície: deitado nadando ou em pé batendo perna
         if (teclas.KeyC) jog.pos.y = Math.max(alturaChao(jog.pos.x, jog.pos.z) + .4, jog.pos.y - 3.6 * dt);
         else if (S.mergulho) jog.pos.y = Math.min(nv - .35, jog.pos.y + (teclas.Space ? 4.2 : 1) * dt);
         else jog.pos.y += (alvoY - jog.pos.y) * Math.min(1, dt * 3);
         jog.vy = 0; jog.chao = true;
         const correnteza = .7 * ONDA_F.v * dt * (S.mergulho ? .3 : 1); jog.pos.x += Math.cos(ONDAS[0][3]) * correnteza; jog.pos.z += Math.sin(ONDAS[0][3]) * correnteza;
         // corpo: deitado nadando, de cabeça pra baixo mergulhando, em pé parado
-        const alvoInc = teclas.KeyC ? 2.1 : S.mergulho ? (teclas.Space ? .3 : 1.45) : mexendo ? 1.32 : .12;
+        const alvoInc = teclas.KeyC ? 2.1 : S.mergulho ? (teclas.Space ? .3 : 1.45) : mexendo ? 1.47 : .12;
         bonecoJog.g.rotation.order = 'YXZ'; S.inc = THREE.MathUtils.lerp(S.inc || 0, alvoInc, Math.min(1, dt * 4)); bonecoJog.g.rotation.x = S.inc;
-        bonecoJog.g.rotation.z = S.mergulho ? 0 : (alturaOnda(jog.pos.x + 1, jog.pos.z) - alturaOnda(jog.pos.x - 1, jog.pos.z)) * .5;
+        bonecoJog.g.rotation.z = (S.mergulho ? 0 : (alturaOnda(jog.pos.x + 1, jog.pos.z) - alturaOnda(jog.pos.x - 1, jog.pos.z)) * .5) + (mexendo ? Math.sin(relogio * (teclas.ShiftLeft ? 6 : 4.2)) * .28 : 0);   // rola o corpo a cada braçada
         S.animNado = mexendo || S.mergulho ? 'nadar' : 'boiar_agua';
         // fôlego embaixo d'água
         if (sub > 2.8) { S.folego = Math.max(0, S.folego - dt); if (S.folego <= 0 && Math.random() < dt * 2) danoJogador(4, 'afogando'); if (Math.random() < dt * 1.5) agua_fx('respirar_embaixo', jog.pos.clone().setY(jog.pos.y + 1.6)); }
@@ -8046,10 +8046,11 @@ function atualizarAgua(dt) {
 }
 quadros.push(Object.assign(dt => { atualizarAgua(dt); return true; }, { fixo: true }));
 // nadar: pose de braçada
-EMOTES.nadar = (p, t, q) => { const s = t * 4.2; p.corpo.rotation.x = .05; p.cabeca.rotation.x = -.55 + Math.sin(s) * .08; p.cabeca.rotation.y = Math.sin(s) * .35;
-  p.be.rotation.set(-1.6 + Math.sin(s) * 1.6, 0, .25 + Math.max(0, Math.cos(s)) * .4); p.bd.rotation.set(-1.6 - Math.sin(s) * 1.6, 0, -.25 - Math.max(0, -Math.cos(s)) * .4);
+EMOTES.nadar = (p, t, q) => { const s = t * (teclas.ShiftLeft ? 6 : 4.2); p.corpo.rotation.x = .05; p.cabeca.rotation.x = -.55 + Math.sin(s) * .08; p.cabeca.rotation.y = Math.sin(s) * .35;
+  const ang2 = s + 3.1416;   // braçada alternada: puxa por baixo e volta por cima (cotovelo pra fora)
+  p.be.rotation.set(-1.6 + Math.cos(s) * 1.55, 0, .15 + Math.max(0, Math.sin(s)) * .7); p.bd.rotation.set(-1.6 + Math.cos(ang2) * 1.55, 0, -.15 - Math.max(0, Math.sin(ang2)) * .7);
   if (p.cE) { p.cE.rotation.x = -.3 - Math.max(0, Math.cos(s)) * .6; p.cD.rotation.x = -.3 - Math.max(0, -Math.cos(s)) * .6; }
-  p.pe.rotation.x = Math.sin(t * 11) * .38; p.pd.rotation.x = -Math.sin(t * 11) * .38; if (p.jE) { p.jE.rotation.x = .25 + Math.max(0, Math.sin(t * 11)) * .3; p.jD.rotation.x = .25 + Math.max(0, -Math.sin(t * 11)) * .3; } };
+  p.pe.rotation.x = Math.sin(t * 11) * .55; p.pd.rotation.x = -Math.sin(t * 11) * .55; if (p.jE) { p.jE.rotation.x = .25 + Math.max(0, Math.sin(t * 11)) * .3; p.jD.rotation.x = .25 + Math.max(0, -Math.sin(t * 11)) * .3; } };
 EMOTES.boiar_agua = (p, t, q) => { const s = t * 2.4; p.corpo.rotation.x = .05; p.cabeca.rotation.x = -.1;
   p.be.rotation.set(-.35 + Math.sin(s) * .3, 0, .9 + Math.sin(s) * .35); p.bd.rotation.set(-.35 - Math.sin(s) * .3, 0, -.9 - Math.sin(s) * .35);
   p.pe.rotation.x = -.35 + Math.sin(t * 3.5) * .5; p.pd.rotation.x = -.35 - Math.sin(t * 3.5) * .5; if (p.jE) { p.jE.rotation.x = .6 + Math.sin(t * 3.5) * .3; p.jD.rotation.x = .6 - Math.sin(t * 3.5) * .3; } };
