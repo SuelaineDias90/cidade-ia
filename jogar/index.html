@@ -4248,6 +4248,7 @@ function atualizarJogador(dt) {
   if (bonecoJog.altTag === undefined) { const bb = new THREE.Box3().setFromObject(bonecoJog.g); bonecoJog.altTag = isFinite(bb.max.y) ? Math.max(1, bb.max.y - bonecoJog.g.position.y) : 3; }
   tagJog.position.set(jog.pos.x, jog.pos.y + bonecoJog.altTag - .05, jog.pos.z);
   if (mouseBaixo) atirar();
+  atualizarArmaMao();
 }
 function atualizarNPCs(dt) {
   for (const n of npcs) {
@@ -6368,12 +6369,14 @@ function motoristaNoCarro(g) {
   m.position.set((T.W || 1.8) * .22, y, z);
   g.add(m); g.userData.motorista = m;
 }
-function tirarMotorista(g) {
+async function tirarMotorista(g) {
   const m = g.userData.motorista; if (!m) return; g.userData.motorista = null;
   const d = m.userData.motorista; g.remove(m);
   const ang = g.rotation.y, lado = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang)), W = g.userData.W || 1.8;
   const pos = g.position.clone().addScaledVector(lado, W * .5 + .9); pos.y = alturaChao(pos.x, pos.z);
-  const b = boneco({ roupa: d.roupa, pele: d.pele, cabelo: d.cab, calca: pega(['#1d3557', '#2b2d42', '#111111', '#6b4f2a']) });
+  const ap = { roupa: d.roupa, pele: d.pele, cabelo: d.cab, calca: pega(['#1d3557', '#2b2d42', '#111111', '#6b4f2a']) };
+  let b; try { b = await corpoRealistaRapido(ap); } catch (e) {}   // motorista realista igual os moradores da rua
+  if (!b) b = boneco(ap);
   b.g.position.copy(pos); cena.add(b.g);
   reagirRoubo(b, lado);
 }
@@ -6440,6 +6443,43 @@ const REACOES = [
 ];
 const Y_ = new THREE.Vector3(0, 1, 0);
 window.__dbg.reagir = i => { const b = boneco({}); b.g.position.set(jog.pos.x + 3, alturaChao(jog.pos.x + 3, jog.pos.z), jog.pos.z); cena.add(b.g); reagirRoubo(b, new THREE.Vector3(1, 0, 0), i); return REACOES.length; };
+// ---- corpo realista rápido (pega um corpo do Blender já pronto, igual os moradores da rua)
+async function corpoRealistaRapido(ap, fem = Math.random() < .5) {
+  const mh = await corposMhProntos();
+  let ops = mh.filter(c => c[1] === (fem ? 1 : 0) && c[2] === 'adulto');
+  if (!ops.length) ops = mh.filter(c => c[2] === 'adulto');
+  if (!ops.length) return null;
+  return bonecoIA(pega(ops)[0], null, { ...ap, manterCores: true });
+}
+// ---- ARMA NA MÃO: desenha a arma que você está segurando (inclusive as que a IA cria)
+function malhaArmaMao(arma) {
+  const g = new THREE.Group(), ia = !!arma.poderRoda;
+  const base = ia ? cor(arma.poderRoda.cor || arma.cor || '#9b5cff') : 0x26262c;
+  const met = (c, r = .5, mt = .7, em = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: mt, emissive: em ? c : 0x000000, emissiveIntensity: em });
+  if (ia) {   // cajado/varinha com orbe brilhante (poder da IA)
+    const cabo = new THREE.Mesh(new THREE.CylinderGeometry(.03, .045, .55, 8), met(0x3a2a1a, .85, .1)); cabo.rotation.z = Math.PI / 2; cabo.position.x = .22; g.add(cabo);
+    const orbe = new THREE.Mesh(new THREE.SphereGeometry(.1, 16, 12), met(base, .2, .2, 1.4)); orbe.position.x = .55; g.add(orbe);
+    const luz = luzDoPool ? null : null;
+  } else {   // pistola/rifle simples e escura
+    const corpo = new THREE.Mesh(new THREE.BoxGeometry(.5, .11, .08), met(base, .45, .75)); corpo.position.x = .22; g.add(corpo);
+    const cano = new THREE.Mesh(new THREE.CylinderGeometry(.026, .026, .34, 8), met(0x101014, .3, .9)); cano.rotation.z = Math.PI / 2; cano.position.x = .5; g.add(cano);
+    const punho = new THREE.Mesh(new THREE.BoxGeometry(.09, .2, .075), met(0x1a1a1f, .6, .3)); punho.position.set(.08, -.12, 0); punho.rotation.z = .25; g.add(punho);
+    const mira = new THREE.Mesh(new THREE.BoxGeometry(.04, .04, .02), met(0x0a0a0a)); mira.position.set(.32, .09, 0); g.add(mira);
+  }
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+function atualizarArmaMao() {
+  const quer = jog.arma && !dirigindo && jog.forma === 'pessoa' && !G.morto && estado === 'jogando';
+  const p = bonecoJog?.p, mao = p?.cD;
+  if (!quer || !mao) { if (jog.armaMesh) jog.armaMesh.visible = false; return; }
+  if (!jog.armaMesh || jog.armaMesh.userData.key !== jog.arma.nome) {
+    if (jog.armaMesh) jog.armaMesh.parent?.remove(jog.armaMesh);
+    jog.armaMesh = malhaArmaMao(jog.arma); jog.armaMesh.userData.key = jog.arma.nome;
+  }
+  if (jog.armaMesh.parent !== mao) { jog.armaMesh.parent?.remove(jog.armaMesh); mao.add(jog.armaMesh); jog.armaMesh.position.copy(window.ARMA_POS || new THREE.Vector3(0, -.42, .02)); jog.armaMesh.rotation.set(window.ARMA_ROT?.x || 0, window.ARMA_ROT?.y || 0, window.ARMA_ROT?.z ?? -Math.PI / 2); }
+  jog.armaMesh.visible = true;
+}
 function reagirRoubo(b, lado, iR) {
   const R = iR != null ? REACOES[iR] : pega(REACOES), alvo = () => dirigindo ? dirigindo.g.position : jog.pos;
   let i = -1, t = 0, dur = 0, passo = null, golpeT = 0, bolha = null, bolhaT = 0, fimT = 0, dir = new THREE.Vector3();
