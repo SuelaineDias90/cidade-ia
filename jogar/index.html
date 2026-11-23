@@ -3195,7 +3195,7 @@ function efeitoArma(hit, A, dir) {
   if (hit.tipo === 'monstro') { o.vida -= (A.dano || 20) * (est === 'explosivo' ? 2 : 1); sangue(o.forma === 'cubo' || o.forma === 'dragao' ? 'monstro_roxo' : o.forma === 'gorila' || o.forma === 'macaco' || o.forma === 'king kong' ? 'monstro_escuro' : 'monstro_verde', hit.pos.clone().setY(o.S * .3), dir, Math.min(2, o.S / 8)); }
   if (est === 'explosivo') return explosao(hit.pos.x, hit.pos.z, A.raio || 8);
   if (hit.tipo !== 'npc') return;
-  if (typeof crime === 'function') crime(.8, 'tiro');
+  if (typeof crime === 'function') crime(.35, 'tiro');
   switch (est) {
     case 'congelar': o.congelado = 8; falarNPC(o, 'Tô... congelaaaado...', 3); break;
     case 'empurrar': o.voo = dir.clone().setY(0).normalize().multiplyScalar(25).setY(12); break;
@@ -4611,7 +4611,7 @@ function entrarSairCarro() {
     transito.splice(transito.indexOf(p.c), 1); tirarMotorista(p.c.g);
     p.c.g.userData.ang = p.c.g.rotation.y;
     v = novoVeiculo(p.c.g, { vel: 0, ang: p.c.g.rotation.y });
-    crime(1, 'roubo de carro');
+    crime(.3, 'roubo de carro');
     const vit = npcs.find(n => !n.dentro && n.pos.distanceTo(jog.pos) < 30); if (vit) falarNPC(vit, 'Ladrão! Roubaram um carro!', 3);
   }
   if (v.tipo === 'policia' && policia.includes(v)) { policia.splice(policia.indexOf(v), 1); crime(2, 'roubou viatura'); }
@@ -4727,7 +4727,7 @@ function moverVeiculo(v, dt, controle) {
       if (n.pos.distanceTo(p) < v.W * .6 + .6) {
         n.voo = new THREE.Vector3(_dir.x * Math.abs(v.vel) * .7 + rnd(-2, 2), 6 + Math.abs(v.vel) * .25, _dir.z * Math.abs(v.vel) * .7 + rnd(-2, 2));
         n.fugir?.(8, p); n.memoria?.push('fui atropelado');
-        if (v === dirigindo) { crime(1, 'atropelamento'); if (Math.random() < .5) soltarDinheiro(n.pos, 10 + (Math.random() * 40 | 0)); }
+        if (v === dirigindo) { crime(.4, 'atropelamento'); if (Math.random() < .5) soltarDinheiro(n.pos, 10 + (Math.random() * 40 | 0)); }
       }
     }
   }
@@ -4824,7 +4824,7 @@ function colisoesCarros(dt) {
     if (A.t || B.t) { const T = A.t || B.t; T.vel = 0; }
     if (forca > 3) {
       fisicaBatida(A, B, forca, r.nx, r.nz, px, pz);
-      if (!A.t && !B.t && forca > 5 && (A.o === dirigindo || B.o === dirigindo)) { const outro = A.o === dirigindo ? B.o : A.o; if (outro.tipo === 'policia') crime(1, 'bateu na polícia'); }
+      if (!A.t && !B.t && forca > 5 && (A.o === dirigindo || B.o === dirigindo)) { const outro = A.o === dirigindo ? B.o : A.o; if (outro.tipo === 'policia') crime(.4, 'bateu na polícia'); }
     }
   }
   // a pé: ninguém atravessa carro
@@ -5029,7 +5029,7 @@ function atualizarPolicia(dt) {
   const fase = (relogio * 4) % 2 < 1; MAT_SIRENE_A.emissiveIntensity = policia.length && fase ? 4 : 0; MAT_SIRENE_B.emissiveIntensity = policia.length && !fase ? 4 : 0;
   if (SOM.sirG) { SOM.sirG.gain.value = policia.length ? Math.max(0, .06 - perto / 3000) : 0; SOM.sir.frequency.value = fase ? 660 : 880; }
   // sem ser visto, as estrelas somem aos poucos
-  if (estrelas) { if (viu) G.semVer = 0; else { G.semVer += dt; if (G.semVer > 12) G.nivel = Math.max(0, G.nivel - dt * .12); } }
+  if (estrelas) { if (viu) G.semVer = 0; else { G.semVer += dt; if (G.semVer > 9) G.nivel = Math.max(0, G.nivel - dt * .18); } }
   // preso: polícia colada e você parado (a pé ou de carro)
   const parado = dirigindo ? Math.abs(dirigindo.vel) < 2 : true;
   if (estrelas && perto < (dirigindo ? 7 : 5.5) && parado && !G.morto) {
@@ -5050,7 +5050,7 @@ function soco() {
       n.voo = f.clone().multiplyScalar(G.socoTipo === 'chute' ? 12 : 7).setY(G.socoTipo === 'chute' ? 6 : 4); n.fugir?.(8); n.humor = Math.max(-1, (n.humor || 0) - .4); n.memoria?.push('o jogador me deu um soco');
       falarNPC(n, pega(['Ai!!', 'Tá louco?!', 'Socorro!', 'Vou chamar a polícia!', 'Isso vai ter volta!']), 2.5); sangue(G.socoTipo === 'chute' ? 'chute' : pega(['soco_nariz', 'soco_boca']), n.pos, f, .7);
       if (Math.random() < .6) soltarDinheiro(n.pos, 5 + (Math.random() * 45 | 0));
-      crime(.55, 'agressão'); tremor.forca = .15; return;
+      crime(.25, 'agressão'); tremor.forca = .15; return;
     }
   }
 }
@@ -5695,7 +5695,7 @@ function ferirAlvo(a, q, dir, causa = 'tiro') {
   if (a.vida <= 0) {
     a.morto = true; a.tMorto = 0; if (a.tag) { cena.remove(a.tag); a.tag = null; }
     if (causa === 'tiro' || causa === 'chute') sangue(Math.random() < .5 ? 'arterial' : 'jorro_continuo', a.pos, dir);
-    sangue(pega(['poca_lenta', 'poca_rapida', 'poca_ladeira']), a.pos); sangue(pega(['gotas_grossas', 'coagulo', 'nevoa_fina']), a.pos, dir); crime(a.papel === 'guarda' ? .6 : 1, 'homicídio');
+    sangue(pega(['poca_lenta', 'poca_rapida', 'poca_ladeira']), a.pos); sangue(pega(['gotas_grossas', 'coagulo', 'nevoa_fina']), a.pos, dir); crime(a.papel === 'guarda' ? .35 : .5, 'homicídio');
     
     narrar(a.papel === 'guarda' ? '💀 Segurança abatido' : `💀 ${a.nome} foi eliminado`);
   } else if (a.papel !== 'guarda' && Math.random() < .5) falarAlvo(a, pega(['Aaah!', 'Tão atirando!', 'Socorro!', 'Não me mata!', 'Seguranças!']));
@@ -6637,11 +6637,19 @@ function atualizarArmaMao() {
   const quer = jog.arma && !dirigindo && jog.forma === 'pessoa' && !G.morto && estado === 'jogando';
   const p = bonecoJog?.p, mao = p?.cD;
   if (!quer || !mao) { if (jog.armaMesh) jog.armaMesh.visible = false; return; }
+  const pronto = jog.chao && G.socoT <= 0 && !jog.emote;
+  if (pronto) {
+    p.bd.rotation.set(-1.25, .2, -.12); p.cD.rotation.x = -.7;
+    if (p.ossos) { p.bd.rotation.set(-1.05, .12, -.08); p.cD.rotation.x = -.6; }
+    p.be.rotation.x += .1;
+  }
   if (!jog.armaMesh || jog.armaMesh.userData.key !== jog.arma.nome) {
     if (jog.armaMesh) jog.armaMesh.parent?.remove(jog.armaMesh);
     jog.armaMesh = malhaArmaMao(jog.arma); jog.armaMesh.userData.key = jog.arma.nome;
   }
-  if (jog.armaMesh.parent !== mao) { jog.armaMesh.parent?.remove(jog.armaMesh); mao.add(jog.armaMesh); jog.armaMesh.position.copy(window.ARMA_POS || new THREE.Vector3(0, -.42, .02)); jog.armaMesh.rotation.set(window.ARMA_ROT?.x || 0, window.ARMA_ROT?.y || 0, window.ARMA_ROT?.z ?? -Math.PI / 2); }
+  if (jog.armaMesh.parent !== mao) { jog.armaMesh.parent?.remove(jog.armaMesh); mao.add(jog.armaMesh); }
+  jog.armaMesh.position.set(.02, -.5, .04);
+  jog.armaMesh.rotation.set(-Math.PI / 2, 0, 0);
   jog.armaMesh.visible = true;
 }
 function reagirRoubo(b, lado, iR) {
@@ -6741,7 +6749,7 @@ function atualizarVida(dt) {
       // carro passou por cima
       for (const C of [dirigindo, ...VIDA.carros.map(c => ({ g: c.g, vel: c.vel }))]) {
         if (!C || Math.abs(C.vel) < 5) continue;
-        if (C.g.position.distanceTo(P.pos) < 2.6) { const f = new THREE.Vector3().subVectors(P.pos, C.g.position).setY(0).normalize(); P.voo = f.multiplyScalar(6 + Math.abs(C.vel) * .5).setY(5 + Math.abs(C.vel) * .2); if (C === dirigindo) { crime(1, 'atropelamento'); if (Math.random() < .4) soltarDinheiro(P.pos, 10 + (Math.random() * 30 | 0)); } }
+        if (C.g.position.distanceTo(P.pos) < 2.6) { const f = new THREE.Vector3().subVectors(P.pos, C.g.position).setY(0).normalize(); P.voo = f.multiplyScalar(6 + Math.abs(C.vel) * .5).setY(5 + Math.abs(C.vel) * .2); if (C === dirigindo) { crime(.4, 'atropelamento'); if (Math.random() < .4) soltarDinheiro(P.pos, 10 + (Math.random() * 30 | 0)); } }
       }
       animarBoneco(P.b, relogio + P.pos.x, P.emote && !P.medo ? 0 : v, P.medo ? 'medo' : P.emote || '');
     }
