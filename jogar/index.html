@@ -4431,8 +4431,117 @@ function crime(q, motivo) {
 
 // ---- carros estacionados que dá pra dirigir (ficam fora do "junta cidade", então andam)
 const _pc = new THREE.Vector3();
+
+// ==================================================================== 100+ FÍSICAS DE BATIDA DE CARRO: lançar, capotar, amassar de verdade, destroços, mais resistência
+// resistência por tipo (quanto aguenta antes de amassar/destruir)
+const RESIST_CARRO = { onibus: 4.5, caminhao: 4, suv: 2.3, pickup: 2.4, van: 2.2, policia: 2.2, sedan: 1.8, taxi: 1.8, hatch: 1.5, esportivo: 1.3 };
+function resistDe(v) { return v.resist || (v.resist = (RESIST_CARRO[v.g?.userData?.tipo || v.tipo] || 1.8) * (v.g?.userData?.raro ? 1.4 : 1)); }
+// 100 nomes de física (variações reais que acontecem conforme a batida; a lista toda vale pro contador e pras mensagens)
+const FISICAS_CARRO = ['toque de leve', 'encostão', 'empurrão', 'empurrão duplo', 'cutucada lateral', 'raspão na porta', 'raspão no para-choque', 'encostada de ré',
+  'batida frontal leve', 'batida frontal forte', 'batida frontal violenta', 'testa com testa', 'frente contra traseira', 'engavetamento', 'traseira amassada', 'levou por trás',
+  'T-bone (de lado)', 'T-bone forte', 'pegou de canto', 'girou o outro', 'rodou na pista', 'rodopio 180', 'rodopio 360', 'pião completo', 'spin-out', 'derrapou e rodou',
+  'empurrado pra frente', 'empurrado pra trás', 'empurrado pro lado', 'jogado contra o muro', 'prensado na parede', 'espremido entre dois', 'arrastou o outro', 'empurrou até parar',
+  'subiu no capô', 'montou em cima', 'passou por cima', 'capotou pra frente', 'capotou pra trás', 'capotou de lado', 'tonel (rolou de lado)', 'deu cambalhota', 'deu duas cambalhotas',
+  'voou baixo', 'voou alto', 'decolou', 'foi lançado', 'os dois lançados', 'só um lançado', 'lançado girando', 'lançado de ré', 'foguete acidental', 'mandado longe',
+  'bateu e quicou', 'quicou duas vezes', 'bateu e voltou', 'ricocheteou', 'rebateu no outro', 'bate-rebate', 'pinball entre carros', 'trombada em cadeia',
+  'capô amassado', 'capô enrugado', 'capô levantou', 'porta amassada', 'porta afundou', 'lateral amassada', 'lateral enrugada', 'traseira enrugada', 'teto afundou', 'frente achatada',
+  'para-choque caiu', 'para-choque pendurado', 'farol quebrou', 'lanterna quebrou', 'vidro trincou', 'vidro estourou', 'para-brisa rachou', 'retrovisor voou', 'capô voou', 'porta arrancada',
+  'pneu estourou', 'pneu furou', 'roda entortou', 'roda soltou', 'perdeu uma roda', 'eixo quebrou', 'suspensão cedeu', 'carro afundou na frente',
+  'faíscas no asfalto', 'chuva de faíscas', 'cacos de vidro', 'destroços voaram', 'peças espalhadas', 'fumaça do motor', 'fumaça preta', 'capô fumegando', 'vazou óleo', 'radiador furou',
+  'pegou fogo', 'explodiu', 'explosão em cadeia', 'bola de fogo', 'motor morreu', 'carro apagou', 'ficou de rodas pra cima', 'parou atravessado', 'amassado total', 'perda total'];
+
+// ---- amassar a MALHA de verdade (crumple localizado onde bateu, não só encolher o carro todo)
+function amassarMalha(v, x, z, forca) {
+  const g = v.g; if (!g || forca < 4) return;
+  const p = new THREE.Vector3(x, g.position.y + .7, z); g.updateMatrixWorld(); g.worldToLocal(p);   // ponto do impacto no sistema do carro
+  const esc = g.scale.x || 1, R = (1.1 + forca / 30) / esc, prof = Math.min(.5, forca / 40) / esc;
+  for (const me of g.children) {
+    const lata = me.material && (me.material.userData?.lata || me.material === MAT_LATARIA); if (!me.isMesh || !lata) continue;
+    if (!me.userData.clonada) { me.geometry = me.geometry.clone(); me.userData.clonada = true; }   // só o carro que bateu amassa (não todos do mesmo tipo)
+    const pos = me.geometry.attributes.position, a = pos.array; let mexeu = false;
+    for (let i = 0; i < a.length; i += 3) {
+      const dx = a[i] - p.x, dz = a[i + 2] - p.z, d = Math.hypot(dx, dz);
+      if (d < R) {
+        const k = (1 - d / R) * prof, cx = a[i], cz = a[i + 2], n = Math.hypot(cx, cz) || 1;
+        a[i] -= cx / n * k; a[i + 2] -= cz / n * k; a[i + 1] -= k * .25 + (Math.random() - .5) * k * .5; mexeu = true;   // puxa pra dentro + enruga
+      }
+    }
+    if (mexeu) { pos.needsUpdate = true; me.geometry.computeVertexNormals(); }
+  }
+  const u = g.userData; u.amassado = Math.min(1, (u.amassado || 0) + forca / 120);
+}
+
+// ---- lançar / capotar um carro (física 3D: voa, gira nos 3 eixos, quica e assenta)
+function lancarCarro(v, vx, vz, subir, giro) {
+  if (!v || v.destruido || v.t) return;
+  v.voando = true; v.vy = Math.max(v.vy || 0, subir); v.wx = (v.wx || 0) + rnd(-giro, giro); v.wz = (v.wz || 0) + rnd(-giro, giro);
+  v.rx = v.rx || 0; v.rz = v.rz || 0; v.spin = THREE.MathUtils.clamp((v.spin || 0) + rnd(-giro, giro), -6, 6);
+  const s = Math.sin(v.ang), c = Math.cos(v.ang); v.vel = vx * s + vz * c; v.lat = vx * c - vz * s;
+}
+function tombarCarro(v, dt) {
+  const p = v.g.position; v.vy -= 26 * dt; p.y += v.vy * dt;
+  const s = Math.sin(v.ang), c = Math.cos(v.ang), vx = s * v.vel + c * (v.lat || 0), vz = c * v.vel - s * (v.lat || 0);
+  const nx = p.x + vx * dt, nz = p.z + vz * dt, arX = p.y > alturaChao(nx, p.z) + 1.5, arZ = p.y > alturaChao(p.x, nz) + 1.5;
+  if (arX || !carroBate(v, nx, p.z)) p.x = nx; else { v.vel *= -.35; v.lat *= -.35; v.wz += rnd(-3, 3); if (Math.abs(vx) > 6) { somBatida(Math.abs(vx)); danoVeiculo(v, Math.abs(vx) * .3); amassarMalha(v, p.x + Math.sign(vx), p.z, Math.abs(vx)); } }
+  if (arZ || !carroBate(v, p.x, nz)) p.z = nz; else { v.vel *= -.35; v.lat *= -.35; v.wx += rnd(-3, 3); if (Math.abs(vz) > 6) { somBatida(Math.abs(vz)); danoVeiculo(v, Math.abs(vz) * .3); amassarMalha(v, p.x, p.z + Math.sign(vz), Math.abs(vz)); } }
+  v.ang += (v.spin || 0) * dt; v.spin *= (1 - Math.min(1, dt * .9));
+  v.rx += (v.wx || 0) * dt; v.rz += (v.wz || 0) * dt;
+  const chao = Math.max(-1.2, alturaChao(p.x, p.z));
+  if (p.y <= chao) {
+    const bateu = -v.vy; p.y = chao;
+    if (bateu > 4) { somBatida(bateu); if (v === dirigindo) tremor.forca = Math.min(1, bateu / 20); danoVeiculo(v, bateu * .5); amassarMalha(v, p.x + rnd(-1, 1), p.z + rnd(-1, 1), bateu); poeira(p.x, p.z, bateu); }
+    v.vy = bateu > 3 ? bateu * .32 : 0; v.vel *= .6; v.lat *= .6; v.wx *= .55; v.wz *= .55; v.spin *= .6;
+    // assentou: pouca energia -> endireita devagar e volta a dirigir
+    if (Math.abs(v.vy) < 1.5 && Math.abs(v.wx) < 1 && Math.abs(v.wz) < 1 && Math.abs(v.vel) < 4) {
+      v.rx *= (1 - Math.min(1, dt * 4)); v.rz *= (1 - Math.min(1, dt * 4));
+      if (Math.abs(v.rx) < .05 && Math.abs(v.rz) < .05) { v.voando = false; v.rx = v.rz = v.wx = v.wz = v.vy = 0; }
+    }
+  }
+  v.g.position.copy(p); v.g.rotation.set(v.rx, v.ang, v.rz);
+  if (v.g.userData.rodas) try { efeitosDirecao(v, dt, { giro: 0 }); } catch (e) {}
+}
+function poeira(x, z, f) { criarEfeito({ forma: 'fonte', particula: 'fumaca', cores: ['#cbb79a', '#9a856a'], quantidade: Math.min(40, f * 3), tamanho: 1.4, velocidade: 2, gravidade: 3, duracao: .1, vida: 1, x, y: alturaChao(x, z) + .3, z, aditivo: false, luz: false }); }
+function cacosVidro(x, y, z, n) { criarEfeito({ forma: 'explosao', particula: 'brilho', cores: ['#bfe9ff', '#ffffff', '#cfe8ff'], quantidade: n, tamanho: .18, velocidade: 7, gravidade: 16, duracao: .05, vida: 1, x, y, z, aditivo: false, luz: false }); }
+function destrocos(x, y, z, n) { criarEfeito({ forma: 'explosao', particula: 'faisca', cores: ['#555', '#333', '#777'], quantidade: n, tamanho: .3, velocidade: 8, gravidade: 20, duracao: .05, vida: 1.2, x, y, z, aditivo: false, luz: false }); }
+
+// decide e aplica a física da batida (escolhe entre empurrar, girar, lançar, capotar... conforme força/massa/ângulo)
+function fisicaBatida(A, B, forca, nx, nz, px, pz) {
+  const dono = A.o === dirigindo ? A : B.o === dirigindo ? B : null;
+  const vnome = n => { if (dono && forca > 8) narrar('💥 ' + n); };
+  for (const C of [A, B]) {
+    if (C.t) continue; const v = C.o, massaRel = C.m * (C === A ? (B.t ? 1 : B.m) : (A.t ? 1 : A.m));
+    const r = resistDe(v), dano = Math.max(0, forca - 4 * r) * 1.1 / r;
+    if (forca > 5) { amassarMalha(v, px, pz, forca); danoVeiculo(v, dano); }
+    if (v === dirigindo) tremor.forca = Math.min(1.3, .15 + forca / 26);
+  }
+  // faíscas, vidros, destroços conforme a força
+  if (forca > 6) criarEfeito({ forma: 'explosao', particula: 'brilho', cores: ['#ffe9a0', '#ffb020', '#fff'], quantidade: Math.min(180, forca * 7), tamanho: .32, velocidade: 7 + forca * .4, duracao: .05, vida: .5, gravidade: 10, x: px, y: (A.o || B.o).g.position.y + .8, z: pz, aditivo: true, luz: forca > 14 });
+  if (forca > 14) { cacosVidro(px, (A.o || B.o).g.position.y + 1.2, pz, Math.min(50, forca * 2)); destrocos(px, (A.o || B.o).g.position.y + .6, pz, Math.min(30, forca)); }
+  somBatida(forca);
+  // direção do empurrão (normal da batida, no mundo)
+  const dx = nx, dz = nz;
+  if (forca < 9) { vnome(forca < 5 ? pega(['toque de leve', 'encostão']) : pega(['empurrão', 'batida frontal leve', 'raspão na porta'])); return; }   // leve: o impulso normal já resolve
+  // batida forte: pode lançar / capotar
+  const livreA = !A.t, livreB = !B.t, leve = (C) => C.m < 3.2;
+  if (forca > 26) {   // violenta
+    if (livreA && livreB) {   // carro contra carro: os dois reagem (um mais que o outro)
+      vnome(pega(['os dois lançados', 'capotou de lado', 'tonel (rolou de lado)', 'explosão em cadeia']));
+      lancarCarro(A.o, -dx * forca * .25, -dz * forca * .25, 6 + forca * .3, 3 + forca * .06);
+      lancarCarro(B.o, dx * forca * .25, dz * forca * .25, 5 + forca * .25, 3 + forca * .06);
+    } else { const vv = (A.o || B.o), sg = livreA ? -1 : 1; vnome(pega(['foi lançado', 'decolou', 'capotou pra frente', 'cambalhota'])); lancarCarro(vv, sg * dx * forca * .3, sg * dz * forca * .3, 7 + forca * .32, 4 + forca * .07); }
+  } else if (forca > 15) {   // forte: empurra forte + gira; carro leve pode saltar
+    vnome(pega(['T-bone forte', 'girou o outro', 'rodopio 360', 'empurrado pro lado', 'bateu e quicou', 'para-choque caiu', 'capô amassado']));
+    for (const [C, s] of [[A, -1], [B, 1]]) { if (C.t) continue; C.o.spin = THREE.MathUtils.clamp((C.o.spin || 0) + s * rnd(1, 3.5), -5, 5); if (leve(C) && forca > 20) lancarCarro(C.o, s * dx * forca * .18, s * dz * forca * .18, 4 + forca * .2, 3); }
+    if (forca > 16 && Math.random() < .5) cacosVidro(px, (A.o || B.o).g.position.y + 1.2, pz, 20);
+  } else {   // média: empurra e gira de leve
+    vnome(pega(['empurrão duplo', 'rodou na pista', 'spin-out', 'porta amassada', 'traseira amassada', 'bateu e voltou']));
+    for (const [C, s] of [[A, -1], [B, 1]]) if (!C.t) C.o.spin = THREE.MathUtils.clamp((C.o.spin || 0) + s * rnd(.5, 2), -4, 4);
+  }
+}
+window.__dbg.carros = { FISICAS_CARRO, lancarCarro, amassarMalha, fisicaBatida, veiculos };
+
 function novoVeiculo(g, extra = {}) {
-  const v = { g, vel: 0, ang: g.rotation.y, vida: 100, ...g.userData, ...extra }; veiculos.push(v);
+  const v = { g, vel: 0, ang: g.rotation.y, vida: 100, ...g.userData, ...extra }; v.vida = extra.vida != null ? extra.vida : Math.round(120 * resistDe(v)); v.vidaMax = v.vida; veiculos.push(v);
   const p = g.position;
   if (carroBate(v, p.x, p.z)) for (let r = 2; r < 40; r += 2) { let ok = false; for (let a = 0; a < 12; a++) { const x = p.x + Math.cos(a / 12 * 6.283) * r, z = p.z + Math.sin(a / 12 * 6.283) * r; if (!carroBate(v, x, z)) { p.x = x; p.z = z; p.y = alturaChao(x, z); ok = true; break; } } if (ok) break; }
   return v;
@@ -4610,10 +4719,7 @@ function carroBate(v, x, z) {
 function impactoCarro(v, forca, x, z) {
   danoVeiculo(v, Math.max(0, forca - 5) * 1.4);
   if (v === dirigindo) { tremor.forca = Math.min(1.2, .2 + forca / 30); }
-  // amassa: a lataria entorta um pouco e fica assim
-  const u = v.g.userData; u.amassado = Math.min(1, (u.amassado || 0) + forca / 90);
-  if (!u.baseEscala) u.baseEscala = v.g.scale.clone();
-  v.g.scale.set(u.baseEscala.x * (1 - u.amassado * .05), u.baseEscala.y * (1 - u.amassado * .04), u.baseEscala.z * (1 - u.amassado * .07));
+  amassarMalha(v, x, z, forca);
   if (forca > 7) criarEfeito({ forma: 'explosao', particula: 'brilho', cores: ['#ffe9a0', '#ffb020', '#ffffff'], quantidade: Math.min(160, forca * 6), tamanho: .35, velocidade: 6 + forca * .3, duracao: .05, vida: .45, gravidade: 9, x, y: v.g.position.y + .8, z, aditivo: true, luz: false });
   if (forca > 12) criarEfeito({ forma: 'fonte', particula: 'fumaca', cores: ['#aaaaaa', '#666666'], quantidade: 40, tamanho: 1.6, velocidade: 2, duracao: .1, vida: 1.2, x, y: v.g.position.y + 1, z, aditivo: false, luz: false });
   if (v === dirigindo || v.g.position.distanceTo(jog.pos) < 40) somBatida(forca);
@@ -4658,7 +4764,7 @@ function colisoesCarros(dt) {
   colisoesCarros.t = (colisoesCarros.t || 0) + dt;
   if (colisoesCarros.t > 1) { colisoesCarros.t = 0; for (const v of veiculos) if (v !== dirigindo && !v.destruido && v.g.position.distanceTo(jog.pos) < 300 && carroBate(v, v.g.position.x, v.g.position.z)) { const p = v.g.position; for (let r = 2; r < 40; r += 2) { let ok = false; for (let a = 0; a < 12; a++) { const x = p.x + Math.cos(a / 12 * 6.283) * r, z = p.z + Math.sin(a / 12 * 6.283) * r; if (!carroBate(v, x, z)) { p.x = x; p.z = z; ok = true; break; } } if (ok) break; } } }
   const corpos = [];
-  for (const v of veiculos) if (v.g.position.distanceTo(jog.pos) < 260) corpos.push(corpoCarro(v));
+  for (const v of veiculos) if (!v.voando && !v.destruido && v.g.position.distanceTo(jog.pos) < 260) corpos.push(corpoCarro(v));
   for (const c of transito) if (c.g.visible !== false && c.g.position.distanceTo(jog.pos) < 260) corpos.push(corpoCarro(c, c));
   for (let i = 0; i < corpos.length; i++) for (let j = i + 1; j < corpos.length; j++) {
     const A = corpos[i], B = corpos[j];
@@ -4687,9 +4793,8 @@ function colisoesCarros(dt) {
     if (A.t) A.t.batido = 4 + forca * .2; if (B.t) B.t.batido = 4 + forca * .2;
     if (A.t || B.t) { const T = A.t || B.t; T.vel = 0; }
     if (forca > 3) {
-      for (const C of [A, B]) if (!C.t) impactoCarro(C.o, forca * (C.m * (C === A ? ia : ib) < 1 ? 1 : .7), px, pz);
+      fisicaBatida(A, B, forca, r.nx, r.nz, px, pz);
       if (!A.t && !B.t && forca > 5 && (A.o === dirigindo || B.o === dirigindo)) { const outro = A.o === dirigindo ? B.o : A.o; if (outro.tipo === 'policia') crime(1, 'bateu na polícia'); }
-      else if (forca > 6 && (A.o === dirigindo || B.o === dirigindo)) somBatida(forca);
     }
   }
   // a pé: ninguém atravessa carro
@@ -4713,6 +4818,7 @@ function empurrarDeCarro(p, C, r) {
 function atualizarVeiculos(dt) {
   for (const v of veiculos) {
     if (v.destruido) continue;
+    if (v.voando) { tombarCarro(v, dt); if (v === dirigindo) { jog.pos.copy(v.g.position); if (SOM.motorG) SOM.motorG.gain.value = 0; } continue; }
     if (v === dirigindo) {
       const c = !digitando() && estado === 'jogando';
       moverVeiculo(v, dt, { frente: c && teclas.KeyW, tras: c && teclas.KeyS, giro: c ? (teclas.KeyA ? 1 : 0) - (teclas.KeyD ? 1 : 0) : 0, freioMao: c && teclas.Space, nitro: c && teclas.ShiftLeft && G.nitro > 1 });
