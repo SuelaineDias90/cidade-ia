@@ -389,6 +389,17 @@ window.SEM_PC = true;
   #stAdmJogo button{border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:7px;background:rgba(255,255,255,.07);color:#fff;font:700 12px 'Segoe UI';cursor:pointer;text-align:left}#stAdmJogo button.on{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
   .stAdm{display:grid;gap:6px}.stAdm input,.stAdm select{background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:9px;padding:7px;font:600 13px 'Segoe UI'}
   .stVis{display:flex;gap:6px;align-items:center;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.04);margin:4px 0;font-size:13px}.stVis span{flex:1}.stVis small{color:#9d93bd}
+  #hubJogos{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(8,5,18,.78);backdrop-filter:blur(10px);font-family:'Segoe UI';color:#fff}#hubJogos.on{display:flex}
+  .hbCaixa{width:min(1040px,95vw);height:min(88vh,900px);display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(30,20,60,.95),rgba(12,8,28,.97));border:1px solid rgba(255,255,255,.12);border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .hbTopo{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08)}.hbTopo b{font:900 22px 'Segoe UI';letter-spacing:3px;background:linear-gradient(90deg,#c4b5fd,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent}.hbTopo span{color:#a99fc8;flex:1}
+  .hbTopo button{border:0;border-radius:10px;width:38px;height:38px;background:rgba(255,255,255,.08);color:#fff;font-size:16px;cursor:pointer}
+  .hbLista{overflow-y:auto;padding:10px 20px 24px}.hbLista h4{margin:20px 0 10px;color:#c4b5fd;letter-spacing:1px}
+  .hbMulti{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:18px;cursor:pointer;background:linear-gradient(120deg,#1d4ed8,#7c3aed 55%,#db2777);box-shadow:0 10px 30px rgba(124,58,237,.35);transition:transform .15s}.hbMulti:hover{transform:translateY(-2px)}
+  .hbMulti i{font-style:normal;font-size:40px}.hbMulti div{flex:1;display:grid}.hbMulti b{font-size:20px}.hbMulti small{opacity:.85}.hbMulti span{font-weight:800;background:rgba(255,255,255,.2);padding:8px 14px;border-radius:12px}
+  .hbGrade{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+  .hbCard{text-align:left;display:grid;gap:5px;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(160deg,color-mix(in srgb,var(--c,#8b5cf6) 35%,transparent),rgba(255,255,255,.03));color:#fff;cursor:pointer;font-family:'Segoe UI';transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+  .hbCard:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(0,0,0,.4);border-color:var(--c,#8b5cf6)}.hbCard i{font-style:normal;font-size:34px}.hbCard b{font-size:16px}.hbCard small{color:#d7cff0;font-size:12px;line-height:1.35}
+  .hbCard.com{--c:#22d3ee}.hbVazio{color:#a99fc8;font-size:13px;padding:10px}
   /* ===== mapa v2 ===== */
   #mapaG{position:fixed;inset:0;z-index:25;display:none;background:#0a1a2a}
   #mapaG canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab;border:0;border-radius:0}
@@ -7342,7 +7353,7 @@ function pararTeste() {
   if (ST.salvoJog) { jog.vel = ST.salvoJog.vel; jog.pulo = ST.salvoJog.pulo; jog.tam = ST.salvoJog.tam; gravidade = ST.salvoJog.grav; bonecoJog.g.scale.setScalar(1); }
   carregarPartes(ST.copia || []);
   if (ST.soJogar) { ST.soJogar = false; STJ = ST.meuSalvo || STJ; carregarPartes(STJ.partes); }
-  estado = 'studio'; interfaceJogo(false); soltarMouse(); bonecoJog.g.visible = false; tagJog.visible = false; gradeST.visible = true; SP.classList.add('on'); pintarST(); $('#stAdmJogo')?.classList.remove('on'); admJ.voar = admJ.deus = admJ.rapido = admJ.fantasma = false;
+  estado = 'studio'; interfaceJogo(false); soltarMouse(); bonecoJog.g.visible = false; tagJog.visible = false; gradeST.visible = true; SP.classList.add('on'); pintarST(); if (ST.doHub) { voltarDoHub(); return; } $('#stAdmJogo')?.classList.remove('on'); admJ.voar = admJ.deus = admJ.rapido = admJ.fantasma = false;
 }
 $('#stTestar').onclick = () => iniciarTeste(false);
 $('#stParar').onclick = pararTeste;
@@ -7360,7 +7371,7 @@ function comandoST([op, a, b, c2]) {
   else if (op === 'fim') { if (ST.fim) return; ST.fim = true; msgST((a ? '🏆 ' : '💀 ') + REDE.filtrar(b), 99); if (a) criarEfeito2d({ estilo: 'confete', duracao: 3 }); setTimeout(() => { if (ST.modo === 'testar') pararTeste(); }, 3500); }
   else if (op === 'log') logST('› ' + a); else if (op === 'erro') logST('⚠️ ' + a);
 }
-function morrerST() { sangue('tiro_saida', jog.pos); jog.pos.copy(ST.checkpoint); jog.vy = 0; ST.vida = STJ.jogador.vida; msgST('💀 Você morreu! Voltando…', 1.5); }
+function morrerST() { ST.worker?.postMessage({ t: 'morreu' }); sangue('tiro_saida', jog.pos); jog.pos.copy(ST.checkpoint); jog.vy = 0; ST.vida = STJ.jogador.vida; msgST('💀 Você morreu! Voltando…', 1.5); }
 function atualizarStudio(dt) {
   if (!ST.on) return;
   if (ST.modo === 'editar') { cameraStudio(dt); bonecoJog.g.visible = false; tagJog.visible = false; return; }
@@ -7375,7 +7386,7 @@ function atualizarStudio(dt) {
     const dentro = Math.abs(jog.pos.x - px) < w && Math.abs(jog.pos.z - pz) < d && jog.pos.y < p.y + p.sy / 2 + .4 && jog.pos.y + 1.8 * jog.tam > p.y - p.sy / 2;
     if (!dentro) continue; agora.add(p.id);
     if (ST.tocando.has(p.id)) continue;
-    if (p.tipo === 'moeda') { apagarParte(p); ST.pontos++; $('#stPts').textContent = '⭐ ' + ST.pontos; ST.worker?.postMessage({ t: 'some', id: p.id }); criarEfeito2d({ estilo: 'flash', cor: '#ffd166', duracao: .2, intensidade: .3 }); }
+    if (p.tipo === 'moeda') { apagarParte(p); if (ST.worker) ST.worker.postMessage({ t: 'moeda', id: p.id }); else { ST.pontos++; $('#stPts').textContent = '⭐ ' + ST.pontos; } criarEfeito2d({ estilo: 'flash', cor: '#ffd166', duracao: .2, intensidade: .3 }); }
     else if (p.tipo === 'lava') morrerST();
     else if (p.tipo === 'checkpoint') { ST.checkpoint = new THREE.Vector3(px, p.y + p.sy / 2 + .1, pz); msgST('🚩 Checkpoint!', 1.5); }
     else if (p.tipo === 'trampolim') { jog.vy = jog.pulo * 2.2; jog.chao = false; }
@@ -7494,6 +7505,102 @@ quadros.push(dt => {
   if (!admJ.fantasma) for (const p of ST.partes) if (p.sFant && !p.s) { p.s = p.sFant; p.sFant = null; solidos.push(p.s); }
   return true;
 });
+// ==================================================================== MENU JOGOS: multiplayer, 10 jogos oficiais do Cidade IA e jogos da comunidade
+const JOGOS_OFICIAIS = (() => {
+  let id = 0;
+  const P = (tipo, x, y, z, sx, sy, sz, cor, nome, extra = {}) => ({ id: 'p' + (++id), tipo, nome: nome || tipo, x, y, z, sx, sy, sz, ry: 0, cor, visivel: true, ...extra });
+  const ARCO = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
+  const J = (nome, desc, ic, cor, partes, codigo, jogador = {}) => ({ nome, desc, ic, cor, oficial: true, lang: 'js', codigo: codigo.join('\n'), jogador: { vel: 10, pulo: 12, tamanho: 1, gravidade: 1, vida: 100, ...jogador }, partes });
+  const lista = [];
+  // 1) OBBY ARCO-ÍRIS — parkour sobre lava
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('lava', 0, -.3, 60, 70, .4, 150, '#ff3b1f', 'Lava')];
+    let z = 5, y = 1, x = 0; for (let i = 0; i < 24; i++) { z += 4.5 + (i % 3); y += i % 2 ? .6 : 0; x = Math.sin(i * .9) * 6; p.push(P(i % 6 === 5 ? 'checkpoint' : 'bloco', x, y, z, i % 4 === 3 ? 1.6 : 2.6, 1, 2.6, ARCO[i % 8], i % 6 === 5 ? 'Checkpoint' : 'Degrau')); }
+    p.push(P('chegada', x, y + .5, z + 5, 5, .4, 5, '#ffd700', 'Chegada'));
+    lista.push(J('Obby Arco-Íris', 'Pule de bloco em bloco sobre a lava até a bandeira dourada.', '🌈', '#ec4899', p, ["jogo.ao_comecar(() => jogo.mensagem('🌈 Chegue na bandeira dourada sem cair na lava!', 4));", "jogo.ao_tocar('Checkpoint', () => jogo.mensagem('🚩 Checkpoint salvo!', 1.5));"])); }
+  // 2) CAÇA-MOEDAS — 30 moedas em 60 segundos
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('bloco', 0, -.5, 0, 90, 1, 90, '#a7f3d0', 'Chão')];
+    for (let i = 0; i < 30; i++) { const a = i * 2.4, r = 8 + (i * 1.3) % 34; p.push(P('moeda', Math.cos(a) * r, 1.2 + (i % 5 === 0 ? 3 : 0), Math.sin(a) * r, 1, 1, .2, '#ffd166', 'Moeda')); }
+    for (let i = 0; i < 6; i++) p.push(P('bloco', Math.cos(i) * 20, 1.5, Math.sin(i * 2) * 20, 4, 3, 4, '#60a5fa', 'Caixa'));
+    lista.push(J('Caça-Moedas', 'Pegue as 30 moedas antes do tempo acabar. Algumas ficam no alto!', '🪙', '#eab308', p, ["let resta = 60;", "jogo.ao_comecar(() => jogo.mensagem('🪙 Pegue as 30 moedas em 60 segundos!', 3));", "jogo.repetir(1, () => { resta--; if (resta <= 10) jogo.mensagem('⏱ ' + resta + ' s', 1); if (resta <= 0) jogo.perder('Acabou o tempo! Você pegou ' + jogo.pontos() + ' moedas'); });", "jogo.ao_tocar('Moeda', () => { if (jogo.pontos() >= 30) jogo.ganhar('Pegou todas com ' + resta + ' s sobrando!'); });"])); }
+  // 3) A LAVA SOBE — escale a torre antes da lava
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('lava', 0, -3, 0, 80, 2, 80, '#ff3b1f', 'LavaSobe')];
+    for (let i = 0; i < 34; i++) { const a = i * .55, y = 1.5 + i * 1.6; p.push(P('bloco', Math.cos(a) * 9, y, Math.sin(a) * 9, 3, .8, 3, i % 2 ? '#94a3b8' : '#cbd5e1', 'Degrau')); }
+    p.push(P('cilindro', 0, 28, 0, 4, 56, 4, '#475569', 'Torre'));
+    p.push(P('chegada', Math.cos(34 * .55) * 9, 1.5 + 34 * 1.6, Math.sin(34 * .55) * 9, 4, .4, 4, '#ffd700', 'Chegada'));
+    lista.push(J('A Lava Sobe', 'A lava está subindo! Escale a torre em espiral antes que ela te alcance.', '🌋', '#ef4444', p, ["let v = 0.55;", "jogo.ao_comecar(() => jogo.mensagem('🌋 A lava está subindo! Corre pra cima!', 3));", "jogo.a_cada_quadro(dt => { const l = jogo.parte('LavaSobe'); l.y += v * dt; v += dt * 0.004; });", "jogo.ao_morrer(() => jogo.perder('A lava te pegou!'));"])); }
+  // 4) LABIRINTO — ache a saída em 2 minutos
+  { id = 0; const N = 9, T = 6, p = [P('spawn', 0, .15, 0, 3, .3, 3, '#3ddc8a', 'Início'), P('bloco', (N - 1) * T / 2, -.5, (N - 1) * T / 2, N * T + 6, 1, N * T + 6, '#e5e7eb', 'Chão')];
+    let s = 7; const rnd2 = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const vis = new Set(['0,0']), par = [], pilha = [[0, 0]], abertas = new Set();
+    while (pilha.length) { const [cx, cz] = pilha[pilha.length - 1]; const viz = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => [cx + a, cz + b]).filter(([a, b]) => a >= 0 && b >= 0 && a < N && b < N && !vis.has(a + ',' + b)); if (!viz.length) { pilha.pop(); continue; } const [nx, nz] = viz[Math.floor(rnd2() * viz.length)]; vis.add(nx + ',' + nz); abertas.add([cx, cz, nx, nz].join()); abertas.add([nx, nz, cx, cz].join()); pilha.push([nx, nz]); }
+    const aberta = (a, b, c, d) => abertas.has([a, b, c, d].join());
+    for (let i = 0; i < N; i++) for (let k = 0; k < N; k++) { const x = i * T, z = k * T;
+      if (!aberta(i, k, i + 1, k)) p.push(P('parede', x + T / 2, 2, z, .6, 4, T + .6, '#6366f1', 'Parede'));
+      if (!aberta(i, k, i, k + 1)) p.push(P('parede', x, 2, z + T / 2, T + .6, 4, .6, '#6366f1', 'Parede')); }
+    for (let i = 0; i < N; i++) { p.push(P('parede', i * T, 2, -T / 2, T + .6, 4, .6, '#4338ca', 'Borda')); p.push(P('parede', -T / 2, 2, i * T, .6, 4, T + .6, '#4338ca', 'Borda')); }
+    p.push(P('chegada', (N - 1) * T, .2, (N - 1) * T, 3, .3, 3, '#ffd700', 'Chegada'));
+    lista.push(J('Labirinto', 'Ache a saída dourada em menos de 2 minutos. As paredes são altas!', '🌀', '#6366f1', p, ["let resta = 120;", "jogo.ao_comecar(() => jogo.mensagem('🌀 Ache a saída dourada! (2 minutos)', 3));", "jogo.repetir(1, () => { resta--; if (resta % 30 === 0 || resta <= 10) jogo.mensagem('⏱ ' + resta + ' s', 1.2); if (resta <= 0) jogo.perder('Você se perdeu no labirinto!'); });"])); }
+  // 5) TORRE DE TRAMPOLINS
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('bloco', 0, -.5, 0, 60, 1, 60, '#fde68a', 'Chão')];
+    let y = 0; for (let i = 0; i < 12; i++) { const a = i * 1.1, x = Math.cos(a) * 7, z = Math.sin(a) * 7; p.push(P('bloco', x, y + .25, z, 4, .5, 4, ARCO[i % 8], 'Andar')); p.push(P('trampolim', x, y + .75, z, 2.4, .5, 2.4, '#ff70a6', 'Trampolim')); if (i === 6) p.push(P('checkpoint', x + 2.5, y + .7, z, 1.5, .3, 1.5, '#3a86ff', 'Checkpoint')); y += 9; }
+    p.push(P('chegada', Math.cos(12 * 1.1) * 7, y + .3, Math.sin(12 * 1.1) * 7, 5, .4, 5, '#ffd700', 'Chegada'));
+    lista.push(J('Torre de Trampolins', 'Quique de trampolim em trampolim até o topo da torre.', '🤸', '#ff70a6', p, ["jogo.ao_comecar(() => jogo.mensagem('🤸 Pule nos trampolins rosas até o topo!', 3));"])); }
+  // 6) PLATAFORMAS MALUCAS — elas se mexem sobre a lava
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('lava', 0, -.3, 45, 50, .4, 100, '#ff3b1f', 'Lava')];
+    for (let i = 0; i < 12; i++) p.push(P('bloco', 0, 1 + i * .3, 6 + i * 6.5, 3.5, .7, 3.5, ARCO[i % 8], 'Mov' + i));
+    p.push(P('chegada', 0, 5, 6 + 12 * 6.5, 5, .4, 5, '#ffd700', 'Chegada'));
+    lista.push(J('Plataformas Malucas', 'As plataformas não param de se mexer. Calcule o pulo!', '🛸', '#06b6d4', p, ["let t = 0;", "jogo.ao_comecar(() => jogo.mensagem('🛸 Pule nas plataformas que se mexem!', 3));", "jogo.a_cada_quadro(dt => { t += dt; for (let i = 0; i < 12; i++) { const p = jogo.parte('Mov' + i); if (i % 3 === 0) p.x = Math.sin(t * 1.2 + i) * 6; else if (i % 3 === 1) p.y = 1 + i * .3 + Math.sin(t * 1.5 + i) * 2; else p.x = Math.cos(t + i) * 4; } });"])); }
+  // 7) CONTRA O RELÓGIO — pista com curvas
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início')];
+    let x = 0, z = 0, dir = 0; for (let i = 0; i < 40; i++) { if (i % 8 === 7) dir = (dir + (i % 16 === 7 ? 1 : 3)) % 4; const [dx, dz] = [[0, 1], [1, 0], [0, -1], [-1, 0]][dir]; x += dx * 4; z += dz * 4; p.push(P(i % 10 === 9 ? 'checkpoint' : 'bloco', x, -.25 + i * .05, z, 4, .5, 4, i % 2 ? '#f1f5f9' : '#334155', i % 10 === 9 ? 'Checkpoint' : 'Pista')); }
+    p.push(P('lava', x / 2, -4, z / 2, 220, .4, 220, '#ff3b1f', 'Abismo'));
+    p.push(P('chegada', x + 2, 2.3, z + 2, 5, .4, 5, '#ffd700', 'Chegada'));
+    lista.push(J('Contra o Relógio', 'Corra pela pista no céu em 50 segundos. Cair = voltar pro checkpoint.', '⏱️', '#f97316', p, ["let resta = 50;", "jogo.ao_comecar(() => jogo.mensagem('⏱️ 50 segundos! Segura Shift pra correr!', 3));", "jogo.repetir(1, () => { resta--; if (resta <= 10) jogo.mensagem('⏱ ' + resta, 0.9); if (resta <= 0) jogo.perder('Acabou o tempo!'); });"], { vel: 12 })); }
+  // 8) CHUVA DE BLOCOS — sobreviva 60 segundos
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('bloco', 0, -.5, 0, 34, 1, 34, '#e0e7ff', 'Arena')];
+    for (const [a, b, c, d] of [[0, 17.5, 35, 1], [0, -17.5, 35, 1], [17.5, 0, 1, 35], [-17.5, 0, 1, 35]]) p.push(P('parede', a, 1.5, b, c, 3, d, '#818cf8', 'Cerca'));
+    lista.push(J('Chuva de Blocos', 'Blocos de lava caem do céu. Desvie por 60 segundos!', '☄️', '#8b5cf6', p, ["const caindo = []; let resta = 60, vel = 9;", "jogo.ao_comecar(() => jogo.mensagem('☄️ Desvie dos blocos de lava por 60 s!', 3));", "jogo.repetir(0.45, () => { caindo.push(jogo.criar('lava', { x: jogo.aleatorio(-15, 15), y: 28, z: jogo.aleatorio(-15, 15), sx: 2.5, sy: 2.5, sz: 2.5, nome: 'Bloco' })); });", "jogo.a_cada_quadro(dt => { for (let i = caindo.length - 1; i >= 0; i--) { const b = caindo[i]; b.y -= vel * dt; if (b.y < -2) { b.apagar(); caindo.splice(i, 1); } } vel += dt * 0.08; });", "jogo.repetir(1, () => { resta--; if (resta % 15 === 0 && resta > 0) jogo.mensagem('Faltam ' + resta + ' s!', 1.5); if (resta <= 0) jogo.ganhar('Você sobreviveu à chuva!'); });", "jogo.ao_morrer(() => jogo.perder('Esmagado! Faltavam ' + resta + ' s'));"])); }
+  // 9) BOLA FUJONA — encoste na bola que foge
+  { id = 0; const p = [P('spawn', 0, .15, 0, 4, .3, 4, '#3ddc8a', 'Início'), P('bloco', 0, -.5, 0, 60, 1, 60, '#bbf7d0', 'Gramado'), P('esfera', 8, 1.2, 8, 2.4, 2.4, 2.4, '#f43f5e', 'Bola')];
+    for (let i = 0; i < 10; i++) p.push(P('arvore', Math.cos(i * .63) * 22, 0, Math.sin(i * .63) * 22, 1, 1, 1, '#3c7d32', 'Árvore'));
+    lista.push(J('Bola Fujona', 'Encoste na bola vermelha 15 vezes em 45 segundos. Ela foge!', '🔴', '#f43f5e', p, ["let resta = 45;", "jogo.ao_comecar(() => jogo.mensagem('🔴 Encoste na bola 15 vezes!', 3));", "function pular() { const b = jogo.parte('Bola'); b.x = jogo.aleatorio(-20, 20); b.z = jogo.aleatorio(-20, 20); }", "jogo.ao_tocar('Bola', () => { jogo.somar_pontos(1); pular(); if (jogo.pontos() >= 15) jogo.ganhar('Pegou 15 com ' + resta + ' s sobrando!'); });", "jogo.repetir(2.5, pular);", "jogo.repetir(1, () => { resta--; if (resta <= 0) jogo.perder('Acabou! Você fez ' + jogo.pontos()); });"])); }
+  // 10) CHÃO QUE SOME
+  { id = 0; const p = [P('spawn', 0, 5.2, -14, 3, .3, 3, '#3ddc8a', 'Início'), P('lava', 0, -.5, 0, 60, .4, 60, '#ff3b1f', 'Lava')];
+    for (let i = -3; i <= 3; i++) for (let k = -3; k <= 3; k++) p.push(P('bloco', i * 4, 4.5, k * 4, 3.8, .6, 3.8, (i + k) % 2 ? '#fef3c7' : '#fde68a', 'Piso'));
+    lista.push(J('Chão que Some', 'Cada piso some logo depois que você pisa. Aguente 40 segundos!', '🧊', '#f59e0b', p, ["let resta = 40;", "jogo.ao_comecar(() => jogo.mensagem('🧊 O chão some! Fique vivo por 40 s', 3));", "jogo.ao_tocar('Piso', piso => { piso.cor = '#ef4444'; jogo.depois(0.7, () => piso.sumir()); jogo.depois(9, () => { piso.aparecer(); piso.cor = '#fde68a'; }); });", "jogo.repetir(1, () => { resta--; if (resta <= 0) jogo.ganhar('Você sobreviveu ao chão que some!'); });", "jogo.ao_morrer(() => jogo.perder('Caiu na lava! Faltavam ' + resta + ' s'));"])); }
+  return lista;
+})();
+
+const HUB = document.createElement('div'); HUB.id = 'hubJogos'; document.body.appendChild(HUB);
+function abrirHub() {
+  ouvirComunidade(); HUB.classList.add('on');
+  const com = [...JOGOS_COM.values()].sort((a, b) => b.t - a.t);
+  HUB.innerHTML = `<div class="hbCaixa"><div class="hbTopo"><b>🎮 JOGOS</b><span>escolha e jogue</span><button id="hbFechar">✖</button></div><div class="hbLista">
+    <div class="hbMulti" id="hbMulti"><i>🌎</i><div><b>Multiplayer online</b><small>a cidade inteira com jogadores do mundo todo · chat e voz</small></div><span>Entrar ➜</span></div>
+    <h4>⭐ Jogos do Cidade IA</h4><div class="hbGrade">${JOGOS_OFICIAIS.map((j, i) => `<button class="hbCard" data-of="${i}" style="--c:${j.cor}"><i>${j.ic}</i><b>${j.nome}</b><small>${j.desc}</small></button>`).join('')}</div>
+    <h4>🛠️ Feitos pela comunidade</h4><div class="hbGrade">${com.length ? com.map(j => `<button class="hbCard com" data-cm="${j.topico}"><i>🎲</i><b>${escH(j.jogo.nome)}</b><small>por ${escH(j.autor)}${j.jogo.desc ? ' · ' + escH(j.jogo.desc) : ''}</small></button>`).join('') : '<div class="hbVazio">Ainda não tem jogos da comunidade carregados. Crie o seu no 🛠️ Studio e publique!</div>'}</div>
+  </div></div>`;
+  $('#hbFechar').onclick = () => HUB.classList.remove('on');
+  $('#hbMulti').onclick = () => { HUB.classList.remove('on'); $('#mMulti').click(); };
+  HUB.querySelectorAll('[data-of]').forEach(b => b.onclick = () => jogarDoHub(JOGOS_OFICIAIS[+b.dataset.of]));
+  HUB.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => jogarDoHub(null, JOGOS_COM.get(b.dataset.cm)));
+  if (!com.length) setTimeout(() => { if (HUB.classList.contains('on') && JOGOS_COM.size) abrirHub(); }, 2500);
+}
+async function jogarDoHub(oficial, com) {
+  HUB.classList.remove('on');
+  if (G.interior) sairLugar(); if (dirigindo) entrarSair();
+  ST.on = true; ST.doHub = true; estado = 'studio'; $('#menuInicio').classList.remove('on'); interfaceJogo(false);
+  irMundoBranco(true); BRANCO.domo.visible = true; aviso('', '#fff', .01);
+  if (oficial) { ST.meuSalvo = JSON.parse(JSON.stringify({ ...STJ, partes: STJ.partes || [] })); STJ = JSON.parse(JSON.stringify(oficial)); ST.donoJogo = null; carregarPartes(STJ.partes); iniciarTeste(true); msgST(`${oficial.ic} ${oficial.nome}`, 2.5); }
+  else { STJ.partes = STJ.partes || []; await jogarComunidade(com); if (ST.modo !== 'testar') { ST.doHub = false; ST.on = false; irMundoBranco(false); irParaInicio(); } }
+}
+function voltarDoHub() {
+  ST.doHub = false; ST.on = false; SP.classList.remove('on'); caixaSel.visible = false; gradeST.visible = false; if (fantasma) fantasma.visible = false;
+  for (const p of [...ST.partes]) { cena.remove(p.mesh); if (p.s) { const i = solidos.indexOf(p.s); if (i >= 0) solidos.splice(i, 1); } } ST.partes.length = 0;
+  bonecoJog.g.visible = true; irMundoBranco(false); irParaInicio(); abrirHub();
+}
+{ const b = document.createElement('button'); b.className = 'bm'; b.id = 'mJogos'; b.innerHTML = '<i>🕹️</i><span><b>Jogos</b><small>multiplayer, 10 jogos oficiais e os da comunidade</small></span>'; $('#mNormal').after(b); b.onclick = abrirHub; }
+
 // botão no menu inicial e na pausa
 { const b = document.createElement('button'); b.className = 'bm'; b.id = 'mStudio'; b.innerHTML = '<i>🛠️</i><span><b>Studio</b><small>crie seu próprio jogo</small></span>'; $('#mMulti').after(b); b.onclick = abrirStudio; }
 

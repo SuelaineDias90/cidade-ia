@@ -1,7 +1,7 @@
 // STUDIO CIDADE IA — o código dos criadores roda AQUI, isolado do jogo (Web Worker):
 // não vê a sua conta, não mexe na página, só conversa com o jogo por mensagens.
 let LUA = null, cmds = [], partes = {}, nomes = {}, jog = { x: 0, y: 0, z: 0, vida: 100, vel: 10, pulo: 12, tamanho: 1, gravidade: 1 }, pontos = 0, tempo = 0, proxId = 1;
-const H = { comecar: [], quadro: [], tocar: {}, tecla: {}, timers: [] };
+const H = { comecar: [], quadro: [], tocar: {}, tecla: {}, timers: [], morrer: [] };
 const c = (...a) => cmds.push(a);
 const fmt = v => typeof v === 'object' ? JSON.stringify(v) : String(v);
 function proxy(id) {
@@ -37,6 +37,7 @@ const jogador = new Proxy({}, {
 const jogo = {
   ao_comecar: f => H.comecar.push(f),
   a_cada_quadro: f => H.quadro.push(f),
+  ao_morrer: f => H.morrer.push(f),
   ao_tocar: (nome, f) => (H.tocar[nome] = H.tocar[nome] || []).push(f),
   ao_apertar: (tecla, f) => (H.tecla[String(tecla).toUpperCase()] = H.tecla[String(tecla).toUpperCase()] || []).push(f),
   depois: (seg, f) => H.timers.push({ t: tempo + +seg, f }),
@@ -60,12 +61,13 @@ const seguro = (f, ...a) => { try { f(...a); } catch (e) { const l = String(e &&
 const LUA_PRELUDIO = `
 local js = require "js"
 local J = js.global.jogo
-local H = { comecar = {}, quadro = {}, tocar = {}, tecla = {}, timers = {} }
+local H = { comecar = {}, quadro = {}, tocar = {}, tecla = {}, timers = {}, morrer = {} }
 local tempo = 0
 jogo = {}
 jogo.jogador = J.jogador
 function jogo.ao_comecar(f) table.insert(H.comecar, f) end
 function jogo.a_cada_quadro(f) table.insert(H.quadro, f) end
+function jogo.ao_morrer(f) table.insert(H.morrer, f) end
 function jogo.ao_tocar(n, f) H.tocar[n] = H.tocar[n] or {}; table.insert(H.tocar[n], f) end
 function jogo.ao_apertar(t, f) t = string.upper(t); H.tecla[t] = H.tecla[t] or {}; table.insert(H.tecla[t], f) end
 function jogo.depois(s, f) table.insert(H.timers, { t = tempo + s, f = f }) end
@@ -89,6 +91,7 @@ function jogo.__quadro(dt)
 end
 function jogo.__tocar(nome, peca) for _, f in ipairs(H.tocar[nome] or {}) do seguro(f, peca) end for _, f in ipairs(H.tocar["*"] or {}) do seguro(f, peca) end end
 function jogo.__tecla(k) for _, f in ipairs(H.tecla[k] or {}) do seguro(f) end end
+function jogo.__morrer() for _, f in ipairs(H.morrer) do seguro(f) end end
 `;
 function iniciar(m) {
   partes = {}; nomes = {};
@@ -99,7 +102,7 @@ function iniciar(m) {
       self.window = self; importScripts(m.luaUrl);
       const roda = src => self.fengari.load(src)();
       roda(LUA_PRELUDIO); roda(m.codigo || '');
-      const F = s => self.fengari.load(s); LUA = { comecar: F('jogo.__comecar()'), quadro: F('local js = require "js" jogo.__quadro(js.global.__a1)'), tocar: F('local js = require "js" jogo.__tocar(js.global.__a1, js.global.__a2)'), tecla: F('local js = require "js" jogo.__tecla(js.global.__a1)') };
+      const F = s => self.fengari.load(s); LUA = { comecar: F('jogo.__comecar()'), quadro: F('local js = require "js" jogo.__quadro(js.global.__a1)'), tocar: F('local js = require "js" jogo.__tocar(js.global.__a1, js.global.__a2)'), tecla: F('local js = require "js" jogo.__tecla(js.global.__a1)'), morrer: F('jogo.__morrer()') };
     } else (new Function('jogo', 'print', '"use strict";\n' + (m.codigo || '')))(jogo, jogo.print);
   } catch (e) { c('erro', String(e && e.message || e)); }
   if (LUA) seguro(LUA.comecar); else for (const f of H.comecar) seguro(f);
@@ -118,5 +121,7 @@ onmessage = ({ data: m }) => {
   else if (m.t === 'tocar') { const p = partes[m.id]; for (const f of H.tocar[p?.nome] || []) seguro(f, proxy(m.id)); for (const f of H.tocar['*'] || []) seguro(f, proxy(m.id)); }
   else if (m.t === 'tecla') for (const f of H.tecla[m.k] || []) seguro(f);
   else if (m.t === 'some') delete partes[m.id];
+  else if (m.t === 'moeda') { pontos++; c('pontos', pontos); const nome = partes[m.id]?.nome; if (LUA) { self.__a1 = nome || ''; self.__a2 = proxy(m.id); seguro(LUA.tocar); } else { for (const f of H.tocar[nome] || []) seguro(f, proxy(m.id)); for (const f of H.tocar['*'] || []) seguro(f, proxy(m.id)); } delete partes[m.id]; }
+  else if (m.t === 'morreu') { if (LUA) seguro(LUA.morrer); else for (const f of H.morrer) seguro(f); }
   flush();
 };
