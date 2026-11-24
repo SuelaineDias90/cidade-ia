@@ -18,8 +18,9 @@
   .slot canvas { width:34px; height:34px; image-rendering:pixelated; }
   .slot .n { position:absolute; right:3px; bottom:1px; font-size:12px; font-weight:800; text-shadow:1px 1px #000; }
   .slot .k { position:absolute; left:3px; top:0; font-size:10px; color:#bbb; text-shadow:1px 1px #000; }
-  #vidaWrap { left:50%; bottom:72px; transform:translateX(-50%); display:none; gap:2px; }
-  #vidaWrap span { font-size:18px; filter:drop-shadow(1px 1px 0 #000); }
+  #vidaWrap { left:calc(50% - 158px); bottom:72px; display:none; gap:1px; }
+  #fomeWrap { left:calc(50% + 2px); bottom:72px; display:none; gap:1px; }
+  #vidaWrap span,#fomeWrap span { font-size:17px; filter:drop-shadow(1px 1px 0 #000); }
   #breakbar { left:50%; top:calc(50% + 22px); transform:translateX(-50%); width:70px; height:7px; background:#0007; border:1px solid #000; display:none; }
   #breakbar i { display:block; height:100%; width:0; background:#ddd; }
   #dica { left:50%; top:12px; transform:translateX(-50%); font-size:13px; background:rgba(0,0,0,.45); padding:6px 12px; border-radius:4px; display:none; text-align:center; max-width:90vw; }
@@ -72,6 +73,7 @@
 <div id="crosshair" class="hud"></div>
 <div id="breakbar" class="hud"><i></i></div>
 <div id="vidaWrap" class="hud"></div>
+<div id="fomeWrap" class="hud"></div>
 <div id="dica" class="hud"></div>
 <div id="aviso" class="hud"></div>
 <button id="voltar">‹ Menu</button>
@@ -120,6 +122,7 @@ tile('leaves', (px) => { for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x+
 tile('brick', (px, rc) => { rc(0, 0, TS, TS, '#9b4a3a'); for (let y = 0; y < TS; y += 4) rc(0, y, TS, 1, '#cfc4b4'); for (let y = 0; y < TS; y += 4) { const off = (y / 4) % 2 ? 4 : 0; for (let x = off; x < TS; x += 8) rc(x, y, 1, 4, '#cfc4b4'); } });
 tile('sand', (px) => ruidoTile(px, [222, 206, 150], 30, 19));
 tile('glass', (px, rc) => { for (let i = 0; i < TS; i++) { px(i, 0, '#dfeefc'); px(i, TS - 1, '#dfeefc'); px(0, i, '#dfeefc'); px(TS - 1, i, '#dfeefc'); } px(3, 3, '#fff'); px(4, 3, '#fff'); });
+tile('wool', (px) => ruidoTile(px, [236, 236, 236], 16, 31));
 function oreTile(nome, cor, cor2, seed) { tile(nome, (px, rc) => { ruidoTile(px, [128, 128, 128], 30, 11); for (let i = 0; i < 7; i++) { const x = 2 + (rnd(i, 1, seed) * 11 | 0), y = 2 + (rnd(i, 2, seed) * 11 | 0); rc(x, y, 3, 2, cor); px(x, y, cor2); px(x + 2, y + 1, cor2); } }); }
 oreTile('ore_coal', '#1e1e1e', '#444', 21); oreTile('ore_iron', '#c49a6c', '#e8c9a0', 22); oreTile('ore_gold', '#e8c63a', '#fff09a', 23); oreTile('ore_diamond', '#4fe3d6', '#c8fff8', 24);
 tile('bedrock', (px) => { for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) { const c = 40 + (rnd(x >> 1, y >> 1, 25) * 50 | 0); px(x, y, sh(c, c, c, 0)); } });
@@ -142,6 +145,7 @@ const BLOCOS = [ null,
   { nome: 'Min. Ferro', faces: ['ore_iron', 'ore_iron', 'ore_iron'], dur: 2.8, cat: 'picareta', nivel: 2, solta: 'ferro_barra' },
   { nome: 'Min. Ouro', faces: ['ore_gold', 'ore_gold', 'ore_gold'], dur: 3.0, cat: 'picareta', nivel: 2, solta: 'ouro_barra' },
   { nome: 'Min. Diamante', faces: ['ore_diamond', 'ore_diamond', 'ore_diamond'], dur: 3.4, cat: 'picareta', nivel: 3, solta: 'diamante' },
+  { nome: 'Lã', faces: ['wool', 'wool', 'wool'], dur: .5, solta: 'Lã' },
   { nome: 'Bedrock', faces: ['bedrock', 'bedrock', 'bedrock'], dur: Infinity, inquebravel: true },
 ];
 const porNome = {}; BLOCOS.forEach((b, i) => { if (b) porNome[b.nome] = i; });
@@ -151,7 +155,9 @@ const MAT = {
   carvao: { nome: 'Carvão', cor: '#222' }, ferro_barra: { nome: 'Barra de Ferro', cor: '#dcdcdc' },
   ouro_barra: { nome: 'Barra de Ouro', cor: '#f2cf3c' }, diamante: { nome: 'Diamante', cor: '#5ef2e4' },
   graveto: { nome: 'Graveto', cor: '#8a6a3a' },
+  carne: { nome: 'Carne', cor: '#c85a4a' }, frango: { nome: 'Frango', cor: '#e8c89a' },
 };
+const FOODS = { carne: 6, frango: 4 };
 const MATNIV = { madeira: 1, pedra: 2, ferro: 3, diamante: 4 }, MATMULT = { madeira: 2, pedra: 4, ferro: 6, diamante: 9 }, MATCOR = { madeira: '#9a7b4f', pedra: '#8a8a8a', ferro: '#e6e6e6', diamante: '#5ef2e4' };
 const FERR = {};
 for (const cat of ['picareta', 'machado', 'pa', 'espada']) for (const mat of ['madeira', 'pedra', 'ferro', 'diamante'])
@@ -274,8 +280,14 @@ function atualizarChunks(forcar) {
 const renderer = new THREE.WebGLRenderer({ canvas: $('#gl'), antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
 const cam = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 1000);
-cena.add(new THREE.HemisphereLight(0xcfe8ff, 0x5a6a3a, 1.0));
+const hemi = new THREE.HemisphereLight(0xcfe8ff, 0x5a6a3a, 1.0); cena.add(hemi);
 const sol = new THREE.DirectionalLight(0xffffff, 1.15); sol.position.set(.5, 1, .3); cena.add(sol);
+// ---- nuvens
+const nuvemCv = document.createElement('canvas'); nuvemCv.width = nuvemCv.height = 128; const ngc = nuvemCv.getContext('2d');
+ngc.clearRect(0, 0, 128, 128); for (let i = 0; i < 26; i++) { const x = Math.random() * 128, y = Math.random() * 128, r = 8 + Math.random() * 20; ngc.fillStyle = 'rgba(255,255,255,.9)'; ngc.beginPath(); ngc.arc(x, y, r, 0, 7); ngc.fill(); }
+const nuvemTex = new THREE.CanvasTexture(nuvemCv); nuvemTex.wrapS = nuvemTex.wrapT = THREE.RepeatWrapping; nuvemTex.repeat.set(6, 6);
+const nuvens = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshBasicMaterial({ map: nuvemTex, transparent: true, opacity: .7, depthWrite: false, fog: false }));
+nuvens.rotation.x = -Math.PI / 2; nuvens.position.y = 72; cena.add(nuvens);
 addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); menuCam.aspect = cam.aspect; menuCam.updateProjectionMatrix(); });
 const menuScene = new THREE.Scene(); menuScene.background = new THREE.Color(0x79a6d8);
 const menuCam = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, .1, 100); menuCam.position.set(0, 0, 5);
@@ -308,7 +320,8 @@ function somCavar(freq) { if (!actx) return; try { const b = actx.createBuffer(1
 const player = { x: 0, y: 40, z: 0, vy: 0, chao: false, yaw: .6, pitch: -.2 };
 const LARG = .3, ALTP = 1.8, OLHO = 1.62;
 let modo = 'sobrevivencia';
-let telaMenu = true, travado = false, vida = 20, invAberto = false, pausado = false;
+let telaMenu = true, travado = false, vida = 20, fome = 20, invAberto = false, pausado = false;
+let tempoDia = 0.3, regenT = 0, fomeT = 0, danoMobT = 0;
 const MODS = { voar: false, velocidade: false, alcance: false, noite: false };
 let voando = false, ultimoPulo = 0;
 const invent = {};
@@ -384,6 +397,8 @@ addEventListener('keydown', e => { teclas[e.code] = true; initAudio();
 });
 addEventListener('keyup', e => teclas[e.code] = false);
 $('#gl').addEventListener('mousedown', e => { if (telaMenu || invAberto || pausado) return; if (!travado) { $('#gl').requestPointerLock(); return; }
+  if (e.button === 0 && modo === 'sobrevivencia' && atacarMob()) return;
+  if (e.button === 2) { const sel = hotbarIds[selSlot]; if (typeof sel === 'string' && FOODS[sel]) { comer(sel); return; } }
   const a = alvo(); if (!a) return;
   if (e.button === 0) { if (modo === 'criativo') destruir(a, false); else { quebrando = a; quebraProg = 0; } }
   else if (e.button === 2) colocar(a);
@@ -394,7 +409,7 @@ addEventListener('wheel', e => { if (telaMenu) return; selecionar((selSlot + (e.
 document.addEventListener('pointerlockchange', () => { travado = document.pointerLockElement === $('#gl'); if (!travado && !telaMenu && !invAberto) { pausado = true; $('#pause').style.display = 'flex'; } });
 addEventListener('mousemove', e => { if (!travado) return; player.yaw -= e.movementX * .0025; player.pitch = Math.max(-1.55, Math.min(1.55, player.pitch - e.movementY * .0025)); });
 $('#pContinuar').onclick = () => { pausado = false; $('#pause').style.display = 'none'; $('#gl').requestPointerLock(); };
-$('#pSair').onclick = () => { pausado = false; $('#pause').style.display = 'none'; telaMenu = true; $('#menu').style.display = 'flex'; for (const id of ['crosshair', 'hotbar', 'voltar', 'vidaWrap', 'dica']) $('#' + id).style.display = 'none'; };
+$('#pSair').onclick = () => { pausado = false; $('#pause').style.display = 'none'; telaMenu = true; $('#menu').style.display = 'flex'; for (const id of ['crosshair', 'hotbar', 'voltar', 'vidaWrap', 'fomeWrap', 'dica']) $('#' + id).style.display = 'none'; };
 
 // ============================================================ UI
 function montarHotbar() { const hb = $('#hotbar'); hb.innerHTML = '';
@@ -426,7 +441,8 @@ function comecar(plano) {
   planoSup = plano; mundo.clear(); gerados.clear(); fila.length = 0;
   for (const [, c] of chunks) for (const m of [c.mS, c.mT]) if (m) { cena.remove(m); m.geometry.dispose(); } chunks.clear();
   for (const p of particulas) cena.remove(p.m); particulas.length = 0;
-  player.x = 0; player.z = 0; player.y = (plano ? 5 : altura(0, 0)) + 3; player.vy = 0; voando = modo === 'criativo' && MODS.voar; vida = 20; pausado = false;
+  for (const m of mobs.slice()) removerMob(m); spawnT = 3; tempoDia = .3;
+  player.x = 0; player.z = 0; player.y = (plano ? 5 : altura(0, 0)) + 3; player.vy = 0; voando = modo === 'criativo' && MODS.voar; vida = 20; fome = 20; pausado = false;
   for (const k in invent) delete invent[k];
   hotbarIds = modo === 'criativo'
     ? [porNome['Grama'], porNome['Terra'], porNome['Pedregulho'], porNome['Tábua'], porNome['Tronco'], porNome['Vidro'], porNome['Tijolo'], porNome['Areia'], 'picareta_diamante']
@@ -435,9 +451,9 @@ function comecar(plano) {
   telaMenu = false; invAberto = false; $('#pause').style.display = 'none'; $('#menu').style.display = 'none'; $('#modsPanel').style.display = 'none'; $('#inv').style.display = 'none';
   atualizarChunks(true);
   $('#crosshair').style.display = 'block'; $('#hotbar').style.display = 'flex'; $('#voltar').style.display = 'none';
-  $('#vidaWrap').style.display = modo === 'sobrevivencia' ? 'flex' : 'none'; if (modo === 'sobrevivencia') desenharVida();
+  const sv = modo === 'sobrevivencia'; $('#vidaWrap').style.display = sv ? 'flex' : 'none'; $('#fomeWrap').style.display = sv ? 'flex' : 'none'; if (sv) { desenharVida(); desenharFome(); }
   montarHotbar();
-  $('#dica').style.display = 'block'; $('#dica').textContent = 'esq: quebra (segura) · dir: coloca · E: inventário/craft · cave fundo p/ minérios · ESC: menu/sair';
+  $('#dica').style.display = 'block'; $('#dica').textContent = 'esq: quebra/bate · dir: coloca/come · E: inventário/craft · cave p/ minérios · à noite vêm zumbis · ESC: menu';
   setTimeout(() => $('#dica').style.display = 'none', 9000); aplicarNoite();
 }
 $('#bPlay').onclick = () => comecar(false);
@@ -450,12 +466,79 @@ function montarMods() { const defs = [['voar', '🕊️ Voar (criativo, 2x espa�
   for (const [k, nome] of defs) { const row = document.createElement('div'); row.className = 'modrow'; row.innerHTML = `<span>${nome}</span>`; const b = document.createElement('button'); b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : ''; b.onclick = () => { MODS[k] = !MODS[k]; b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : ''; aplicarNoite(); }; row.appendChild(b); L.appendChild(row); } }
 function aplicarNoite() { if (MODS.noite) { cena.background.set(0x0a1030); cena.fog.color.set(0x0a1030); sol.intensity = .3; } else { cena.background.set(0x8fc6ff); cena.fog.color.set(0x8fc6ff); sol.intensity = 1.15; } }
 
+// ============================================================ DIA/NOITE + CÉU
+const COR_DIA = new THREE.Color(0x8fc6ff), COR_NOITE = new THREE.Color(0x0a1230);
+function isNoite() { return MODS.noite || Math.sin(tempoDia * Math.PI * 2) < -0.08; }
+function atualizarCeu(dt) {
+  tempoDia = (tempoDia + dt / 180) % 1;
+  const ang = tempoDia * Math.PI * 2, h = Math.sin(ang), luz = MODS.noite ? 0 : Math.max(0, h);
+  sol.position.set(Math.cos(ang) * .6, Math.max(.05, h), .3); sol.intensity = .12 + luz * 1.05; hemi.intensity = .28 + luz * .72;
+  if (!MODS.noite) { const c = new THREE.Color(); if (h > .15) c.copy(COR_DIA); else if (h > -.15) c.copy(COR_DIA).lerp(COR_NOITE, (.15 - h) / .30); else c.copy(COR_NOITE); cena.background.copy(c); cena.fog.color.copy(c); }
+  nuvens.position.x = player.x; nuvens.position.z = player.z; nuvemTex.offset.x += dt * .004; nuvens.material.opacity = .35 + luz * .4; nuvens.material.color.setScalar(.6 + luz * .4);
+}
+
+// ============================================================ BICHOS (mobs)
+const MOBDEF = {
+  porco: { cor: 0xea9a9a, alt: .9, larg: .9, hp: 8, drop: 'carne' },
+  vaca: { cor: 0x5c4532, alt: 1.3, larg: 1.0, hp: 10, drop: 'carne' },
+  galinha: { cor: 0xf4f4f4, alt: .7, larg: .6, hp: 4, drop: 'frango' },
+  ovelha: { cor: 0xe7e2d6, alt: 1.1, larg: .9, hp: 8, drop: 'Lã' },
+  zumbi: { cor: 0x4a8a46, alt: 1.8, larg: .7, hp: 20, hostil: true, drop: null },
+};
+const mobs = [];
+function caixa(w, h, d, cor, x, y, z) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: cor })); m.position.set(x, y, z); return m; }
+function modeloMob(tipo) { const d = MOBDEF[tipo], g = new THREE.Group();
+  if (tipo === 'zumbi') { g.add(caixa(.55, .75, .3, d.cor, 0, 1.0, 0)); g.add(caixa(.4, .4, .4, 0x3c6b38, 0, 1.6, 0)); g.add(caixa(.18, .6, .2, d.cor, 0, 1.1, .32)); g.add(caixa(.18, .6, .2, d.cor, 0, 1.1, -.32)); g.add(caixa(.2, .7, .22, 0x2f5a2c, .16, .35, 0)); g.add(caixa(.2, .7, .22, 0x2f5a2c, -.16, .35, 0)); }
+  else { const bl = d.larg, al = d.alt; g.add(caixa(bl, al * .55, bl * 1.3, d.cor, 0, al * .55, 0)); g.add(caixa(bl * .7, bl * .7, bl * .6, d.cor, 0, al * .7, bl * .8)); if (tipo === 'porco') g.add(caixa(.18, .14, .1, 0xd98b8b, 0, al * .62, bl * 1.1)); const ly = al * .22; for (const [sx, sz] of [[.3, .5], [-.3, .5], [.3, -.5], [-.3, -.5]]) g.add(caixa(bl * .22, ly * 2, bl * .22, 0x5a5a5a, sx * bl, ly, sz * bl)); }
+  return g; }
+function alturaChaoMob(x, z) { const fx = Math.floor(x), fz = Math.floor(z); for (let y = CEU; y > 0; y--) if (get(fx, y, fz)) return y + 1; return 1; }
+function spawnMob(tipo, x, z) { const y = alturaChaoMob(x, z); if (y < 1) return; const g = modeloMob(tipo); g.position.set(x, y, z); cena.add(g); mobs.push({ tipo, g, x, y, z, vy: 0, hp: MOBDEF[tipo].hp, hostil: !!MOBDEF[tipo].hostil, yaw: Math.random() * 6.28, tw: 0, anda: false, atk: 0 }); }
+function removerMob(m) { cena.remove(m.g); m.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); const i = mobs.indexOf(m); if (i >= 0) mobs.splice(i, 1); }
+function matarMob(m) { const d = MOBDEF[m.tipo]; if (d.drop) { darItem(d.drop, 1 + (Math.random() * 2 | 0)); aviso('+ ' + nomeItem(mapKey(d.drop))); montarHotbar(); } removerMob(m); }
+let spawnT = 0;
+function atualizarMobs(dt) {
+  const noite = isNoite();
+  spawnT -= dt;
+  if (spawnT <= 0) { spawnT = 2.2;
+    const ang = Math.random() * 6.28, dist = 16 + Math.random() * 22, x = player.x + Math.cos(ang) * dist, z = player.z + Math.sin(ang) * dist;
+    const nZ = mobs.reduce((s, m) => s + (m.hostil ? 1 : 0), 0), nA = mobs.length - nZ;
+    if (noite) { if (nZ < 9) spawnMob('zumbi', x, z); } else if (nA < 12) { const a = ['porco', 'vaca', 'galinha', 'ovelha']; spawnMob(a[Math.random() * 4 | 0], x, z); }
+  }
+  for (let i = mobs.length - 1; i >= 0; i--) { const m = mobs[i];
+    const dxp = player.x - m.x, dzp = player.z - m.z, distP = Math.hypot(dxp, dzp);
+    if (distP > 72 || (m.hostil && !noite)) { removerMob(m); continue; }
+    m.vy -= 20 * dt; let ny = m.y + m.vy * dt; const ch = alturaChaoMob(m.x, m.z); if (ny <= ch) { ny = ch; m.vy = 0; } m.y = ny;
+    let spd = m.hostil ? 2.4 : 1.1;
+    if (m.hostil && distP < 20) { m.yaw = Math.atan2(dxp, dzp); m.atk -= dt; if (distP < 1.5) { spd = 0; if (m.atk <= 0) { dano(3); m.atk = 1.1; } } }
+    else { m.tw -= dt; if (m.tw <= 0) { m.tw = 2 + Math.random() * 3; m.yaw = Math.random() * 6.28; m.anda = Math.random() > .35; } if (!m.anda) spd = 0; }
+    if (spd) { const nx = m.x + Math.sin(m.yaw) * spd * dt, nz = m.z + Math.cos(m.yaw) * spd * dt; const sob = alturaChaoMob(nx, nz); if (Math.abs(sob - m.y) <= 1.2 && !get(Math.floor(nx), Math.ceil(m.y) + 1, Math.floor(nz))) { m.x = nx; m.z = nz; if (sob > m.y && m.vy <= 0) m.vy = 5; } else m.tw = 0; }
+    m.g.position.set(m.x, m.y, m.z); m.g.rotation.y = m.yaw;
+  }
+}
+function atacarMob() { cam.getWorldDirection(_dir); let melhor = null, md = 3.6;
+  for (const m of mobs) { const alt = MOBDEF[m.tipo].alt; const vx = m.x - player.x, vy = (m.y + alt * .6) - (player.y + OLHO), vz = m.z - player.z; const d = Math.hypot(vx, vy, vz); if (d > md) continue; const dot = (vx * _dir.x + vy * _dir.y + vz * _dir.z) / (d || 1); if (dot > .72 && d < md) { md = d; melhor = m; } }
+  if (!melhor) return false; const f = ferramentaAtual(); const dmg = f && f.cat === 'espada' ? f.mult : (f ? 2 : 1); melhor.hp -= dmg;
+  const dx = melhor.x - player.x, dz = melhor.z - player.z, l = Math.hypot(dx, dz) || 1; melhor.x += dx / l * .5; melhor.z += dz / l * .5; melhor.vy = 3.5; somCavar(240);
+  if (melhor.hp <= 0) matarMob(melhor); return true;
+}
+
+// ============================================================ FOME / VIDA
+function desenharFome() { const w = $('#fomeWrap'); w.innerHTML = ''; for (let i = 0; i < 10; i++) { const s = document.createElement('span'); s.textContent = (i * 2 + 2) <= fome ? '🍗' : (i * 2 + 1) <= fome ? '🍖' : '▪️'; w.appendChild(s); } }
+function atualizarFomeVida(dt) {
+  fomeT += dt; if (fomeT > 7) { fomeT = 0; if (fome > 0) { fome = Math.max(0, fome - 1); desenharFome(); } }
+  regenT += dt;
+  if (fome >= 17 && vida < 20) { if (regenT > 3) { regenT = 0; vida = Math.min(20, vida + 1); desenharVida(); } }
+  else if (fome === 0 && vida > 1) { if (regenT > 4) { regenT = 0; vida--; desenharVida(); } }
+  else if (regenT > 3) regenT = 3;
+}
+function comer(key) { if (!FOODS[key]) return false; if (fome >= 20) return true; if (modo === 'sobrevivencia') { if ((invent[key] || 0) <= 0) return true; invent[key]--; } fome = Math.min(20, fome + FOODS[key]); desenharFome(); montarHotbar(); somCavar(500); return true; }
+
 // ============================================================ LOOP
 let ult = performance.now();
 function loop() { const agora = performance.now(), dt = Math.min(.05, (agora - ult) / 1000); ult = agora;
   if (telaMenu) { blocoMenu.rotation.y += dt * .7; blocoMenu.rotation.x = Math.sin(agora / 1600) * .25; renderer.render(menuScene, menuCam); }
   else {
-    if (!pausado) { mover(dt); atualizarChunks(false); atualizarParticulas(dt);
+    if (!pausado) { mover(dt); atualizarChunks(false); atualizarParticulas(dt); atualizarCeu(dt); atualizarMobs(dt); if (modo === 'sobrevivencia') atualizarFomeVida(dt);
       if (quebrando && modo === 'sobrevivencia') { const a = alvo();
         if (a && a.bx === quebrando.bx && a.by === quebrando.by && a.bz === quebrando.bz && get(a.bx, a.by, a.bz)) {
           const id = get(a.bx, a.by, a.bz), tq = tempoQuebra(id);
