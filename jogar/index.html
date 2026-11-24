@@ -1593,9 +1593,9 @@ function criarViaduto(eixo, linha, Yt = 8.5, DW = 13, z0 = -215, z1 = 215) {
     return m; };
   // tabuleiro (deck) de asfalto por cima + concreto cinza por baixo (não fica preto)
   const matDeck = MB(0x3a3b40, .92), matConc = MB(0xa7a39a, .9), matBarr = MB(0xbfbab0, .85);
-  P(0, Yt - .25, cen, DW, .5, LEN, matDeck, false);                 // pista (asfalto)
-  P(0, Yt - .62, cen, DW + .6, .35, LEN, matConc, false);           // laje de concreto por baixo
-  for (const s of [-1, 1]) P(s * DW / 4, Yt - 1.05, cen, 1.3, .9, LEN, matConc, false);   // vigas longitudinais (viga caixão)
+  P(0, Yt - .2, cen, DW, .3, LEN, matDeck, false);                  // pista (asfalto fino em cima)
+  P(0, Yt - 1.3, cen, DW + .3, 1.9, LEN, matConc, false);           // VIGA-CAIXÃO grossa de concreto (dá corpo, não fica papelão)
+  for (const s of [-1, 1]) P(s * (DW / 2 - .1), Yt - 1.3, cen, .5, 2.2, LEN, matConc, false);   // bordas de concreto (frisos laterais)
   // faixas (linha amarela no meio + bordas brancas)
   P(0, Yt + .02, cen, .5, .05, LEN, MB(0xe8c33a, .6), false);
   for (const s of [-1, 1]) P(s * (DW / 2 - .8), Yt + .02, cen, .3, .05, LEN, MB(0xf0f0ea, .6), false);
@@ -1606,8 +1606,8 @@ function criarViaduto(eixo, linha, Yt = 8.5, DW = 13, z0 = -215, z1 = 215) {
   const posW = (cx, cz) => emX ? [cz, linha + cx] : [linha + cx, cz];
   // pilares de concreto AFUNILADOS nas calçadas (fora da rua) + viga-cabeça por cima — não atrapalha carro
   for (let p = z0 + 22; p <= z1 - 22; p += 32) {
-    for (const s2 of [-1, 1]) { const [wx, wz] = posW(s2 * (DW / 2 + 2.2), p); const col = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.5, Yt - 1.1, 18), matConc); col.position.set(wx, (Yt - 1.1) / 2, wz); col.castShadow = true; col.receiveShadow = true; g.add(col); solidos.push({ minX: wx - 1.4, maxX: wx + 1.4, minZ: wz - 1.4, maxZ: wz + 1.4, h: Yt - 1 }); }
-    P(0, Yt - 1, p, DW + 6, 1.1, 2.6, matConc, false);   // viga-cabeça (hammerhead)
+    for (const s2 of [-1, 1]) { const [wx, wz] = posW(s2 * (DW / 2 + 2.6), p); const col = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2.3, Yt - 2.1, 20), matConc); col.position.set(wx, (Yt - 2.1) / 2, wz); col.castShadow = true; col.receiveShadow = true; g.add(col); solidos.push({ minX: wx - 2, maxX: wx + 2, minZ: wz - 2, maxZ: wz + 2, h: Yt - 2 }); }
+    P(0, Yt - 1.7, p, DW + 7, 1.4, 3, matConc, false);   // viga-cabeça (hammerhead) grossa
   }
   // postes de luz no viaduto (nas bordas, braço pra dentro)
   const matPosteV = MB(0x2b2f33, .5, .6), matLuzV = new THREE.MeshStandardMaterial({ color: 0xfff2d0, emissive: 0xffd58a, emissiveIntensity: 0 }); matsNoite.push({ m: matLuzV, forca: 3 });
@@ -1674,8 +1674,9 @@ function superficieViaduto(x, z, y) {
   }
   return best;
 }
-criarViaduto('z', 0, 10, 13, -150, 150);   // viaduto norte-sul sobre a avenida x=0 (rampas na própria avenida)
-criarViaduto('x', 0, 14, 13, -150, 150);   // viaduto leste-oeste mais alto, cruza por cima do outro
+// VIADUTOS removidos a pedido (ficavam atravessando prédios). Funções mantidas caso queira voltar depois.
+// criarViaduto('z', 0, 11, 16, -150, 150);
+// criarViaduto('x', 0, 15.5, 16, -150, 150);
 
 // ---- nuvens
 const texNuvem = texCanvas(256, 128, (g, W, H) => {
