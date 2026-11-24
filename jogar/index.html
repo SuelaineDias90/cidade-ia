@@ -1599,8 +1599,8 @@ function criarViaduto(eixo, linha, Yt = 8.5, DW = 13, z0 = -215, z1 = 215) {
   for (const s of [-1, 1]) P(s * (DW / 2 - .8), Yt + .02, cen, .3, .05, LEN, MB(0xf0f0ea, .6), false);
   // mureta dos dois lados: segura quem está EM CIMA (minY), deixa passar embaixo
   for (const s of [-1, 1]) P(s * (DW / 2 - .15), Yt + .45, cen, .35, 1.1, LEN, matBarr, true, Yt - .5);
-  // pilares + viga embaixo (no canteiro central)
-  for (let p = z0 + 24; p <= z1 - 24; p += 36) { P(0, (Yt - .6) / 2, p, 2.6, Yt - .6, 2.2, matConc, true); P(0, Yt - .75, p, DW + 2, .7, 2.4, matConc, false); }
+  // pilares nos DOIS lados (fora da rua, na calçada) + viga por cima ligando — libera a rua embaixo
+  for (let p = z0 + 24; p <= z1 - 24; p += 36) { for (const s2 of [-1, 1]) P(s2 * (DW / 2 + 2), (Yt - .6) / 2, p, 1.8, Yt - .6, 1.8, matConc, true); P(0, Yt - .75, p, DW + 5, .7, 2, matConc, false); }
   const RL = 48;
   // rampas nas pontas (sobem do chão até o tabuleiro)
   const matR = MB(0x3a3b40, .92);
