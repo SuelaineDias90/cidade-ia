@@ -1597,13 +1597,17 @@ function criarViaduto(eixo, linha, Yt = 8.5, DW = 13, z0 = -215, z1 = 215) {
   // faixas (linha amarela no meio + bordas brancas)
   P(0, Yt + .02, cen, .5, .05, LEN, MB(0xe8c33a, .6), false);
   for (const s of [-1, 1]) P(s * (DW / 2 - .8), Yt + .02, cen, .3, .05, LEN, MB(0xf0f0ea, .6), false);
-  // mureta dos dois lados (só visual — não bloqueia quem anda embaixo)
-  for (const s of [-1, 1]) P(s * (DW / 2 - .15), Yt + .35, cen, .3, 1, LEN, matBarr, false);
-  // pilares + viga embaixo
-  for (let p = z0 + 20; p <= z1 - 20; p += 34) { P(0, (Yt - .6) / 2, p, 2.6, Yt - .6, 2.2, matConc, true); P(0, Yt - .75, p, DW + 2, .7, 2.4, matConc, false); }
-  // rampas nas pontas (desce até o chão)
-  for (const s of [-1, 1]) { const zr = (s < 0 ? z0 : z1), zc = zr + s * 22, m = new THREE.Mesh(new THREE.BoxGeometry(emX ? 44 : DW, .5, emX ? DW : 44), matDeck); if (emX) { m.position.set(zc, Yt / 2, linha); m.rotation.z = s * Math.atan2(Yt, 44); } else { m.position.set(linha, Yt / 2, zc); m.rotation.x = -s * Math.atan2(Yt, 44); } m.receiveShadow = true; g.add(m); }
-  const V = { eixo, linha, Yt, DW, z0, z1, emX };
+  // mureta dos dois lados: segura quem está EM CIMA (minY), deixa passar embaixo
+  for (const s of [-1, 1]) P(s * (DW / 2 - .15), Yt + .45, cen, .35, 1.1, LEN, matBarr, true, Yt - .5);
+  // pilares + viga embaixo (no canteiro central)
+  for (let p = z0 + 24; p <= z1 - 24; p += 36) { P(0, (Yt - .6) / 2, p, 2.6, Yt - .6, 2.2, matConc, true); P(0, Yt - .75, p, DW + 2, .7, 2.4, matConc, false); }
+  const RL = 48;
+  // rampas nas pontas (sobem do chão até o tabuleiro)
+  const matR = MB(0x3a3b40, .92);
+  for (const s of [-1, 1]) { const zr = (s < 0 ? z0 : z1), zc = zr + s * RL / 2, comp = Math.hypot(RL, Yt), m = new THREE.Mesh(new THREE.BoxGeometry(emX ? comp : DW, .5, emX ? DW : comp), matR); if (emX) { m.position.set(zc, Yt / 2, linha); m.rotation.z = -s * Math.atan2(Yt, RL); } else { m.position.set(linha, Yt / 2, zc); m.rotation.x = s * Math.atan2(Yt, RL); } m.receiveShadow = true; g.add(m);
+    // muretas da rampa
+    for (const b of [-1, 1]) { const mr = new THREE.Mesh(new THREE.BoxGeometry(emX ? comp : .35, 1, emX ? .35 : comp), matBarr); if (emX) { mr.position.set(zc, Yt / 2 + .5, linha + b * (DW / 2 - .15)); mr.rotation.z = -s * Math.atan2(Yt, RL); } else { mr.position.set(linha + b * (DW / 2 - .15), Yt / 2 + .5, zc); mr.rotation.x = s * Math.atan2(Yt, RL); } g.add(mr); } }
+  const V = { eixo, linha, Yt, DW, z0, z1, emX, RL };
   VIADUTOS.push(V);
   // carros em cima
   for (let k = 0; k < 10; k++) {
@@ -1627,8 +1631,22 @@ function atualizarViaduto(dt) {
     c.g.userData.giroRoda = (c.g.userData.giroRoda || 0) + c.vel * dt / (.36 * ESCALA_CARRO);
   }
 }
-criarViaduto('z', 0);          // viaduto norte-sul por cima da avenida central (passa por cima das ruas leste-oeste)
-criarViaduto('x', 0, 12.5);    // viaduto leste-oeste mais alto, cruza por cima do outro
+// altura da superfície do viaduto em (x,z) se o personagem/carro está nela (perto da altura y). null = não está
+function superficieViaduto(x, z, y) {
+  let best = null;
+  for (const V of VIADUTOS) {
+    const perp = V.emX ? Math.abs(z - V.linha) : Math.abs(x - V.linha);
+    if (perp > V.DW / 2) continue;
+    const a = V.emX ? x : z, RL = V.RL; let h = null;
+    if (a >= V.z0 && a <= V.z1) h = V.Yt;
+    else if (a >= V.z0 - RL && a < V.z0) h = V.Yt * (a - (V.z0 - RL)) / RL;
+    else if (a > V.z1 && a <= V.z1 + RL) h = V.Yt * ((V.z1 + RL) - a) / RL;
+    if (h !== null && h <= y + 1.7 && (best === null || h > best)) best = h;
+  }
+  return best;
+}
+criarViaduto('z', 0, 10, 13, -150, 150);   // viaduto norte-sul sobre a avenida x=0 (rampas na própria avenida)
+criarViaduto('x', 0, 14, 13, -150, 150);   // viaduto leste-oeste mais alto, cruza por cima do outro
 
 // ---- nuvens
 const texNuvem = texCanvas(256, 128, (g, W, H) => {
@@ -4364,6 +4382,7 @@ function atualizarJogador(dt) {
   jog.vy -= 25 * gravidade * dt; jog.vy = Math.max(jog.vy, -60); jog.pos.y += jog.vy * dt;
   const _ch = alturaChao(jog.pos.x, jog.pos.z), _nv = typeof nivelAgua === 'function' ? nivelAgua(jog.pos.x, jog.pos.z) : -Infinity;
   let piso = Math.max(_nv > _ch + 1.6 ? _ch : -1.2, _ch); const s = colide(jog.pos.clone().setY(-10), .3); if (s && jog.pos.y >= s.h - 1) piso = Math.max(piso, s.h); if (ST.on) piso = Math.max(piso, pisoStudio(jog.pos));
+  const _sv = typeof superficieViaduto === 'function' ? superficieViaduto(jog.pos.x, jog.pos.z, jog.pos.y) : null; if (_sv !== null) piso = Math.max(piso, _sv);   // andar em cima do viaduto
   if (G.interior) piso = Math.max(piso, Y_INT);
   if (agua && jog.pos.y < agua.position.y) { jog.vy = Math.max(jog.vy, -2); if (teclas.Space) jog.vy = 4; }
   if (jog.pos.y <= piso) {
@@ -4821,8 +4840,12 @@ function moverVeiculo(v, dt, controle) {
   }
   // relevo: altura e inclinação
   const ex = v.L * .32, ey = v.W * .32, lx = _dir.z, lz = -_dir.x;
-  const hf = alturaChao(p.x + _dir.x * ex, p.z + _dir.z * ex), ht = alturaChao(p.x - _dir.x * ex, p.z - _dir.z * ex);
-  const hl = alturaChao(p.x + lx * ey, p.z + lz * ey), hr = alturaChao(p.x - lx * ey, p.z - lz * ey);
+  let hf = alturaChao(p.x + _dir.x * ex, p.z + _dir.z * ex), ht = alturaChao(p.x - _dir.x * ex, p.z - _dir.z * ex);
+  let hl = alturaChao(p.x + lx * ey, p.z + lz * ey), hr = alturaChao(p.x - lx * ey, p.z - lz * ey);
+  if (typeof superficieViaduto === 'function') {   // dirigir em cima do viaduto / subir a rampa
+    const vf = superficieViaduto(p.x + _dir.x * ex, p.z + _dir.z * ex, p.y), vt = superficieViaduto(p.x - _dir.x * ex, p.z - _dir.z * ex, p.y), vl = superficieViaduto(p.x + lx * ey, p.z + lz * ey, p.y), vr = superficieViaduto(p.x - lx * ey, p.z - lz * ey, p.y);
+    if (vf != null) hf = vf; if (vt != null) ht = vt; if (vl != null) hl = vl; if (vr != null) hr = vr;
+  }
   const chaoV = v.anfibio ? Math.max(-.1, (hf + ht) / 2) : Math.max(-1.2, (hf + ht) / 2);
   const chaoAnt = v.chaoAnt ?? chaoV; v.chaoAnt = chaoV;
   const vChao = dt ? (chaoV - chaoAnt) / dt : 0;   // velocidade com que o chão sobe embaixo do carro
