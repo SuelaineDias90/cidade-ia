@@ -698,6 +698,9 @@ for (let i = -4; i <= 4; i++) {
 // ---- objetos da cidade modelados no Blender (props_blender.py): chafariz, árvores, banco
 const PROPS = {};
 await Promise.all(['chafariz', 'arvore1', 'arvore2', 'arvore3', 'banco'].map(async n => { try { PROPS[n] = await (await fetch('./static/modelos/props/' + n + '.json')).json(); } catch (e) { console.warn('prop', n, e); } }));
+// prédios modelados no Blender (predios_blender.py)
+const PREDIOS_MOD = ['torre_vidro', 'torre_escura', 'predio_tijolo', 'predio_bege', 'predio_cinza'];
+await Promise.all(PREDIOS_MOD.map(async n => { try { PROPS[n] = await (await fetch('./static/modelos/predios/' + n + '.json')).json(); } catch (e) { console.warn('predio', n, e); PREDIOS_MOD.splice(PREDIOS_MOD.indexOf(n), 1); } }));
 const MATS_PROP = {}, GEOS_PROP = {};
 function matProp(nome) {
   if (MATS_PROP[nome]) return MATS_PROP[nome];
@@ -707,6 +710,7 @@ function matProp(nome) {
   else if (nome.startsWith('pedra')) m = new THREE.MeshStandardMaterial({ color: hex, roughness: .82 });
   else if (nome.startsWith('madeira')) m = new THREE.MeshStandardMaterial({ color: hex, roughness: .72 });
   else if (nome.startsWith('ferro')) m = new THREE.MeshStandardMaterial({ color: hex, roughness: .45, metalness: .65 });
+  else if (nome.startsWith('vidro')) { m = new THREE.MeshStandardMaterial({ color: hex, roughness: .12, metalness: .4, emissive: hex, emissiveIntensity: 0 }); matsNoite.push({ m, forca: .85 }); }   // janela: brilha de noite
   else if (nome.startsWith('casca')) m = new THREE.MeshStandardMaterial({ color: hex, roughness: .95 });
   else if (nome.startsWith('folha')) m = new THREE.MeshStandardMaterial({ color: hex, roughness: .8 });
   else m = new THREE.MeshStandardMaterial({ color: hex, roughness: .7 });
@@ -767,8 +771,23 @@ function letreiro(txt, fundo = '#1d3557', corTxt = '#ffffff', larg = 8, alt = 1.
   return new THREE.Mesh(new THREE.BoxGeometry(larg, alt, .15), m);
 }
 const MAT_LUZ_ANTENA = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0xff0000, emissiveIntensity: 2 });
+function modeloPredio(x, z, h) {
+  if (!PREDIOS_MOD.length) return null;
+  if (Math.max(Math.abs(x), Math.abs(z)) > 125) return null;   // só no centrão (torres altas)
+  const r = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453 % 1);
+  if (h > 46) return PROPS.torre_vidro ? (r < .5 ? 'torre_vidro' : 'torre_escura') : null;
+  if (h > 33) return PROPS.predio_cinza ? (r < .5 ? 'predio_cinza' : 'predio_bege') : null;
+  return null;   // prédios menores ficam de caixa (barato)
+}
 function predio(x, z, w, d, h, opc = {}) {
   const E = opc.estilo != null ? ESTILOS[opc.estilo] : pega(ESTILOS);
+  // prédio modelado no Blender (centro, torres altas) — visual 3D de verdade; mantém colisão
+  const nomeMod = !opc.nome ? modeloPredio(x, z, h) : null;
+  if (nomeMod && PROPS[nomeMod]) {
+    const g = grupoProp(nomeMod); g.scale.set(w, h, d); g.position.set(x, 0, z); cena.add(g);
+    const s = { minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2, h }; solidos.push(s); predios.push({ m: g, s, w, h, d });
+    return g;
+  }
   const b = caixa(x, h / 2, z, w, h, d, matDoEstilo(E), true);
   uvEscala(b.geometry, Math.max(1, Math.round(Math.max(w, d) / 4)) / 4, Math.max(1, Math.round(h / 3.5)) / 4);
   const matTopo = MB(0x6f6f6f, .95), matMuro = MB(0x9a958c, .9);
