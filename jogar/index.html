@@ -1574,8 +1574,61 @@ function atualizarTransito(dt) {
     // atropelou? empurra (cartoon) e o morador fica bravo
     if (c.vel > 4) for (const n of npcs) if (!n.dentro && !n.voo && n.pos.distanceTo(c.g.position) < 2) { n.voo = new THREE.Vector3(rnd(-6, 6), 7, rnd(-6, 6)); n.fugir?.(4, c.g.position); }
   }
+  if (typeof atualizarViaduto === 'function') atualizarViaduto(dt);
 }
 criarTransito();
+// ---- VIADUTO / estrada elevada (tipo GTA): passa por cima das ruas, com carros em cima
+const VIADUTOS = [];
+const viadutoCarros = [];
+function criarViaduto(eixo, linha, Yt = 8.5, DW = 13, z0 = -215, z1 = 215) {
+  // eixo 'z' = corre no sentido Z (em cima da avenida linha X=linha); 'x' = corre em X
+  const emX = eixo === 'x';
+  const g = new THREE.Group(); cena.add(g);
+  const LEN = z1 - z0, cen = (z0 + z1) / 2;
+  const P = (cx, cy, cz, w, h, d, mat, solido, minY) => {
+    let px, pz, gw, gd;
+    if (emX) { px = cz; pz = linha + cx; gw = d; gd = w; } else { px = linha + cx; pz = cz; gw = w; gd = d; }
+    const m = new THREE.Mesh(new THREE.BoxGeometry(gw, h, gd), mat); m.position.set(px, cy, pz); m.castShadow = true; m.receiveShadow = true; g.add(m);
+    if (solido) { const o = { minX: px - gw / 2, maxX: px + gw / 2, minZ: pz - gd / 2, maxZ: pz + gd / 2, h: cy + h / 2 }; if (minY != null) o.minY = minY; solidos.push(o); }
+    return m; };
+  // tabuleiro (deck) de asfalto
+  const matDeck = MB(0x3a3b40, .92), matConc = MB(0x9a958c, .9), matBarr = MB(0xb7b2a6, .85);
+  P(0, Yt - .3, cen, DW, .6, LEN, matDeck, false);
+  // faixas (linha amarela no meio + bordas brancas)
+  P(0, Yt + .02, cen, .5, .05, LEN, MB(0xe8c33a, .6), false);
+  for (const s of [-1, 1]) P(s * (DW / 2 - .8), Yt + .02, cen, .3, .05, LEN, MB(0xf0f0ea, .6), false);
+  // mureta dos dois lados (só visual — não bloqueia quem anda embaixo)
+  for (const s of [-1, 1]) P(s * (DW / 2 - .15), Yt + .35, cen, .3, 1, LEN, matBarr, false);
+  // pilares + viga embaixo
+  for (let p = z0 + 20; p <= z1 - 20; p += 34) { P(0, (Yt - .6) / 2, p, 2.6, Yt - .6, 2.2, matConc, true); P(0, Yt - .75, p, DW + 2, .7, 2.4, matConc, false); }
+  // rampas nas pontas (desce até o chão)
+  for (const s of [-1, 1]) { const zr = (s < 0 ? z0 : z1), zc = zr + s * 22, m = new THREE.Mesh(new THREE.BoxGeometry(emX ? 44 : DW, .5, emX ? DW : 44), matDeck); if (emX) { m.position.set(zc, Yt / 2, linha); m.rotation.z = s * Math.atan2(Yt, 44); } else { m.position.set(linha, Yt / 2, zc); m.rotation.x = -s * Math.atan2(Yt, 44); } m.receiveShadow = true; g.add(m); }
+  const V = { eixo, linha, Yt, DW, z0, z1, emX };
+  VIADUTOS.push(V);
+  // carros em cima
+  for (let k = 0; k < 10; k++) {
+    const c = carroModelo(undefined, k % 6 === 0 ? 'onibus' : undefined); cena.add(c);
+    const sentido = k % 2 ? 1 : -1, faixa = sentido > 0 ? 3.1 : -3.1;
+    viadutoCarros.push({ g: c, V, faixa, sentido, pos: rnd(z0, z1), vel: rnd(8, 14), velMax: rnd(11, 17) });
+  }
+  return V;
+}
+function atualizarViaduto(dt) {
+  for (const c of viadutoCarros) {
+    if (c.vida) continue;
+    let alvo = c.velMax;
+    for (const o of viadutoCarros) { if (o === c || o.V !== c.V || o.faixa !== c.faixa || o.sentido !== c.sentido) continue; const d = (o.pos - c.pos) * c.sentido; if (d > 0 && d < 16) alvo = Math.min(alvo, Math.max(0, (d - 6) * 1.2)); }
+    c.vel += THREE.MathUtils.clamp(alvo - c.vel, -16 * dt, 5 * dt);
+    c.pos += c.vel * c.sentido * dt;
+    if (c.pos > c.V.z1) c.pos = c.V.z0; else if (c.pos < c.V.z0) c.pos = c.V.z1;
+    const V = c.V;
+    if (V.emX) { c.g.position.set(c.pos, V.Yt, V.linha + c.faixa); c.g.rotation.y = c.sentido > 0 ? Math.PI / 2 : -Math.PI / 2; }
+    else { c.g.position.set(V.linha + c.faixa, V.Yt, c.pos); c.g.rotation.y = c.sentido > 0 ? 0 : Math.PI; }
+    c.g.userData.giroRoda = (c.g.userData.giroRoda || 0) + c.vel * dt / (.36 * ESCALA_CARRO);
+  }
+}
+criarViaduto('z', 0);          // viaduto norte-sul por cima da avenida central (passa por cima das ruas leste-oeste)
+criarViaduto('x', 0, 12.5);    // viaduto leste-oeste mais alto, cruza por cima do outro
 
 // ---- nuvens
 const texNuvem = texCanvas(256, 128, (g, W, H) => {
