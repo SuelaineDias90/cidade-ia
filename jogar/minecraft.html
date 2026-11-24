@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Cidade AI — Modo Blocos</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',system-ui,sans-serif; user-select:none; }
+  canvas { display:block; }
+  #crosshair { position:fixed; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; pointer-events:none; opacity:.85; z-index:5; display:none; }
+  #crosshair::before,#crosshair::after { content:''; position:absolute; background:#fff; mix-blend-mode:difference; }
+  #crosshair::before { left:9px; top:0; width:4px; height:22px; }
+  #crosshair::after { top:9px; left:0; height:4px; width:22px; }
+  /* HOTBAR */
+  #hotbar { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); display:none; gap:4px; z-index:5; background:rgba(0,0,0,.35); padding:4px; border:3px solid #1d1d1d; border-radius:4px; }
+  .slot { width:52px; height:52px; border:3px solid #3a3a3a; background:#0008; display:flex; align-items:center; justify-content:center; position:relative; }
+  .slot.sel { border-color:#fff; }
+  .slot i { width:34px; height:34px; display:block; border:2px solid rgba(0,0,0,.3); image-rendering:pixelated; }
+  .slot b { position:absolute; left:3px; top:1px; font-size:11px; color:#fff; text-shadow:1px 1px #000; }
+  /* MENU */
+  #menu { position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    background:#6b8f3a; background-size:48px 48px;
+    background-image:linear-gradient(45deg,rgba(0,0,0,.08) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.08) 75%),linear-gradient(45deg,rgba(0,0,0,.08) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.08) 75%);
+    background-position:0 0,24px 24px; }
+  #menu .capa { position:absolute; inset:0; background:rgba(20,30,10,.55); }
+  #menu .wrap { position:relative; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .titulo { font-family:'Courier New',monospace; font-weight:900; letter-spacing:10px; font-size:clamp(34px,8vw,74px); color:#e8e8e8; text-transform:uppercase;
+    text-shadow:4px 4px 0 #2a2a2a, 8px 8px 0 rgba(0,0,0,.35); -webkit-text-stroke:2px #222; }
+  .bemvindo { font-family:'Courier New',monospace; font-weight:800; letter-spacing:3px; font-size:clamp(16px,3.5vw,26px); color:#ffd21e; text-shadow:2px 2px 0 #7a5a00; margin-top:-4px; }
+  .btns { display:flex; flex-direction:column; gap:12px; margin-top:22px; width:min(320px,80vw); }
+  .mcbtn { font-family:'Courier New',monospace; font-weight:800; letter-spacing:2px; font-size:22px; color:#fff; text-shadow:2px 2px 0 #1a1a1a; text-transform:uppercase;
+    padding:14px; background:#7a7a7a; border:3px solid #3a3a3a; border-bottom-width:6px; border-radius:3px; cursor:pointer; image-rendering:pixelated; }
+  .mcbtn:hover { background:#8f8f8f; border-color:#fff; }
+  .mcbtn:active { border-bottom-width:3px; transform:translateY(3px); }
+  #modsPanel { position:fixed; inset:0; z-index:11; display:none; align-items:center; justify-content:center; background:rgba(10,15,5,.75); }
+  #modsPanel .cx { background:#5a5a5a; border:4px solid #2a2a2a; border-radius:4px; padding:18px; width:min(420px,90vw); max-height:88vh; overflow:auto; }
+  #modsPanel h2 { font-family:'Courier New',monospace; color:#ffd21e; letter-spacing:2px; margin-bottom:12px; text-align:center; text-shadow:2px 2px 0 #000; }
+  .modrow { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px; background:#0004; border:2px solid #333; margin-bottom:7px; color:#fff; font-family:'Courier New',monospace; font-size:15px; }
+  .modrow button { font-family:'Courier New',monospace; font-weight:800; padding:6px 14px; border:2px solid #222; background:#7a7a7a; color:#fff; cursor:pointer; border-radius:3px; }
+  .modrow button.on { background:#3faa3f; }
+  #dica { position:fixed; left:50%; top:12px; transform:translateX(-50%); z-index:5; color:#fff; font-family:'Courier New',monospace; font-size:13px; background:rgba(0,0,0,.4); padding:6px 12px; border-radius:4px; display:none; text-align:center; }
+  #voltar { position:fixed; left:12px; top:12px; z-index:6; font-family:'Courier New',monospace; font-weight:800; color:#fff; background:rgba(0,0,0,.45); border:2px solid #555; padding:8px 12px; border-radius:4px; cursor:pointer; display:none; }
+</style>
+</head>
+<body>
+<div id="crosshair"></div>
+<div id="dica">clique pra travar o mouse · botão esq: quebra · dir: coloca · 1-8: bloco · espaço: pula · dois pulos: voar (mod)</div>
+<button id="voltar">‹ Menu</button>
+<div id="hotbar"></div>
+<div id="menu"><div class="capa"></div><div class="wrap">
+  <div class="titulo">Cidade AI</div>
+  <div class="bemvindo">bem vindo</div>
+  <div class="btns">
+    <button class="mcbtn" id="bPlay">Play</button>
+    <button class="mcbtn" id="bMods">Mods</button>
+    <button class="mcbtn" id="bMake">Makeplace</button>
+  </div>
+</div></div>
+<div id="modsPanel"><div class="cx"><h2>MODS</h2><div id="modsList"></div>
+  <button class="mcbtn" id="modsFechar" style="width:100%;margin-top:6px;font-size:18px">Voltar</button></div></div>
+
+<script type="module">
+import * as THREE from './static/three.module.min.js';
+
+// ------------------------------------------------------------ util / texturas
+function texBloco(base, ruido, linhas) {
+  const S = 16, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d');
+  const [r, gg, b] = base;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const n = (Math.sin(x * 12.9 + y * 78.2) * 43758.5) % 1, d = 1 + (Math.abs(n) - .5) * ruido;
+    g.fillStyle = `rgb(${r * d | 0},${gg * d | 0},${b * d | 0})`; g.fillRect(x, y, 1, 1);
+  }
+  if (linhas) { g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 1; for (let i = 4; i < S; i += 5) { g.beginPath(); g.moveTo(0, i + .5); g.lineTo(S, i + .5); g.stroke(); } }
+  const t = new THREE.CanvasTexture(cv); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+// cada bloco: [topo, lado, baixo] cor rgb; icone = cor do lado
+const BLOCOS = [
+  null,
+  { nome: 'Grama', cor: [[108, 172, 64], [134, 102, 58], [120, 88, 54]], ruido: .5, icone: '#6cac40' },
+  { nome: 'Terra', cor: [[134, 102, 58]], ruido: .5, icone: '#86663a' },
+  { nome: 'Pedra', cor: [[130, 130, 130]], ruido: .4, icone: '#828282' },
+  { nome: 'Tábua', cor: [[178, 140, 86]], ruido: .3, linhas: true, icone: '#b28c56' },
+  { nome: 'Tronco', cor: [[120, 95, 55], [96, 72, 44]], ruido: .3, linhas: true, icone: '#60482c' },
+  { nome: 'Folha', cor: [[62, 142, 58]], ruido: .7, icone: '#3e8e3a' },
+  { nome: 'Tijolo', cor: [[150, 70, 55]], ruido: .25, linhas: true, icone: '#964637' },
+  { nome: 'Areia', cor: [[224, 208, 150]], ruido: .3, icone: '#e0d096' },
+];
+const matCache = new Map();
+function matFace(id, face) {   // face: 0 topo, 1 lado, 2 baixo
+  const B = BLOCOS[id], cores = B.cor, c = cores[face] || cores[cores.length === 3 ? face : (face === 0 ? 0 : face === 2 && cores[2] ? 2 : cores[1] ? 1 : 0)] || cores[0];
+  const key = id + '_' + c.join(',');
+  if (!matCache.has(key)) matCache.set(key, new THREE.MeshLambertMaterial({ map: texBloco(c, B.ruido, B.linhas) }));
+  return matCache.get(key);
+}
+function corTopo(id) { return BLOCOS[id].cor[0]; }
+function corLado(id) { const c = BLOCOS[id].cor; return c.length >= 2 ? c[1] : c[0]; }
+function corBaixo(id) { const c = BLOCOS[id].cor; return c[2] || c[c.length >= 2 ? 1 : 0]; }
+
+// ------------------------------------------------------------ mundo (voxels)
+const R = 40, ALT = 40;   // raio do mundo em blocos, altura máxima
+const mundo = new Map();
+const K = (x, y, z) => x + ',' + y + ',' + z;
+const get = (x, y, z) => mundo.get(K(x, y, z)) || 0;
+const set = (x, y, z, id) => { if (id) mundo.set(K(x, y, z), id); else mundo.delete(K(x, y, z)); };
+
+function ruido2(x, z, s) { const v = Math.sin(x * 12.9898 * s + z * 78.233 * s) * 43758.5453; return v - Math.floor(v); }
+function altura(x, z) {
+  let h = 6 + Math.sin(x * .12) * 3 + Math.cos(z * .11) * 3 + Math.sin((x + z) * .05) * 4;
+  h += (ruido2(Math.floor(x / 3), Math.floor(z / 3), 1) - .5) * 3;
+  return Math.max(1, Math.round(h));
+}
+function gerarMundo(plano) {
+  mundo.clear();
+  for (let x = -R; x <= R; x++) for (let z = -R; z <= R; z++) {
+    const h = plano ? 4 : altura(x, z);
+    for (let y = 0; y < h; y++) set(x, y, z, y === h - 1 ? (plano ? 1 : (h > 11 ? 3 : 1)) : (y > h - 4 ? 2 : 3));
+    if (!plano) {   // árvores
+      if (h > 4 && h < 12 && ruido2(x, z, 5) > .984) {
+        const tronco = h + 2 + (ruido2(z, x, 3) * 2 | 0);
+        for (let y = h; y < tronco; y++) set(x, y, z, 5);
+        for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = -1; dy <= 2; dy++)
+          if (Math.abs(dx) + Math.abs(dz) + Math.abs(dy) <= 3 && !(dx === 0 && dz === 0 && dy < 1)) { if (!get(x + dx, tronco + dy, z + dz)) set(x + dx, tronco + dy, z + dz, 6); }
+      }
+    }
+  }
+}
+
+// mesh do mundo: só as faces visíveis (vizinho vazio), com sombreamento por face
+const cena = new THREE.Scene();
+cena.background = new THREE.Color(0x8fc6ff);
+cena.fog = new THREE.Fog(0x8fc6ff, R * 1.2, R * 2.1);
+let meshMundo = null;
+const FACES = [
+  { n: [1, 0, 0], v: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], f: 1, sh: .72 },
+  { n: [-1, 0, 0], v: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]], f: 1, sh: .72 },
+  { n: [0, 1, 0], v: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]], f: 0, sh: 1 },
+  { n: [0, -1, 0], v: [[0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1]], f: 2, sh: .55 },
+  { n: [0, 0, 1], v: [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]], f: 1, sh: .86 },
+  { n: [0, 0, -1], v: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]], f: 1, sh: .64 },
+];
+function corFace(id, f) { return f === 0 ? corTopo(id) : f === 2 ? corBaixo(id) : corLado(id); }
+function rebuild() {
+  const P = [], N = [], C = [], UV = [], I = []; let vi = 0;
+  for (const [key, id] of mundo) {
+    const [x, y, z] = key.split(',').map(Number);
+    for (const F of FACES) {
+      if (get(x + F.n[0], y + F.n[1], z + F.n[2])) continue;
+      const [cr, cg, cb] = corFace(id, F.f), sh = F.sh;
+      for (let k = 0; k < 4; k++) { const v = F.v[k]; P.push(x + v[0], y + v[1], z + v[2]); N.push(...F.n); C.push(cr / 255 * sh, cg / 255 * sh, cb / 255 * sh); }
+      UV.push(0, 0, 0, 1, 1, 1, 1, 0);
+      I.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3); vi += 4;
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
+  g.setIndex(I); g.computeBoundingSphere();
+  if (meshMundo) { cena.remove(meshMundo); meshMundo.geometry.dispose(); }
+  meshMundo = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  cena.add(meshMundo);
+}
+
+// ------------------------------------------------------------ render + luz
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+const cam = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 1000);
+cena.add(new THREE.HemisphereLight(0xbfe0ff, 0x5a6a3a, 1.05));
+const sol = new THREE.DirectionalLight(0xffffff, 1.1); sol.position.set(.5, 1, .3); cena.add(sol);
+addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+// ------------------------------------------------------------ jogador
+const player = { x: 0, y: 20, z: 0, vy: 0, chao: false, yaw: 0, pitch: 0 };
+const LARG = .3, ALTP = 1.8, OLHO = 1.62;
+const MODS = { voar: false, velocidade: false, alcance: false, quebraJa: true, noite: false };
+let voando = false, ultimoPulo = 0;
+
+function solido(x, y, z) { return get(Math.floor(x), Math.floor(y), Math.floor(z)) !== 0; }
+function colideAABB(px, py, pz) {
+  for (let x = Math.floor(px - LARG); x <= Math.floor(px + LARG); x++)
+    for (let y = Math.floor(py); y <= Math.floor(py + ALTP); y++)
+      for (let z = Math.floor(pz - LARG); z <= Math.floor(pz + LARG); z++)
+        if (get(x, y, z)) return true;
+  return false;
+}
+function mover(dt) {
+  const f = MODS.velocidade ? 2 : 1, vel = (voando ? 9 : 5.2) * f;
+  const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+  let mx = 0, mz = 0;
+  if (teclas['KeyW']) { mx -= sin; mz -= cos; } if (teclas['KeyS']) { mx += sin; mz += cos; }
+  if (teclas['KeyA']) { mx -= cos; mz += sin; } if (teclas['KeyD']) { mx += cos; mz -= sin; }
+  const l = Math.hypot(mx, mz); if (l) { mx /= l; mz /= l; }
+  // horizontal com colisão por eixo
+  let nx = player.x + mx * vel * dt; if (!colideAABB(nx, player.y, player.z)) player.x = nx;
+  let nz = player.z + mz * vel * dt; if (!colideAABB(player.x, player.y, nz)) player.z = nz;
+  // vertical
+  if (voando) {
+    let vv = 0; if (teclas['Space']) vv += 1; if (teclas['ShiftLeft']) vv -= 1;
+    let ny = player.y + vv * vel * dt; if (!colideAABB(player.x, ny, player.z)) player.y = ny; player.vy = 0;
+  } else {
+    player.vy -= 26 * dt; let ny = player.y + player.vy * dt;
+    if (colideAABB(player.x, ny, player.z)) { if (player.vy < 0) player.chao = true; player.vy = 0; } else { player.y = ny; player.chao = false; }
+    if (player.y < -30) { player.x = 0; player.z = 0; player.y = 25; player.vy = 0; }
+  }
+  cam.position.set(player.x, player.y + OLHO, player.z);
+  cam.rotation.set(0, 0, 0); cam.rotateY(player.yaw); cam.rotateX(player.pitch);
+}
+
+// raycast voxel (DDA)
+const _dir = new THREE.Vector3();
+function alvoBloco() {
+  cam.getWorldDirection(_dir);
+  let x = player.x, y = player.y + OLHO, z = player.z;
+  const step = .06, max = MODS.alcance ? 12 : 5.2; let px = Math.floor(x), py = Math.floor(y), pz = Math.floor(z);
+  for (let t = 0; t < max; t += step) {
+    const nx = x + _dir.x * t, ny = y + _dir.y * t, nz = z + _dir.z * t, bx = Math.floor(nx), by = Math.floor(ny), bz = Math.floor(nz);
+    if (get(bx, by, bz)) return { bx, by, bz, px, py, pz };   // px.. = última célula vazia (onde coloca)
+    px = bx; py = by; pz = bz;
+  }
+  return null;
+}
+function dentroDoPlayer(x, y, z) {
+  return x >= Math.floor(player.x - LARG) && x <= Math.floor(player.x + LARG) &&
+         z >= Math.floor(player.z - LARG) && z <= Math.floor(player.z + LARG) &&
+         y >= Math.floor(player.y) && y <= Math.floor(player.y + ALTP);
+}
+
+// ------------------------------------------------------------ input
+const teclas = {}; let travado = false, blocoSel = 1;
+addEventListener('keydown', e => { teclas[e.code] = true;
+  if (e.code >= 'Digit1' && e.code <= 'Digit8') selecionar(+e.code.slice(5));
+  if (e.code === 'Space') { const agora = performance.now(); if (MODS.voar && agora - ultimoPulo < 300) voando = !voando; ultimoPulo = agora; if (!voando && player.chao) player.vy = 8.4; }
+  if (e.code === 'Escape') {} });
+addEventListener('keyup', e => teclas[e.code] = false);
+renderer.domElement.addEventListener('mousedown', e => {
+  if (!travado) { renderer.domElement.requestPointerLock(); return; }
+  const a = alvoBloco(); if (!a) return;
+  if (e.button === 0) { set(a.bx, a.by, a.bz, 0); rebuild(); }           // quebra
+  else if (e.button === 2) { if (!dentroDoPlayer(a.px, a.py, a.pz) && !get(a.px, a.py, a.pz)) { set(a.px, a.py, a.pz, blocoSel); rebuild(); } }   // coloca
+});
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('pointerlockchange', () => { travado = document.pointerLockElement === renderer.domElement; });
+addEventListener('mousemove', e => { if (!travado) return; player.yaw -= e.movementX * .0025; player.pitch = Math.max(-1.55, Math.min(1.55, player.pitch - e.movementY * .0025)); });
+
+// hotbar
+function montarHotbar() {
+  const hb = document.getElementById('hotbar'); hb.innerHTML = '';
+  for (let i = 1; i <= 8; i++) { const s = document.createElement('div'); s.className = 'slot' + (i === blocoSel ? ' sel' : ''); s.dataset.i = i;
+    s.innerHTML = `<i style="background:${BLOCOS[i].icone}"></i><b>${i}</b>`; s.onclick = () => selecionar(i); hb.appendChild(s); }
+}
+function selecionar(i) { if (i < 1 || i > 8) return; blocoSel = i; document.querySelectorAll('.slot').forEach(s => s.classList.toggle('sel', +s.dataset.i === blocoSel)); }
+
+// ------------------------------------------------------------ menu / mods
+const $ = s => document.querySelector(s);
+function comecar(plano) {
+  gerarMundo(plano); rebuild();
+  player.x = 0; player.z = 0; player.y = altura(0, 0) + 3; player.vy = 0; voando = false;
+  $('#menu').style.display = 'none'; $('#modsPanel').style.display = 'none';
+  $('#crosshair').style.display = 'block'; $('#hotbar').style.display = 'flex'; $('#voltar').style.display = 'block';
+  $('#dica').style.display = 'block'; setTimeout(() => $('#dica').style.display = 'none', 7000);
+  montarHotbar();
+}
+$('#bPlay').onclick = () => comecar(false);
+$('#bMake').onclick = () => comecar(true);
+$('#bMods').onclick = () => { montarMods(); $('#modsPanel').style.display = 'flex'; };
+$('#modsFechar').onclick = () => $('#modsPanel').style.display = 'none';
+$('#voltar').onclick = () => { if (travado) document.exitPointerLock(); $('#menu').style.display = 'flex'; $('#crosshair').style.display = 'none'; $('#hotbar').style.display = 'none'; $('#voltar').style.display = 'none'; };
+function montarMods() {
+  const defs = [['voar', '🕊️ Voar (2x espaço)'], ['velocidade', '⚡ Super velocidade'], ['alcance', '🎯 Alcance longo'], ['noite', '🌙 Noite']];
+  const L = $('#modsList'); L.innerHTML = '';
+  for (const [k, nome] of defs) { const row = document.createElement('div'); row.className = 'modrow';
+    row.innerHTML = `<span>${nome}</span>`; const b = document.createElement('button'); b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : '';
+    b.onclick = () => { MODS[k] = !MODS[k]; b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : ''; aplicarMods(); }; row.appendChild(b); L.appendChild(row); }
+}
+function aplicarMods() {
+  if (MODS.noite) { cena.background = new THREE.Color(0x0a1030); cena.fog.color.set(0x0a1030); sol.intensity = .25; }
+  else { cena.background = new THREE.Color(0x8fc6ff); cena.fog.color.set(0x8fc6ff); sol.intensity = 1.1; }
+}
+
+// ------------------------------------------------------------ loop
+let ult = performance.now();
+function loop() {
+  const agora = performance.now(), dt = Math.min(.05, (agora - ult) / 1000); ult = agora;
+  if ($('#menu').style.display === 'none') mover(dt);
+  renderer.render(cena, cam);
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
