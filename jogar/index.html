@@ -1603,13 +1603,21 @@ function criarViaduto(eixo, linha, Yt = 8.5, DW = 13, z0 = -215, z1 = 215) {
   for (const s of [-1, 1]) P(s * (DW / 2 - .15), Yt + .45, cen, .35, 1.1, LEN, matBarr, true, Yt - .5);
   // pilares nos DOIS lados (fora da rua, na calçada) + viga por cima ligando — libera a rua embaixo
   for (let p = z0 + 24; p <= z1 - 24; p += 36) { for (const s2 of [-1, 1]) P(s2 * (DW / 2 + 2), (Yt - .6) / 2, p, 1.8, Yt - .6, 1.8, matConc, true); P(0, Yt - .75, p, DW + 5, .7, 2, matConc, false); }
-  const RL = 48;
-  // rampas nas pontas (sobem do chão até o tabuleiro)
   const matR = MB(0x3a3b40, .92);
-  for (const s of [-1, 1]) { const zr = (s < 0 ? z0 : z1), zc = zr + s * RL / 2, comp = Math.hypot(RL, Yt), m = new THREE.Mesh(new THREE.BoxGeometry(emX ? comp : DW, .5, emX ? DW : comp), matR); if (emX) { m.position.set(zc, Yt / 2, linha); m.rotation.z = -s * Math.atan2(Yt, RL); } else { m.position.set(linha, Yt / 2, zc); m.rotation.x = s * Math.atan2(Yt, RL); } m.receiveShadow = true; g.add(m);
-    // muretas da rampa
-    for (const b of [-1, 1]) { const mr = new THREE.Mesh(new THREE.BoxGeometry(emX ? comp : .35, 1, emX ? .35 : comp), matBarr); if (emX) { mr.position.set(zc, Yt / 2 + .5, linha + b * (DW / 2 - .15)); mr.rotation.z = -s * Math.atan2(Yt, RL); } else { mr.position.set(linha + b * (DW / 2 - .15), Yt / 2 + .5, zc); mr.rotation.x = s * Math.atan2(Yt, RL); } g.add(mr); } }
-  const V = { eixo, linha, Yt, DW, z0, z1, emX, RL };
+  // rampas de acesso em DIAGONAL (saem pro lado — a avenida embaixo fica LIVRE); passam por cima das casas (que somem)
+  const W_R = 9;
+  const rampas = emX
+    ? [{ ax: z0 - 36, az: -34, ay: 0, bx: z0, bz: linha, by: Yt, w: W_R }, { ax: z1 + 36, az: 34, ay: 0, bx: z1, bz: linha, by: Yt, w: W_R }]
+    : [{ ax: linha - 34, az: z0 - 36, ay: 0, bx: linha, bz: z0, by: Yt, w: W_R }, { ax: linha + 34, az: z1 + 36, ay: 0, bx: linha, bz: z1, by: Yt, w: W_R }];
+  for (const r of rampas) {
+    const comp = Math.hypot(r.bx - r.ax, r.bz - r.az, r.by - r.ay);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(r.w, .5, comp), matR); m.position.set((r.ax + r.bx) / 2, (r.ay + r.by) / 2, (r.az + r.bz) / 2); m.lookAt(r.bx, r.by, r.bz); m.receiveShadow = true; g.add(m);
+    for (const b of [-1, 1]) { const mr = new THREE.Mesh(new THREE.BoxGeometry(.3, 1, comp), matBarr); mr.position.copy(m.position); mr.quaternion.copy(m.quaternion); mr.translateX(b * r.w / 2); mr.translateY(.7); g.add(mr); }
+    // tira as casas debaixo da rampa (abre caminho)
+    const minX = Math.min(r.ax, r.bx) - r.w, maxX = Math.max(r.ax, r.bx) + r.w, minZ = Math.min(r.az, r.bz) - r.w, maxZ = Math.max(r.az, r.bz) + r.w;
+    for (const pp of predios) if (pp.casa && pp.grupo && pp.grupo.visible) { const cx = (pp.s.minX + pp.s.maxX) / 2, cz = (pp.s.minZ + pp.s.maxZ) / 2; if (cx > minX && cx < maxX && cz > minZ && cz < maxZ) { pp.grupo.visible = false; const i = solidos.indexOf(pp.s); if (i >= 0) solidos.splice(i, 1); } }
+  }
+  const V = { eixo, linha, Yt, DW, z0, z1, emX, rampas };
   VIADUTOS.push(V);
   // carros em cima
   for (let k = 0; k < 10; k++) {
@@ -1636,14 +1644,19 @@ function atualizarViaduto(dt) {
 // altura da superfície do viaduto em (x,z) se o personagem/carro está nela (perto da altura y). null = não está
 function superficieViaduto(x, z, y) {
   let best = null;
+  const pega = (h) => { if (h != null && h <= y + 1.7 && (best === null || h > best)) best = h; };
   for (const V of VIADUTOS) {
-    const perp = V.emX ? Math.abs(z - V.linha) : Math.abs(x - V.linha);
-    if (perp > V.DW / 2) continue;
-    const a = V.emX ? x : z, RL = V.RL; let h = null;
-    if (a >= V.z0 && a <= V.z1) h = V.Yt;
-    else if (a >= V.z0 - RL && a < V.z0) h = V.Yt * (a - (V.z0 - RL)) / RL;
-    else if (a > V.z1 && a <= V.z1 + RL) h = V.Yt * ((V.z1 + RL) - a) / RL;
-    if (h !== null && h <= y + 1.7 && (best === null || h > best)) best = h;
+    // tabuleiro plano
+    const perp = V.emX ? Math.abs(z - V.linha) : Math.abs(x - V.linha), a = V.emX ? x : z;
+    if (perp <= V.DW / 2 && a >= V.z0 && a <= V.z1) pega(V.Yt);
+    // rampas de acesso (segmentos)
+    for (const r of V.rampas || []) {
+      const dx = r.bx - r.ax, dz = r.bz - r.az, len2 = dx * dx + dz * dz;
+      let t = len2 ? ((x - r.ax) * dx + (z - r.az) * dz) / len2 : 0;
+      if (t < 0 || t > 1) continue;
+      const pd = Math.hypot(x - (r.ax + dx * t), z - (r.az + dz * t));
+      if (pd <= r.w / 2) pega(r.ay + (r.by - r.ay) * t);
+    }
   }
   return best;
 }
