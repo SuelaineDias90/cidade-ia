@@ -4698,15 +4698,16 @@ function tombarCarro(v, dt) {
   if (noAr || !carroBate(v, p.x, nz)) p.z = nz; else { v.vel *= -.35; v.lat *= -.35; v.wx = (v.wx || 0) + rnd(-3, 3); if (Math.abs(vz) > 6) { somBatida(Math.abs(vz)); danoVeiculo(v, Math.abs(vz) * .3); amassarMalha(v, p.x, p.z + Math.sign(vz), Math.abs(vz)); } }
   v.ang += (v.spin || 0) * dt; v.spin *= (1 - Math.min(1, dt * 1.4));
   v.rx += (v.wx || 0) * dt; v.rz += (v.wz || 0) * dt;
-  const chao = Math.max(-1.2, alturaChao(p.x, p.z)), forcaSettle = v.voandoT > 3;
+  const chao = Math.max(-1.2, alturaChao(p.x, p.z)), forcaSettle = v.voandoT > 1.3;
   v.jaChao = Math.max(0, (v.jaChao || 0) - dt);
   if (p.y <= chao || forcaSettle) {
     const bateu = Math.max(0, -v.vy); if (p.y < chao) p.y = chao;
     if (bateu > 4 && !v.jaChao) { v.jaChao = .25; somBatida(bateu); if (v === dirigindo) tremor.forca = Math.min(1, bateu / 20); danoVeiculo(v, bateu * .5); amassarMalha(v, p.x + rnd(-1, 1), p.z + rnd(-1, 1), bateu); poeira(p.x, p.z, bateu); }
     v.vy = (bateu > 3 && !forcaSettle) ? bateu * .3 : 0; v.vel *= .7; v.lat *= .7; v.wx *= .4; v.wz *= .4; v.spin *= .5;
-    const quase = forcaSettle || (Math.abs(v.vy) < 1.5 && Math.abs(v.wx) < 1.5 && Math.abs(v.wz) < 1.5 && Math.abs(v.vel) < 5);
+    const tombadoMuito = Math.abs(v.rx) > .4 || Math.abs(v.rz) > .4;   // de lado/capotado: endireita sempre
+    const quase = forcaSettle || tombadoMuito || (Math.abs(v.vy) < 1.5 && Math.abs(v.wx) < 1.5 && Math.abs(v.wz) < 1.5 && Math.abs(v.vel) < 5);
     if (quase) {
-      const k = Math.min(1, dt * (forcaSettle ? 10 : 6)); v.rx += -v.rx * k; v.rz += -v.rz * k; v.wx *= .5; v.wz *= .5;
+      const k = Math.min(1, dt * (forcaSettle || tombadoMuito ? 12 : 7)); v.rx += -v.rx * k; v.rz += -v.rz * k; v.wx *= .4; v.wz *= .4; v.vel *= .88; v.lat *= .88;
       if (Math.abs(v.rx) < .05 && Math.abs(v.rz) < .05) { v.voando = false; v.voandoT = 0; v.rx = v.rz = v.wx = v.wz = v.vy = 0; v.g.rotation.set(0, v.ang, 0); p.y = chao; v.g.position.copy(p); return; }
     }
   }
