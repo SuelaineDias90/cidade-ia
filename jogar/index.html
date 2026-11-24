@@ -1456,20 +1456,21 @@ const matFinal = sh({
   void main(){
     vec3 c = texture2D(cena, vUv).rgb; float d = texture2D(tProf, vUv).x;
     if (d < .9999) {
-      if (usaAO > .5) c *= mix(1., texture2D(ao, vUv).r, .85);                                  // sombra de contato
+      if (usaAO > .5) c *= mix(1., texture2D(ao, vUv).r, .92);                                  // sombra de contato (mais marcada)
       vec4 v = projInv * vec4(vUv * 2. - 1., d * 2. - 1., 1.); v.xyz /= v.w;
       vec3 w = (camMundo * vec4(v.xyz, 1.)).xyz, dirW = normalize((camMundo * vec4(v.xyz, 0.)).xyz);
       float dist = length(v.xyz), f = 1. - exp(-dist * densNevoa * exp(-max(w.y, 0.) / 220.));    // névoa da distância (mais densa embaixo)
       float s = pow(max(dot(dirW, solDir), 0.), 7.);
       c = mix(c, mix(corHoriz, corSol, s * .45), clamp(f, 0., .85));
     }
-    c += (texture2D(b1, vUv).rgb * .7 + texture2D(b2, vUv).rgb * .9) * forca;               // brilho das luzes
+    c += (texture2D(b1, vUv).rgb * .82 + texture2D(b2, vUv).rgb * 1.05) * forca;             // brilho das luzes (bloom)
     float l = dot(c, vec3(.2126, .7152, .0722));
-    c = mix(vec3(l), c, 1.16);
-    c *= mix(vec3(1.), vec3(1.04, .99, .93), calor); c *= mix(vec3(1.), vec3(.84, .93, 1.12), frio);
+    c = mix(vec3(l), c, 1.1);                                                                   // saturação natural
+    c *= mix(vec3(.9, .97, 1.09), vec3(1.1, 1.02, .87), smoothstep(.06, .72, l));               // grade cinema GTA: sombra fria, luz quente
+    c *= mix(vec3(1.), vec3(1.05, .99, .92), calor); c *= mix(vec3(1.), vec3(.84, .93, 1.12), frio);
     c = aces(c);
-    c = c * c * (3. - 2. * c) * .2 + c * .8;                                                    // curva em S (contraste de filme)
-    vec2 q = vUv - .5; c *= 1. - dot(q, q) * .55;
+    c = c * c * (3. - 2. * c) * .34 + c * .66;                                                  // curva em S mais forte (contraste de filme)
+    vec2 q = vUv - .5; c *= 1. - dot(q, q) * .64;                                               // vinheta
     c = srgb(c);
     c += (fract(sin(dot(vUv + tempo, vec2(12.9898, 78.233))) * 43758.5453) - .5) * .012;
     gl_FragColor = vec4(c, 1.);
