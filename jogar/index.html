@@ -1770,7 +1770,7 @@ function atualizarRealismo(dt) {
 
 // ============================================================ MUNDO GRANDE (~50 km² de terra) com STREAMING: só o que está perto é construído
 // escala: 1 unidade ≈ 0,58 m (pessoa = 3 unidades). Continente com raio ~7200 un (~4 km).
-const ILHA = { R: 7200, metade: 7800, CH: 512, helices: [] };
+const ILHA = { R: 7200, metade: 12200, CH: 512, helices: [] };   // alcance maior pra caber a ilha nova
 function _hash(x, z) { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); }
 function _ruido(x, z) {
   const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
@@ -1786,6 +1786,8 @@ const ILHAS = [
   PX([[740, 40], [765, 5], [830, -25], [1000, -30], [1105, -5], [1120, 40], [1132, 100], [1105, 120], [1040, 160], [1005, 222], [930, 232], [845, 262], [800, 262], [775, 250], [755, 232], [715, 210], [715, 170], [725, 130], [738, 80]]),
   PX([[-280, 350], [-180, 325], [-60, 330], [35, 360], [70, 372], [80, 395], [70, 415], [40, 430], [-60, 462], [-180, 470], [-280, 450], [-320, 400]]),
 ];
+// ILHA NOVA (mapa maior) — grande, longe a leste; o chunk carrega sozinho ao chegar perto
+(() => { const CX = 9000, CZ = 0, pl = []; for (let a = 0; a < 22; a++) { const ang = a / 22 * 6.283, rr = 2300 * (.8 + .2 * Math.sin(ang * 3 + 1)); pl.push([CX + Math.cos(ang) * rr, CZ + Math.sin(ang) * rr]); } ILHAS.push(pl); })();
 const ILHAS_SEG = ILHAS.map(pl => pl.map((a, i) => { const b = pl[(i + 1) % pl.length]; return [a[0], a[1], b[0], b[1]]; }));
 function _dentroPoligono(pl, x, z) {
   let d = false;
@@ -1818,6 +1820,7 @@ function distIlha(k, x, z) {
 const PONTES = [
   { a: [(608 - 400) * 10, (292 - 360) * 10], b: [(752 - 400) * 10, (236 - 360) * 10] },
   { a: [(128 - 400) * 10, (352 - 360) * 10], b: [(52 - 400) * 10, (372 - 360) * 10] },
+  { a: [6262, -1705], b: [7507, -930] },   // ponte pra ILHA NOVA (Cidade Nova) a leste
 ];
 function naPonte(x, z) {
   for (const P of PONTES) {
@@ -1837,6 +1840,7 @@ const CIDADES = [
   { nome: 'Praia Dourada', x: 4560, z: 2460, meia: 480, bloco: 60, alt: [10, 55] },
   { nome: 'Alto da Serra', x: 840, z: -2880, meia: 360, bloco: 60, casas: true },
   { nome: 'Metrópole', x: 0, z: 0, meia: 3600, bloco: 60, alt: [25, 190], centro: true, forma: 0, margem: 170 },
+  { nome: 'Cidade Nova', x: 9000, z: 0, meia: 1000, bloco: 60, alt: [18, 110] },   // na ilha nova a leste
 ];
 const NUCLEO = { x0: -300, x1: 300, z0: -300, z1: 340 };   // o centro feito à mão (não gera nada aqui)
 function noNucleo(x, z) { return x > NUCLEO.x0 && x < NUCLEO.x1 && z > NUCLEO.z0 && z < NUCLEO.z1; }
