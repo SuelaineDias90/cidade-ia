@@ -1599,10 +1599,24 @@ function criarViaduto(eixo, linha, Yt = 8.5, DW = 13, z0 = -215, z1 = 215) {
   // faixas (linha amarela no meio + bordas brancas)
   P(0, Yt + .02, cen, .5, .05, LEN, MB(0xe8c33a, .6), false);
   for (const s of [-1, 1]) P(s * (DW / 2 - .8), Yt + .02, cen, .3, .05, LEN, MB(0xf0f0ea, .6), false);
-  // mureta dos dois lados: segura quem está EM CIMA (minY), deixa passar embaixo
-  for (const s of [-1, 1]) P(s * (DW / 2 - .15), Yt + .45, cen, .35, 1.1, LEN, matBarr, true, Yt - .5);
-  // pilares nos DOIS lados (fora da rua, na calçada) + viga por cima ligando — libera a rua embaixo
-  for (let p = z0 + 24; p <= z1 - 24; p += 36) { for (const s2 of [-1, 1]) P(s2 * (DW / 2 + 2), (Yt - .6) / 2, p, 1.8, Yt - .6, 1.8, matConc, true); P(0, Yt - .75, p, DW + 5, .7, 2, matConc, false); }
+  // faixa tracejada no meio (visual profissional)
+  for (let d = z0 + 2; d < z1; d += 7) P(0, Yt + .03, d, .4, .05, 3.2, MB(0xf0f0ea, .6), false);
+  // barreira New Jersey dos dois lados (segura em cima via minY, passa livre embaixo)
+  for (const s of [-1, 1]) { P(s * (DW / 2 - .12), Yt + .25, cen, .22, .5, LEN, matBarr, true, Yt - .5); P(s * (DW / 2 - .2), Yt + .62, cen, .36, .5, LEN, matBarr, false); }
+  const posW = (cx, cz) => emX ? [cz, linha + cx] : [linha + cx, cz];
+  // pilares de concreto AFUNILADOS nas calçadas (fora da rua) + viga-cabeça por cima — não atrapalha carro
+  for (let p = z0 + 22; p <= z1 - 22; p += 32) {
+    for (const s2 of [-1, 1]) { const [wx, wz] = posW(s2 * (DW / 2 + 2.2), p); const col = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.5, Yt - 1.1, 18), matConc); col.position.set(wx, (Yt - 1.1) / 2, wz); col.castShadow = true; col.receiveShadow = true; g.add(col); solidos.push({ minX: wx - 1.4, maxX: wx + 1.4, minZ: wz - 1.4, maxZ: wz + 1.4, h: Yt - 1 }); }
+    P(0, Yt - 1, p, DW + 6, 1.1, 2.6, matConc, false);   // viga-cabeça (hammerhead)
+  }
+  // postes de luz no viaduto (nas bordas, braço pra dentro)
+  const matPosteV = MB(0x2b2f33, .5, .6), matLuzV = new THREE.MeshStandardMaterial({ color: 0xfff2d0, emissive: 0xffd58a, emissiveIntensity: 0 }); matsNoite.push({ m: matLuzV, forca: 3 });
+  for (let p = z0 + 18; p <= z1 - 18; p += 44) for (const s2 of [-1, 1]) {
+    const [wx, wz] = posW(s2 * (DW / 2 - .4), p), [hx, hz] = posW(s2 * (DW / 2 - 1.9), p);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.08, .11, 4, 8), matPosteV); pole.position.set(wx, Yt + 2.7, wz); pole.castShadow = true; g.add(pole);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(.1, .1, 1.6), matPosteV); arm.position.set((wx + hx) / 2, Yt + 4.6, (wz + hz) / 2); arm.lookAt(hx, Yt + 4.6, hz); g.add(arm);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(.5, .16, .9), matLuzV); head.position.set(hx, Yt + 4.5, hz); g.add(head);
+  }
   const matR = MB(0x3a3b40, .92);
   // rampas de acesso em DIAGONAL (saem pro lado — a avenida embaixo fica LIVRE); passam por cima das casas (que somem)
   const W_R = 9;
