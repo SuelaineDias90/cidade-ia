@@ -6,55 +6,73 @@
 <title>Cidade AI — Modo Blocos</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  html,body { height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',system-ui,sans-serif; user-select:none; }
-  canvas { display:block; }
-  #crosshair { position:fixed; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; pointer-events:none; opacity:.85; z-index:5; display:none; }
+  html,body { height:100%; overflow:hidden; background:#000; font-family:'Courier New',monospace; user-select:none; color:#fff; }
+  canvas#gl { display:block; position:fixed; inset:0; }
+  .hud { position:fixed; z-index:5; }
+  #crosshair { left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; pointer-events:none; opacity:.9; display:none; }
   #crosshair::before,#crosshair::after { content:''; position:absolute; background:#fff; mix-blend-mode:difference; }
-  #crosshair::before { left:9px; top:0; width:4px; height:22px; }
-  #crosshair::after { top:9px; left:0; height:4px; width:22px; }
-  /* HOTBAR */
-  #hotbar { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); display:none; gap:4px; z-index:5; background:rgba(0,0,0,.35); padding:4px; border:3px solid #1d1d1d; border-radius:4px; }
-  .slot { width:52px; height:52px; border:3px solid #3a3a3a; background:#0008; display:flex; align-items:center; justify-content:center; position:relative; }
-  .slot.sel { border-color:#fff; }
-  .slot i { width:34px; height:34px; display:block; border:2px solid rgba(0,0,0,.3); image-rendering:pixelated; }
-  .slot b { position:absolute; left:3px; top:1px; font-size:11px; color:#fff; text-shadow:1px 1px #000; }
+  #crosshair::before { left:9px; top:0; width:4px; height:22px; } #crosshair::after { top:9px; left:0; height:4px; width:22px; }
+  #hotbar { left:50%; bottom:14px; transform:translateX(-50%); display:none; gap:4px; background:rgba(0,0,0,.35); padding:4px; border:3px solid #111; border-radius:3px; }
+  .slot { width:50px; height:50px; border:3px solid #3a3a3a; background:#0008; display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
+  .slot.sel { border-color:#fff; box-shadow:0 0 0 2px #fff; }
+  .slot canvas { width:34px; height:34px; image-rendering:pixelated; }
+  .slot .n { position:absolute; right:3px; bottom:1px; font-size:12px; font-weight:800; text-shadow:1px 1px #000; }
+  .slot .k { position:absolute; left:3px; top:0; font-size:10px; color:#bbb; text-shadow:1px 1px #000; }
+  #vidaWrap { left:50%; bottom:72px; transform:translateX(-50%); display:none; gap:2px; }
+  #vidaWrap span { font-size:18px; filter:drop-shadow(1px 1px 0 #000); }
+  #breakbar { left:50%; top:calc(50% + 22px); transform:translateX(-50%); width:70px; height:7px; background:#0007; border:1px solid #000; display:none; }
+  #breakbar i { display:block; height:100%; width:0; background:#ddd; }
+  #dica { left:50%; top:12px; transform:translateX(-50%); font-size:13px; background:rgba(0,0,0,.45); padding:6px 12px; border-radius:4px; display:none; text-align:center; max-width:90vw; }
+  #voltar { left:12px; top:12px; font-weight:800; background:rgba(0,0,0,.5); border:2px solid #666; padding:8px 12px; border-radius:4px; cursor:pointer; display:none; z-index:6; color:#fff; }
+  /* INVENTÁRIO */
+  #inv { position:fixed; inset:0; z-index:8; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); }
+  #inv .cx { background:#c6c6c6; border:4px solid #555; border-top-color:#fff; border-left-color:#fff; padding:14px; border-radius:3px; }
+  #inv h3 { color:#333; margin-bottom:10px; letter-spacing:1px; }
+  #invGrid { display:grid; grid-template-columns:repeat(9,46px); gap:4px; }
+  #invGrid .slot { width:46px; height:46px; background:#8b8b8b; border:2px solid #373737; border-top-color:#fff; border-left-color:#fff; }
+  #invGrid .slot canvas { width:32px; height:32px; }
   /* MENU */
-  #menu { position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
-    background:#6b8f3a; background-size:48px 48px;
-    background-image:linear-gradient(45deg,rgba(0,0,0,.08) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.08) 75%),linear-gradient(45deg,rgba(0,0,0,.08) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.08) 75%);
-    background-position:0 0,24px 24px; }
-  #menu .capa { position:absolute; inset:0; background:rgba(20,30,10,.55); }
-  #menu .wrap { position:relative; display:flex; flex-direction:column; align-items:center; gap:10px; }
-  .titulo { font-family:'Courier New',monospace; font-weight:900; letter-spacing:10px; font-size:clamp(34px,8vw,74px); color:#e8e8e8; text-transform:uppercase;
-    text-shadow:4px 4px 0 #2a2a2a, 8px 8px 0 rgba(0,0,0,.35); -webkit-text-stroke:2px #222; }
-  .bemvindo { font-family:'Courier New',monospace; font-weight:800; letter-spacing:3px; font-size:clamp(16px,3.5vw,26px); color:#ffd21e; text-shadow:2px 2px 0 #7a5a00; margin-top:-4px; }
-  .btns { display:flex; flex-direction:column; gap:12px; margin-top:22px; width:min(320px,80vw); }
-  .mcbtn { font-family:'Courier New',monospace; font-weight:800; letter-spacing:2px; font-size:22px; color:#fff; text-shadow:2px 2px 0 #1a1a1a; text-transform:uppercase;
-    padding:14px; background:#7a7a7a; border:3px solid #3a3a3a; border-bottom-width:6px; border-radius:3px; cursor:pointer; image-rendering:pixelated; }
-  .mcbtn:hover { background:#8f8f8f; border-color:#fff; }
+  #menu { position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  #menu .capa { position:absolute; inset:0; background:radial-gradient(ellipse at center,rgba(0,0,0,.15),rgba(0,0,0,.55)); }
+  #menu .wrap { position:relative; display:flex; flex-direction:column; align-items:center; z-index:2; }
+  .logo { position:relative; margin-bottom:2px; }
+  .titulo { font-weight:900; letter-spacing:12px; font-size:clamp(38px,9vw,82px); color:#cfcfcf; text-transform:uppercase; line-height:1;
+    text-shadow: 3px 3px 0 #6a6a6a, 6px 6px 0 #3a3a3a, 9px 11px 0 rgba(0,0,0,.45); -webkit-text-stroke:3px #2a2a2a; }
+  .splash { position:absolute; right:-6px; bottom:-10px; color:#ffd21e; font-weight:800; font-size:clamp(13px,2.6vw,20px); transform:rotate(-18deg); text-shadow:2px 2px 0 #7a5a00; animation:bob .6s ease-in-out infinite alternate; }
+  @keyframes bob { from{transform:rotate(-18deg) scale(1)} to{transform:rotate(-18deg) scale(1.1)} }
+  .bemvindo { font-weight:800; letter-spacing:4px; font-size:clamp(16px,3.5vw,26px); color:#ffd21e; text-shadow:2px 2px 0 #7a5a00; margin:8px 0 2px; }
+  .btns { display:flex; flex-direction:column; gap:11px; margin-top:20px; width:min(360px,86vw); }
+  .mcbtn { font-weight:800; letter-spacing:2px; font-size:21px; color:#fff; text-shadow:2px 2px 0 #1a1a1a; text-transform:uppercase; padding:13px; cursor:pointer; border-radius:3px;
+    background:linear-gradient(#8f8f8f,#7a7a7a); border:3px solid #2e2e2e; border-top-color:#a9a9a9; border-bottom-width:6px; }
+  .mcbtn:hover { background:linear-gradient(#a7bd86,#8fae6a); border-color:#fff; }
   .mcbtn:active { border-bottom-width:3px; transform:translateY(3px); }
-  #modsPanel { position:fixed; inset:0; z-index:11; display:none; align-items:center; justify-content:center; background:rgba(10,15,5,.75); }
+  .mcbtn.modo { font-size:18px; }
+  .mcbtn.modo b { color:#ffd21e; }
+  #modsPanel { position:fixed; inset:0; z-index:11; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.7); }
   #modsPanel .cx { background:#5a5a5a; border:4px solid #2a2a2a; border-radius:4px; padding:18px; width:min(420px,90vw); max-height:88vh; overflow:auto; }
-  #modsPanel h2 { font-family:'Courier New',monospace; color:#ffd21e; letter-spacing:2px; margin-bottom:12px; text-align:center; text-shadow:2px 2px 0 #000; }
-  .modrow { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px; background:#0004; border:2px solid #333; margin-bottom:7px; color:#fff; font-family:'Courier New',monospace; font-size:15px; }
-  .modrow button { font-family:'Courier New',monospace; font-weight:800; padding:6px 14px; border:2px solid #222; background:#7a7a7a; color:#fff; cursor:pointer; border-radius:3px; }
+  #modsPanel h2 { color:#ffd21e; letter-spacing:2px; margin-bottom:12px; text-align:center; text-shadow:2px 2px 0 #000; }
+  .modrow { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px; background:#0004; border:2px solid #333; margin-bottom:7px; font-size:15px; }
+  .modrow button { font-weight:800; padding:6px 14px; border:2px solid #222; background:#7a7a7a; color:#fff; cursor:pointer; border-radius:3px; }
   .modrow button.on { background:#3faa3f; }
-  #dica { position:fixed; left:50%; top:12px; transform:translateX(-50%); z-index:5; color:#fff; font-family:'Courier New',monospace; font-size:13px; background:rgba(0,0,0,.4); padding:6px 12px; border-radius:4px; display:none; text-align:center; }
-  #voltar { position:fixed; left:12px; top:12px; z-index:6; font-family:'Courier New',monospace; font-weight:800; color:#fff; background:rgba(0,0,0,.45); border:2px solid #555; padding:8px 12px; border-radius:4px; cursor:pointer; display:none; }
 </style>
 </head>
 <body>
-<div id="crosshair"></div>
-<div id="dica">clique pra travar o mouse · botão esq: quebra · dir: coloca · 1-8: bloco · espaço: pula · dois pulos: voar (mod)</div>
+<canvas id="gl"></canvas>
+<div id="crosshair" class="hud"></div>
+<div id="breakbar" class="hud"><i></i></div>
+<div id="vidaWrap" class="hud"></div>
+<div id="dica" class="hud"></div>
 <button id="voltar">‹ Menu</button>
-<div id="hotbar"></div>
+<div id="hotbar" class="hud"></div>
+<div id="inv"><div class="cx"><h3 id="invTit">INVENTÁRIO</h3><div id="invGrid"></div></div></div>
 <div id="menu"><div class="capa"></div><div class="wrap">
-  <div class="titulo">Cidade AI</div>
+  <div class="logo"><div class="titulo">Cidade AI</div><div class="splash">Modo Blocos!</div></div>
   <div class="bemvindo">bem vindo</div>
   <div class="btns">
     <button class="mcbtn" id="bPlay">Play</button>
-    <button class="mcbtn" id="bMods">Mods</button>
+    <button class="mcbtn modo" id="bModo">Modo: <b>Criativo</b></button>
     <button class="mcbtn" id="bMake">Makeplace</button>
+    <button class="mcbtn" id="bMods">Mods</button>
   </div>
 </div></div>
 <div id="modsPanel"><div class="cx"><h2>MODS</h2><div id="modsList"></div>
@@ -62,230 +80,241 @@
 
 <script type="module">
 import * as THREE from './static/three.module.min.js';
+const $ = s => document.querySelector(s);
 
-// ------------------------------------------------------------ util / texturas
-function texBloco(base, ruido, linhas) {
-  const S = 16, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d');
-  const [r, gg, b] = base;
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    const n = (Math.sin(x * 12.9 + y * 78.2) * 43758.5) % 1, d = 1 + (Math.abs(n) - .5) * ruido;
-    g.fillStyle = `rgb(${r * d | 0},${gg * d | 0},${b * d | 0})`; g.fillRect(x, y, 1, 1);
-  }
-  if (linhas) { g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 1; for (let i = 4; i < S; i += 5) { g.beginPath(); g.moveTo(0, i + .5); g.lineTo(S, i + .5); g.stroke(); } }
-  const t = new THREE.CanvasTexture(cv); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-// cada bloco: [topo, lado, baixo] cor rgb; icone = cor do lado
-const BLOCOS = [
-  null,
-  { nome: 'Grama', cor: [[108, 172, 64], [134, 102, 58], [120, 88, 54]], ruido: .5, icone: '#6cac40' },
-  { nome: 'Terra', cor: [[134, 102, 58]], ruido: .5, icone: '#86663a' },
-  { nome: 'Pedra', cor: [[130, 130, 130]], ruido: .4, icone: '#828282' },
-  { nome: 'Tábua', cor: [[178, 140, 86]], ruido: .3, linhas: true, icone: '#b28c56' },
-  { nome: 'Tronco', cor: [[120, 95, 55], [96, 72, 44]], ruido: .3, linhas: true, icone: '#60482c' },
-  { nome: 'Folha', cor: [[62, 142, 58]], ruido: .7, icone: '#3e8e3a' },
-  { nome: 'Tijolo', cor: [[150, 70, 55]], ruido: .25, linhas: true, icone: '#964637' },
-  { nome: 'Areia', cor: [[224, 208, 150]], ruido: .3, icone: '#e0d096' },
+// ============================================================ ATLAS DE TEXTURAS (estilo Minecraft, pixel)
+const TS = 16, COLS = 8, ROWS = 4;   // tile 16px, atlas 8x4
+const atlasCv = document.createElement('canvas'); atlasCv.width = COLS * TS; atlasCv.height = ROWS * TS;
+const ag = atlasCv.getContext('2d');
+let _ti = 0; const TILE = {};
+function rnd(x, y, s) { const v = Math.sin(x * 127.1 + y * 311.7 + s * 74.7) * 43758.5; return v - Math.floor(v); }
+function tile(nome, draw) { const i = _ti++, tx = i % COLS, ty = (i / COLS | 0); TILE[nome] = i; const o = { x: tx * TS, y: ty * TS }; draw((x, y, c) => { ag.fillStyle = c; ag.fillRect(o.x + x, o.y + y, 1, 1); }, (x, y, w, h, c) => { ag.fillStyle = c; ag.fillRect(o.x + x, o.y + y, w, h); }); return i; }
+const sh = (r, g, b, d) => `rgb(${Math.max(0, Math.min(255, r + d)) | 0},${Math.max(0, Math.min(255, g + d)) | 0},${Math.max(0, Math.min(255, b + d)) | 0})`;
+function ruidoTile(px, base, [r, g, b], amp, seed) { for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) { const d = (rnd(x, y, seed) - .5) * amp; px(x, y, sh(r, g, b, d)); } }
+// grama topo
+tile('grass_top', (px) => { ruidoTile(px, 0, [96, 158, 56], 46, 1); for (let i = 0; i < 40; i++) { const x = rnd(i, 1, 2) * TS | 0, y = rnd(i, 2, 3) * TS | 0; px(x, y, sh(70, 130, 40, (rnd(i, 3, 4) - .5) * 30)); } });
+// grama lado
+tile('grass_side', (px) => { for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) { if (y < 4 + (rnd(x, 0, 5) * 2 | 0)) px(x, y, sh(96, 158, 56, (rnd(x, y, 6) - .5) * 40)); else px(x, y, sh(134, 100, 58, (rnd(x, y, 7) - .5) * 46)); } });
+// terra
+tile('dirt', (px) => { ruidoTile(px, 0, [134, 100, 58], 50, 8); for (let i = 0; i < 18; i++) px(rnd(i, 1, 9) * TS | 0, rnd(i, 2, 9) * TS | 0, sh(110, 80, 46, 0)); });
+// pedra
+tile('stone', (px, rc) => { ruidoTile(px, 0, [128, 128, 128], 34, 11); for (let i = 0; i < 6; i++) { const x = rnd(i, 1, 12) * TS | 0, y = rnd(i, 2, 12) * TS | 0; px(x, y, sh(96, 96, 96, 0)); px(x + 1, y, sh(104, 104, 104, 0)); } });
+// pedregulho (cobblestone)
+tile('cobble', (px, rc) => { for (let by = 0; by < 4; by++) for (let bx = 0; bx < 4; bx++) { const c = 100 + (rnd(bx, by, 13) * 60 | 0); rc(bx * 4, by * 4, 4, 4, sh(c, c, c, 0)); } for (let y = 0; y < TS; y += 4) rc(0, y, TS, 1, '#555'); for (let x = 0; x < TS; x += 4) rc(x, 0, 1, TS, '#555'); });
+// tábua
+tile('plank', (px, rc) => { ruidoTile(px, 0, [178, 142, 90], 26, 14); for (let y = 0; y < TS; y += 4) rc(0, y, TS, 1, 'rgba(90,60,30,.5)'); for (let i = 0; i < 6; i++) px(rnd(i, 0, 15) * TS | 0, rnd(i, 1, 15) * TS | 0, '#3f2a14'); });
+// tronco lado
+tile('log_side', (px, rc) => { for (let x = 0; x < TS; x++) { const d = Math.sin(x * .9) * 16; for (let y = 0; y < TS; y++) px(x, y, sh(120, 92, 56, d + (rnd(x, y, 16) - .5) * 18)); } rc(0, 0, TS, 2, '#5a4328'); rc(0, TS - 2, TS, 2, '#5a4328'); });
+// tronco topo (anéis)
+tile('log_top', (px) => { for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) { const dx = x - 7.5, dy = y - 7.5, r = Math.hypot(dx, dy); px(x, y, sh(168, 132, 80, Math.sin(r * 2.2) * 24 - r * 2)); } });
+// folha
+tile('leaves', (px) => { for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) { const n = rnd(x, y, 17); if (n > .82) px(x, y, '#2c5e26'); else px(x, y, sh(60, 140, 54, (n - .5) * 60)); } });
+// tijolo
+tile('brick', (px, rc) => { rc(0, 0, TS, TS, '#9b4a3a'); for (let y = 0; y < TS; y += 4) rc(0, y, TS, 1, '#cfc4b4'); for (let y = 0; y < TS; y += 4) { const off = (y / 4) % 2 ? 4 : 0; for (let x = off; x < TS; x += 8) rc(x, y, 1, 4, '#cfc4b4'); } for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) if (rnd(x, y, 18) > .85) px(x, y, sh(135, 60, 48, 0)); });
+// areia
+tile('sand', (px) => ruidoTile(px, 0, [222, 206, 150], 30, 19));
+// vidro
+tile('glass', (px, rc) => { rc(0, 0, TS, TS, 'rgba(180,220,240,0.0)'); for (let i = 0; i < TS; i++) { px(i, 0, '#dfeefc'); px(i, TS - 1, '#dfeefc'); px(0, i, '#dfeefc'); px(TS - 1, i, '#dfeefc'); } px(3, 3, '#ffffff'); px(4, 3, '#ffffff'); });
+const atlasTex = new THREE.CanvasTexture(atlasCv); atlasTex.magFilter = THREE.NearestFilter; atlasTex.minFilter = THREE.NearestFilter; atlasTex.colorSpace = THREE.SRGBColorSpace;
+function uvTile(i) { const tx = i % COLS, ty = (i / COLS | 0), e = .002; return [ (tx + e) / COLS, 1 - (ty + 1 - e) / ROWS, (tx + 1 - e) / COLS, 1 - (ty + e) / ROWS ]; }
+
+// ============================================================ BLOCOS
+// faces: [topo, lado, baixo]
+const BLOCOS = [ null,
+  { nome: 'Grama', faces: ['grass_top', 'grass_side', 'dirt'], dur: .6 },
+  { nome: 'Terra', faces: ['dirt', 'dirt', 'dirt'], dur: .5 },
+  { nome: 'Pedra', faces: ['stone', 'stone', 'stone'], dur: 1.5, solta: 'Pedregulho' },
+  { nome: 'Pedregulho', faces: ['cobble', 'cobble', 'cobble'], dur: 1.7 },
+  { nome: 'Tábua', faces: ['plank', 'plank', 'plank'], dur: .8 },
+  { nome: 'Tronco', faces: ['log_top', 'log_side', 'log_top'], dur: 1.0 },
+  { nome: 'Folha', faces: ['leaves', 'leaves', 'leaves'], dur: .2, transp: true },
+  { nome: 'Tijolo', faces: ['brick', 'brick', 'brick'], dur: 1.3 },
+  { nome: 'Areia', faces: ['sand', 'sand', 'sand'], dur: .5 },
+  { nome: 'Vidro', faces: ['glass', 'glass', 'glass'], dur: .3, transp: true },
 ];
-const matCache = new Map();
-function matFace(id, face) {   // face: 0 topo, 1 lado, 2 baixo
-  const B = BLOCOS[id], cores = B.cor, c = cores[face] || cores[cores.length === 3 ? face : (face === 0 ? 0 : face === 2 && cores[2] ? 2 : cores[1] ? 1 : 0)] || cores[0];
-  const key = id + '_' + c.join(',');
-  if (!matCache.has(key)) matCache.set(key, new THREE.MeshLambertMaterial({ map: texBloco(c, B.ruido, B.linhas) }));
-  return matCache.get(key);
-}
-function corTopo(id) { return BLOCOS[id].cor[0]; }
-function corLado(id) { const c = BLOCOS[id].cor; return c.length >= 2 ? c[1] : c[0]; }
-function corBaixo(id) { const c = BLOCOS[id].cor; return c[2] || c[c.length >= 2 ? 1 : 0]; }
+const porNome = {}; BLOCOS.forEach((b, i) => { if (b) porNome[b.nome] = i; });
+// ícone do bloco pro hotbar/inventário (desenha o tile do lado)
+function iconeBloco(id, size) { const cv = document.createElement('canvas'); cv.width = cv.height = size; const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; const i = TILE[BLOCOS[id].faces[1]], tx = i % COLS, ty = (i / COLS | 0); g.drawImage(atlasCv, tx * TS, ty * TS, TS, TS, 0, 0, size, size); return cv; }
 
-// ------------------------------------------------------------ mundo (voxels)
-const R = 40, ALT = 40;   // raio do mundo em blocos, altura máxima
-const mundo = new Map();
+// ============================================================ MUNDO
+const R = 46, mundo = new Map();
 const K = (x, y, z) => x + ',' + y + ',' + z;
 const get = (x, y, z) => mundo.get(K(x, y, z)) || 0;
 const set = (x, y, z, id) => { if (id) mundo.set(K(x, y, z), id); else mundo.delete(K(x, y, z)); };
-
-function ruido2(x, z, s) { const v = Math.sin(x * 12.9898 * s + z * 78.233 * s) * 43758.5453; return v - Math.floor(v); }
-function altura(x, z) {
-  let h = 6 + Math.sin(x * .12) * 3 + Math.cos(z * .11) * 3 + Math.sin((x + z) * .05) * 4;
-  h += (ruido2(Math.floor(x / 3), Math.floor(z / 3), 1) - .5) * 3;
-  return Math.max(1, Math.round(h));
-}
-function gerarMundo(plano) {
+function nz(x, z, s) { const v = Math.sin(x * 12.9898 * s + z * 78.233 * s) * 43758.5453; return v - Math.floor(v); }
+function altura(x, z) { let h = 7 + Math.sin(x * .12) * 3 + Math.cos(z * .1) * 3 + Math.sin((x + z) * .045) * 4 + (nz(Math.floor(x / 3), Math.floor(z / 3), 1) - .5) * 3; return Math.max(1, Math.round(h)); }
+function gerar(plano) {
   mundo.clear();
   for (let x = -R; x <= R; x++) for (let z = -R; z <= R; z++) {
     const h = plano ? 4 : altura(x, z);
-    for (let y = 0; y < h; y++) set(x, y, z, y === h - 1 ? (plano ? 1 : (h > 11 ? 3 : 1)) : (y > h - 4 ? 2 : 3));
-    if (!plano) {   // árvores
-      if (h > 4 && h < 12 && ruido2(x, z, 5) > .984) {
-        const tronco = h + 2 + (ruido2(z, x, 3) * 2 | 0);
-        for (let y = h; y < tronco; y++) set(x, y, z, 5);
-        for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = -1; dy <= 2; dy++)
-          if (Math.abs(dx) + Math.abs(dz) + Math.abs(dy) <= 3 && !(dx === 0 && dz === 0 && dy < 1)) { if (!get(x + dx, tronco + dy, z + dz)) set(x + dx, tronco + dy, z + dz, 6); }
-      }
-    }
+    for (let y = 0; y < h; y++) set(x, y, z, y === h - 1 ? (plano ? porNome.Grama : (h > 12 ? porNome.Pedra : porNome.Grama)) : (y > h - 4 ? porNome.Terra : porNome.Pedra));
+    if (!plano && y_arvore(x, z, h)) continue;
   }
+  function y_arvore(x, z, h) { if (h > 4 && h < 12 && nz(x, z, 5) > .985) { const top = h + 3 + (nz(z, x, 3) * 2 | 0); for (let y = h; y < top; y++) set(x, y, z, porNome.Tronco); for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = -1; dy <= 2; dy++) { if (Math.abs(dx) + Math.abs(dz) + Math.max(0, dy) <= 3 && !(dx === 0 && dz === 0 && dy < 1) && !get(x + dx, top + dy, z + dz)) set(x + dx, top + dy, z + dz, porNome.Folha); } } return false; }
 }
 
-// mesh do mundo: só as faces visíveis (vizinho vazio), com sombreamento por face
-const cena = new THREE.Scene();
-cena.background = new THREE.Color(0x8fc6ff);
-cena.fog = new THREE.Fog(0x8fc6ff, R * 1.2, R * 2.1);
-let meshMundo = null;
+// ============================================================ MESH (faces visíveis, UV no atlas)
+const cena = new THREE.Scene(); cena.background = new THREE.Color(0x8fc6ff); cena.fog = new THREE.Fog(0x8fc6ff, R * 1.1, R * 2);
 const FACES = [
-  { n: [1, 0, 0], v: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], f: 1, sh: .72 },
-  { n: [-1, 0, 0], v: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]], f: 1, sh: .72 },
+  { n: [1, 0, 0], v: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], f: 1, sh: .78 },
+  { n: [-1, 0, 0], v: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]], f: 1, sh: .78 },
   { n: [0, 1, 0], v: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]], f: 0, sh: 1 },
-  { n: [0, -1, 0], v: [[0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1]], f: 2, sh: .55 },
-  { n: [0, 0, 1], v: [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]], f: 1, sh: .86 },
-  { n: [0, 0, -1], v: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]], f: 1, sh: .64 },
+  { n: [0, -1, 0], v: [[0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1]], f: 2, sh: .5 },
+  { n: [0, 0, 1], v: [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]], f: 1, sh: .9 },
+  { n: [0, 0, -1], v: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]], f: 1, sh: .68 },
 ];
-function corFace(id, f) { return f === 0 ? corTopo(id) : f === 2 ? corBaixo(id) : corLado(id); }
-function rebuild() {
+let meshS = null, meshT = null;
+function visivel(id, viz) { if (!id) return false; if (!viz) return true; const B = BLOCOS[viz]; return B.transp && viz !== id ? true : !BLOCOS[viz] ? true : BLOCOS[viz].transp ? (viz !== id) : false; }
+function construir(lista, transp) {
   const P = [], N = [], C = [], UV = [], I = []; let vi = 0;
   for (const [key, id] of mundo) {
+    if (!!BLOCOS[id].transp !== transp) continue;
     const [x, y, z] = key.split(',').map(Number);
     for (const F of FACES) {
-      if (get(x + F.n[0], y + F.n[1], z + F.n[2])) continue;
-      const [cr, cg, cb] = corFace(id, F.f), sh = F.sh;
-      for (let k = 0; k < 4; k++) { const v = F.v[k]; P.push(x + v[0], y + v[1], z + v[2]); N.push(...F.n); C.push(cr / 255 * sh, cg / 255 * sh, cb / 255 * sh); }
-      UV.push(0, 0, 0, 1, 1, 1, 1, 0);
+      const vizId = get(x + F.n[0], y + F.n[1], z + F.n[2]);
+      if (vizId && (!BLOCOS[vizId].transp || vizId === id)) continue;
+      const [u0, v0, u1, v1] = uvTile(TILE[BLOCOS[id].faces[F.f]]), s = F.sh;
+      for (let k = 0; k < 4; k++) { const v = F.v[k]; P.push(x + v[0], y + v[1], z + v[2]); N.push(...F.n); C.push(s, s, s); }
+      UV.push(u0, v0, u0, v1, u1, v1, u1, v0);
       I.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3); vi += 4;
     }
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
-  g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
   g.setIndex(I); g.computeBoundingSphere();
-  if (meshMundo) { cena.remove(meshMundo); meshMundo.geometry.dispose(); }
-  meshMundo = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
-  cena.add(meshMundo);
+  return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: atlasTex, vertexColors: true, transparent: transp, alphaTest: transp ? .5 : 0 }));
+}
+function rebuild() {
+  for (const m of [meshS, meshT]) if (m) { cena.remove(m); m.geometry.dispose(); }
+  meshS = construir(false, false); cena.add(meshS);
+  meshT = construir(true, true); cena.add(meshT);
 }
 
-// ------------------------------------------------------------ render + luz
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// ============================================================ RENDER
+const renderer = new THREE.WebGLRenderer({ canvas: $('#gl'), antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
 const cam = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 1000);
-cena.add(new THREE.HemisphereLight(0xbfe0ff, 0x5a6a3a, 1.05));
-const sol = new THREE.DirectionalLight(0xffffff, 1.1); sol.position.set(.5, 1, .3); cena.add(sol);
-addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+cena.add(new THREE.HemisphereLight(0xcfe8ff, 0x5a6a3a, 1.0));
+const sol = new THREE.DirectionalLight(0xffffff, 1.15); sol.position.set(.5, 1, .3); cena.add(sol);
+addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); menuCam.aspect = cam.aspect; menuCam.updateProjectionMatrix(); });
+// cena do menu: um bloco de grama girando
+const menuScene = new THREE.Scene(); menuScene.background = new THREE.Color(0x79a6d8);
+const menuCam = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, .1, 100); menuCam.position.set(0, 0, 5);
+menuScene.add(new THREE.HemisphereLight(0xffffff, 0x556644, 1.1)); const ml = new THREE.DirectionalLight(0xffffff, 1); ml.position.set(1, 2, 2); menuScene.add(ml);
+const blocoMenu = (() => { const mats = ['grass_top', 'grass_side', 'grass_side', 'dirt', 'grass_side', 'grass_side'].map(() => null); const geo = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+  // uv por face via grupos: aplicamos textura única e ajustamos UV? simples: material com atlas e UV manual
+  const faceTiles = ['grass_side', 'grass_side', 'grass_top', 'dirt', 'grass_side', 'grass_side']; const uvAttr = geo.attributes.uv;
+  for (let f = 0; f < 6; f++) { const [u0, v0, u1, v1] = uvTile(TILE[faceTiles[f]]); const b = f * 4; uvAttr.setXY(b, u0, v1); uvAttr.setXY(b + 1, u1, v1); uvAttr.setXY(b + 2, u0, v0); uvAttr.setXY(b + 3, u1, v0); } uvAttr.needsUpdate = true;
+  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: atlasTex })); menuScene.add(m); return m; })();
 
-// ------------------------------------------------------------ jogador
-const player = { x: 0, y: 20, z: 0, vy: 0, chao: false, yaw: 0, pitch: 0 };
+// ============================================================ JOGADOR / ESTADO
+const player = { x: 0, y: 24, z: 0, vy: 0, chao: false, yaw: .6, pitch: -.2 };
 const LARG = .3, ALTP = 1.8, OLHO = 1.62;
-const MODS = { voar: false, velocidade: false, alcance: false, quebraJa: true, noite: false };
+let modo = 'criativo';   // 'criativo' | 'sobrevivencia'
+let telaMenu = true, travado = false, vida = 20, invAberto = false;
+const MODS = { voar: true, velocidade: false, alcance: false, noite: false };
 let voando = false, ultimoPulo = 0;
+const invent = {};   // {nomeBloco: qtd}  (sobrevivência)
+const hotbarIds = [porNome.Grama, porNome.Terra, porNome.Pedra, porNome.Tábua, porNome.Tronco, porNome.Folha, porNome.Tijolo, porNome.Areia, porNome.Vidro];
+let selSlot = 0;
 
-function solido(x, y, z) { return get(Math.floor(x), Math.floor(y), Math.floor(z)) !== 0; }
-function colideAABB(px, py, pz) {
-  for (let x = Math.floor(px - LARG); x <= Math.floor(px + LARG); x++)
-    for (let y = Math.floor(py); y <= Math.floor(py + ALTP); y++)
-      for (let z = Math.floor(pz - LARG); z <= Math.floor(pz + LARG); z++)
-        if (get(x, y, z)) return true;
-  return false;
-}
+function solidoCol(x, y, z) { const id = get(Math.floor(x), Math.floor(y), Math.floor(z)); return id && !BLOCOS[id].transp ? true : id === porNome.Vidro || id === porNome.Folha ? true : !!id; }
+function colideAABB(px, py, pz) { for (let x = Math.floor(px - LARG); x <= Math.floor(px + LARG); x++) for (let y = Math.floor(py); y <= Math.floor(py + ALTP); y++) for (let z = Math.floor(pz - LARG); z <= Math.floor(pz + LARG); z++) if (get(x, y, z)) return true; return false; }
+const teclas = {};
 function mover(dt) {
-  const f = MODS.velocidade ? 2 : 1, vel = (voando ? 9 : 5.2) * f;
-  const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
-  let mx = 0, mz = 0;
+  const criativoVoo = modo === 'criativo' && (MODS.voar || voando);
+  const vel = (voando ? 9 : 5.0) * (MODS.velocidade ? 1.8 : 1);
+  const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw); let mx = 0, mz = 0;
   if (teclas['KeyW']) { mx -= sin; mz -= cos; } if (teclas['KeyS']) { mx += sin; mz += cos; }
   if (teclas['KeyA']) { mx -= cos; mz += sin; } if (teclas['KeyD']) { mx += cos; mz -= sin; }
   const l = Math.hypot(mx, mz); if (l) { mx /= l; mz /= l; }
-  // horizontal com colisão por eixo
   let nx = player.x + mx * vel * dt; if (!colideAABB(nx, player.y, player.z)) player.x = nx;
-  let nz = player.z + mz * vel * dt; if (!colideAABB(player.x, player.y, nz)) player.z = nz;
-  // vertical
-  if (voando) {
-    let vv = 0; if (teclas['Space']) vv += 1; if (teclas['ShiftLeft']) vv -= 1;
-    let ny = player.y + vv * vel * dt; if (!colideAABB(player.x, ny, player.z)) player.y = ny; player.vy = 0;
-  } else {
-    player.vy -= 26 * dt; let ny = player.y + player.vy * dt;
-    if (colideAABB(player.x, ny, player.z)) { if (player.vy < 0) player.chao = true; player.vy = 0; } else { player.y = ny; player.chao = false; }
-    if (player.y < -30) { player.x = 0; player.z = 0; player.y = 25; player.vy = 0; }
-  }
-  cam.position.set(player.x, player.y + OLHO, player.z);
-  cam.rotation.set(0, 0, 0); cam.rotateY(player.yaw); cam.rotateX(player.pitch);
+  let nz2 = player.z + mz * vel * dt; if (!colideAABB(player.x, player.y, nz2)) player.z = nz2;
+  if (voando) { let vv = 0; if (teclas['Space']) vv += 1; if (teclas['ShiftLeft']) vv -= 1; const ny = player.y + vv * vel * dt; if (!colideAABB(player.x, ny, player.z)) player.y = ny; player.vy = 0; }
+  else { player.vy -= 26 * dt; const ny = player.y + player.vy * dt; if (colideAABB(player.x, ny, player.z)) { if (player.vy < -22 && modo === 'sobrevivencia') { dano((-player.vy - 22) * .6 | 0); } if (player.vy < 0) player.chao = true; player.vy = 0; } else { player.y = ny; player.chao = false; } if (player.y < -40) { player.x = player.z = 0; player.y = 30; player.vy = 0; } }
+  cam.position.set(player.x, player.y + OLHO, player.z); cam.rotation.set(0, 0, 0); cam.rotateY(player.yaw); cam.rotateX(player.pitch);
 }
+function dano(n) { if (modo !== 'sobrevivencia' || n <= 0) return; vida = Math.max(0, vida - n); desenharVida(); if (vida <= 0) { vida = 20; player.x = player.z = 0; player.y = altura(0, 0) + 3; player.vy = 0; desenharVida(); } }
 
-// raycast voxel (DDA)
+// raycast
 const _dir = new THREE.Vector3();
-function alvoBloco() {
-  cam.getWorldDirection(_dir);
-  let x = player.x, y = player.y + OLHO, z = player.z;
-  const step = .06, max = MODS.alcance ? 12 : 5.2; let px = Math.floor(x), py = Math.floor(y), pz = Math.floor(z);
-  for (let t = 0; t < max; t += step) {
-    const nx = x + _dir.x * t, ny = y + _dir.y * t, nz = z + _dir.z * t, bx = Math.floor(nx), by = Math.floor(ny), bz = Math.floor(nz);
-    if (get(bx, by, bz)) return { bx, by, bz, px, py, pz };   // px.. = última célula vazia (onde coloca)
-    px = bx; py = by; pz = bz;
-  }
-  return null;
-}
-function dentroDoPlayer(x, y, z) {
-  return x >= Math.floor(player.x - LARG) && x <= Math.floor(player.x + LARG) &&
-         z >= Math.floor(player.z - LARG) && z <= Math.floor(player.z + LARG) &&
-         y >= Math.floor(player.y) && y <= Math.floor(player.y + ALTP);
-}
+function alvo() { cam.getWorldDirection(_dir); const ox = player.x, oy = player.y + OLHO, oz = player.z; const step = .05, max = MODS.alcance ? 12 : 5.2; let px = Math.floor(ox), py = Math.floor(oy), pz = Math.floor(oz);
+  for (let t = 0; t < max; t += step) { const bx = Math.floor(ox + _dir.x * t), by = Math.floor(oy + _dir.y * t), bz = Math.floor(oz + _dir.z * t); if (get(bx, by, bz)) return { bx, by, bz, px, py, pz }; px = bx; py = by; pz = bz; } return null; }
+function dentroPlayer(x, y, z) { return x >= Math.floor(player.x - LARG) && x <= Math.floor(player.x + LARG) && z >= Math.floor(player.z - LARG) && z <= Math.floor(player.z + LARG) && y >= Math.floor(player.y) && y <= Math.floor(player.y + ALTP); }
 
-// ------------------------------------------------------------ input
-const teclas = {}; let travado = false, blocoSel = 1;
+// quebrar/colocar
+let quebrando = null, quebraProg = 0;
+function quebrarInstante(a) { const id = get(a.bx, a.by, a.bz); if (!id) return; if (modo === 'sobrevivencia') { const nome = BLOCOS[id].solta || BLOCOS[id].nome; if (nome) invent[nome] = (invent[nome] || 0) + 1; } set(a.bx, a.by, a.bz, 0); rebuild(); montarHotbar(); }
+function colocar(a) { const nome = BLOCOS[hotbarIds[selSlot]]?.nome; const id = hotbarIds[selSlot]; if (!id) return; if (modo === 'sobrevivencia') { if ((invent[nome] || 0) <= 0) return; } if (dentroPlayer(a.px, a.py, a.pz) || get(a.px, a.py, a.pz)) return; set(a.px, a.py, a.pz, id); if (modo === 'sobrevivencia') { invent[nome]--; montarHotbar(); } rebuild(); }
+
+// ============================================================ INPUT
 addEventListener('keydown', e => { teclas[e.code] = true;
-  if (e.code >= 'Digit1' && e.code <= 'Digit8') selecionar(+e.code.slice(5));
-  if (e.code === 'Space') { const agora = performance.now(); if (MODS.voar && agora - ultimoPulo < 300) voando = !voando; ultimoPulo = agora; if (!voando && player.chao) player.vy = 8.4; }
-  if (e.code === 'Escape') {} });
-addEventListener('keyup', e => teclas[e.code] = false);
-renderer.domElement.addEventListener('mousedown', e => {
-  if (!travado) { renderer.domElement.requestPointerLock(); return; }
-  const a = alvoBloco(); if (!a) return;
-  if (e.button === 0) { set(a.bx, a.by, a.bz, 0); rebuild(); }           // quebra
-  else if (e.button === 2) { if (!dentroDoPlayer(a.px, a.py, a.pz) && !get(a.px, a.py, a.pz)) { set(a.px, a.py, a.pz, blocoSel); rebuild(); } }   // coloca
+  if (e.code >= 'Digit1' && e.code <= 'Digit9') selecionar(+e.code.slice(5) - 1);
+  if (e.code === 'KeyE') toggleInv();
+  if (e.code === 'Space') { const a = performance.now(); if (modo === 'criativo' && a - ultimoPulo < 300) { voando = !voando; } ultimoPulo = a; if (!voando && player.chao) player.vy = 8.4; }
+  if (e.code === 'Escape') { if (invAberto) toggleInv(); }
 });
-renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('pointerlockchange', () => { travado = document.pointerLockElement === renderer.domElement; });
+addEventListener('keyup', e => teclas[e.code] = false);
+$('#gl').addEventListener('mousedown', e => { if (telaMenu || invAberto) return; if (!travado) { $('#gl').requestPointerLock(); return; }
+  const a = alvo(); if (!a) return;
+  if (e.button === 0) { if (modo === 'criativo') quebrarInstante(a); else { quebrando = a; quebraProg = 0; } }
+  else if (e.button === 2) colocar(a);
+});
+$('#gl').addEventListener('mouseup', () => { quebrando = null; quebraProg = 0; $('#breakbar').style.display = 'none'; });
+$('#gl').addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('wheel', e => { if (telaMenu) return; selecionar((selSlot + (e.deltaY > 0 ? 1 : -1) + 9) % 9); });
+document.addEventListener('pointerlockchange', () => { travado = document.pointerLockElement === $('#gl'); });
 addEventListener('mousemove', e => { if (!travado) return; player.yaw -= e.movementX * .0025; player.pitch = Math.max(-1.55, Math.min(1.55, player.pitch - e.movementY * .0025)); });
 
-// hotbar
-function montarHotbar() {
-  const hb = document.getElementById('hotbar'); hb.innerHTML = '';
-  for (let i = 1; i <= 8; i++) { const s = document.createElement('div'); s.className = 'slot' + (i === blocoSel ? ' sel' : ''); s.dataset.i = i;
-    s.innerHTML = `<i style="background:${BLOCOS[i].icone}"></i><b>${i}</b>`; s.onclick = () => selecionar(i); hb.appendChild(s); }
+// ============================================================ UI
+function montarHotbar() { const hb = $('#hotbar'); hb.innerHTML = '';
+  hotbarIds.forEach((id, i) => { const s = document.createElement('div'); s.className = 'slot' + (i === selSlot ? ' sel' : ''); s.dataset.i = i;
+    const ic = iconeBloco(id, 34); s.appendChild(ic); const k = document.createElement('div'); k.className = 'k'; k.textContent = i + 1; s.appendChild(k);
+    if (modo === 'sobrevivencia') { const n = document.createElement('div'); n.className = 'n'; n.textContent = invent[BLOCOS[id].nome] || 0; s.appendChild(n); }
+    s.onclick = () => selecionar(i); hb.appendChild(s); });
 }
-function selecionar(i) { if (i < 1 || i > 8) return; blocoSel = i; document.querySelectorAll('.slot').forEach(s => s.classList.toggle('sel', +s.dataset.i === blocoSel)); }
+function selecionar(i) { selSlot = i; document.querySelectorAll('#hotbar .slot').forEach(s => s.classList.toggle('sel', +s.dataset.i === selSlot)); }
+function desenharVida() { const w = $('#vidaWrap'); w.innerHTML = ''; for (let i = 0; i < 10; i++) { const s = document.createElement('span'); s.textContent = (i * 2 + 2) <= vida ? '❤️' : (i * 2 + 1) <= vida ? '💔' : '🖤'; w.appendChild(s); } }
+function toggleInv() { if (telaMenu) return; invAberto = !invAberto; $('#inv').style.display = invAberto ? 'flex' : 'none'; if (invAberto) { if (travado) document.exitPointerLock(); montarInv(); } }
+function montarInv() { const g = $('#invGrid'); g.innerHTML = ''; $('#invTit').textContent = modo === 'criativo' ? 'INVENTÁRIO (criativo — clique pra pegar)' : 'INVENTÁRIO';
+  for (let id = 1; id < BLOCOS.length; id++) { const B = BLOCOS[id]; if (!B) continue; if (modo === 'sobrevivencia' && !(invent[B.nome] > 0)) continue;
+    const s = document.createElement('div'); s.className = 'slot'; s.appendChild(iconeBloco(id, 32));
+    if (modo === 'sobrevivencia') { const n = document.createElement('div'); n.className = 'n'; n.textContent = invent[B.nome]; s.appendChild(n); }
+    s.title = B.nome; s.onclick = () => { if (hotbarIds.includes(id)) { selecionar(hotbarIds.indexOf(id)); } else { hotbarIds[selSlot] = id; montarHotbar(); } }; g.appendChild(s); } }
 
-// ------------------------------------------------------------ menu / mods
-const $ = s => document.querySelector(s);
+// ============================================================ MENU
 function comecar(plano) {
-  gerarMundo(plano); rebuild();
-  player.x = 0; player.z = 0; player.y = altura(0, 0) + 3; player.vy = 0; voando = false;
-  $('#menu').style.display = 'none'; $('#modsPanel').style.display = 'none';
+  gerar(plano); rebuild();
+  player.x = 0; player.z = 0; player.y = (plano ? 4 : altura(0, 0)) + 3; player.vy = 0; voando = modo === 'criativo' && MODS.voar; vida = 20;
+  for (const k in invent) delete invent[k];
+  telaMenu = false; $('#menu').style.display = 'none'; $('#modsPanel').style.display = 'none';
   $('#crosshair').style.display = 'block'; $('#hotbar').style.display = 'flex'; $('#voltar').style.display = 'block';
-  $('#dica').style.display = 'block'; setTimeout(() => $('#dica').style.display = 'none', 7000);
+  $('#vidaWrap').style.display = modo === 'sobrevivencia' ? 'flex' : 'none'; if (modo === 'sobrevivencia') desenharVida();
   montarHotbar();
+  $('#dica').style.display = 'block'; $('#dica').textContent = 'clique: trava mouse · esq: quebra' + (modo === 'sobrevivencia' ? ' (segura)' : '') + ' · dir: coloca · 1-9/roda: bloco · E: inventário · espaço: pula' + (modo === 'criativo' ? ' · 2x espaço: voar' : '');
+  setTimeout(() => $('#dica').style.display = 'none', 8000);
+  aplicarNoite();
 }
 $('#bPlay').onclick = () => comecar(false);
 $('#bMake').onclick = () => comecar(true);
+$('#bModo').onclick = () => { modo = modo === 'criativo' ? 'sobrevivencia' : 'criativo'; $('#bModo').innerHTML = 'Modo: <b>' + (modo === 'criativo' ? 'Criativo' : 'Sobrevivência') + '</b>'; };
 $('#bMods').onclick = () => { montarMods(); $('#modsPanel').style.display = 'flex'; };
 $('#modsFechar').onclick = () => $('#modsPanel').style.display = 'none';
-$('#voltar').onclick = () => { if (travado) document.exitPointerLock(); $('#menu').style.display = 'flex'; $('#crosshair').style.display = 'none'; $('#hotbar').style.display = 'none'; $('#voltar').style.display = 'none'; };
-function montarMods() {
-  const defs = [['voar', '🕊️ Voar (2x espaço)'], ['velocidade', '⚡ Super velocidade'], ['alcance', '🎯 Alcance longo'], ['noite', '🌙 Noite']];
-  const L = $('#modsList'); L.innerHTML = '';
-  for (const [k, nome] of defs) { const row = document.createElement('div'); row.className = 'modrow';
-    row.innerHTML = `<span>${nome}</span>`; const b = document.createElement('button'); b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : '';
-    b.onclick = () => { MODS[k] = !MODS[k]; b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : ''; aplicarMods(); }; row.appendChild(b); L.appendChild(row); }
-}
-function aplicarMods() {
-  if (MODS.noite) { cena.background = new THREE.Color(0x0a1030); cena.fog.color.set(0x0a1030); sol.intensity = .25; }
-  else { cena.background = new THREE.Color(0x8fc6ff); cena.fog.color.set(0x8fc6ff); sol.intensity = 1.1; }
-}
+$('#voltar').onclick = () => { if (travado) document.exitPointerLock(); telaMenu = true; $('#menu').style.display = 'flex'; for (const id of ['crosshair', 'hotbar', 'voltar', 'vidaWrap']) $('#' + id).style.display = 'none'; if (invAberto) toggleInv(); };
+function montarMods() { const defs = [['voar', '🕊️ Voar (criativo, 2x espaço)'], ['velocidade', '⚡ Super velocidade'], ['alcance', '🎯 Alcance longo'], ['noite', '🌙 Noite']]; const L = $('#modsList'); L.innerHTML = '';
+  for (const [k, nome] of defs) { const row = document.createElement('div'); row.className = 'modrow'; row.innerHTML = `<span>${nome}</span>`; const b = document.createElement('button'); b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : ''; b.onclick = () => { MODS[k] = !MODS[k]; b.textContent = MODS[k] ? 'ON' : 'OFF'; b.className = MODS[k] ? 'on' : ''; aplicarNoite(); }; row.appendChild(b); L.appendChild(row); } }
+function aplicarNoite() { if (MODS.noite) { cena.background.set(0x0a1030); cena.fog.color.set(0x0a1030); sol.intensity = .3; } else { cena.background.set(0x8fc6ff); cena.fog.color.set(0x8fc6ff); sol.intensity = 1.15; } }
 
-// ------------------------------------------------------------ loop
+// ============================================================ LOOP
 let ult = performance.now();
-function loop() {
-  const agora = performance.now(), dt = Math.min(.05, (agora - ult) / 1000); ult = agora;
-  if ($('#menu').style.display === 'none') mover(dt);
-  renderer.render(cena, cam);
+function loop() { const agora = performance.now(), dt = Math.min(.05, (agora - ult) / 1000); ult = agora;
+  if (telaMenu) { blocoMenu.rotation.y += dt * .7; blocoMenu.rotation.x = Math.sin(agora / 1600) * .25; renderer.render(menuScene, menuCam); }
+  else {
+    mover(dt);
+    if (quebrando && modo === 'sobrevivencia') { const a = alvo(); if (a && a.bx === quebrando.bx && a.by === quebrando.by && a.bz === quebrando.bz && get(a.bx, a.by, a.bz)) { quebraProg += dt / (BLOCOS[get(a.bx, a.by, a.bz)].dur * .9); $('#breakbar').style.display = 'block'; $('#breakbar i').style.width = Math.min(100, quebraProg * 100) + '%'; if (quebraProg >= 1) { quebrarInstante(a); quebrando = null; quebraProg = 0; $('#breakbar').style.display = 'none'; } } else { quebrando = null; $('#breakbar').style.display = 'none'; } }
+    renderer.render(cena, cam);
+  }
   requestAnimationFrame(loop);
 }
 loop();
