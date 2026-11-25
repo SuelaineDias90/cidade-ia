@@ -4266,6 +4266,176 @@ async function denunciar(id) {
 
 // ---------- chat de voz (direto entre os jogadores, só quem está perto)
 const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' }];
+
+// ================================================================= ZAP (mensagens e ligações entre jogadores)
+const ZAP = { mq: null, conta: null, id: null, nome: null, online: new Map(), chatCom: null, call: null, tocando: null };
+try { ZAP.amigos = JSON.parse(localStorage.getItem('zap_amigos') || '{}'); } catch (e) { ZAP.amigos = {}; }
+try { ZAP.convs = JSON.parse(localStorage.getItem('zap_convs') || '{}'); } catch (e) { ZAP.convs = {}; }
+function zapSalvar() { try { localStorage.setItem('zap_amigos', JSON.stringify(ZAP.amigos)); localStorage.setItem('zap_convs', JSON.stringify(ZAP.convs)); } catch (e) {} }
+// --- estilos + UI
+(() => { const st = document.createElement('style'); st.textContent = `
+ #zapBtn i{background:linear-gradient(135deg,#25d366,#128c7e)}
+ #zap{position:fixed;inset:0;z-index:60;display:none;background:rgba(10,14,20,.6);backdrop-filter:blur(3px);align-items:center;justify-content:center}
+ #zap.on{display:flex}
+ #zapCx{width:min(440px,96vw);height:min(680px,92vh);background:#0b141a;border:1px solid #223;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px #000a}
+ #zapTopo{background:#1f2c33;padding:12px 14px;display:flex;align-items:center;gap:10px;color:#fff}
+ #zapTopo b{font-size:17px}#zapTopo small{color:#8aa}#zapVolta{cursor:pointer;font-size:20px;display:none}
+ #zapAbas{display:flex;background:#111b21}#zapAbas button{flex:1;background:none;border:0;color:#8aa;padding:11px;font:600 13px Segoe UI;cursor:pointer;border-bottom:2px solid transparent}
+ #zapAbas button.on{color:#25d366;border-color:#25d366}
+ #zapLista{flex:1;overflow:auto}
+ .zc{display:flex;align-items:center;gap:11px;padding:11px 13px;cursor:pointer;border-bottom:1px solid #16232b}
+ .zc:hover{background:#15242c}.zc .av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#3a86ff,#06d6a0);display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;flex-shrink:0}
+ .zc .nm{flex:1;color:#e9edef}.zc .nm small{display:block;color:#8aa;font-size:12px}
+ .zc .bt{display:flex;gap:6px}.zc .bt button{background:#223;border:0;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:15px}
+ .zc .bt button.lig{background:#25d366}
+ #zapChat{flex:1;display:none;flex-direction:column}
+ #zapMsgs{flex:1;overflow:auto;padding:12px;background:#0b141a;display:flex;flex-direction:column;gap:6px}
+ .zm{max-width:78%;padding:7px 10px;border-radius:9px;font-size:14px;color:#e9edef;word-break:break-word}
+ .zm.eu{align-self:flex-end;background:#005c4b}.zm.ele{align-self:flex-start;background:#202c33}
+ #zapEnvia{display:flex;gap:8px;padding:10px;background:#111b21}
+ #zapTxt{flex:1;padding:10px;border-radius:20px;border:0;background:#2a3942;color:#fff;font:15px Segoe UI}
+ #zapEnvia button{background:#25d366;border:0;color:#fff;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:18px}
+ #zapVazio{color:#6b8;text-align:center;padding:30px 20px;font-size:14px}
+ #zapCall{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(5,10,14,.96);color:#fff}
+ #zapCall.on{display:flex}#zapCall .ava{width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;font-size:52px;animation:zpulse 1.2s infinite}
+ @keyframes zpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+ #zapCall h2{font-size:24px}#zapCall .st{color:#9ab}
+ #zapCall .acoes{display:flex;gap:26px;margin-top:10px}
+ #zapCall .acoes button{width:66px;height:66px;border-radius:50%;border:0;font-size:26px;cursor:pointer;color:#fff}
+ .btAtende{background:#25d366}.btRecusa{background:#e23b3b}
+ #zapId{font-size:12px;color:#8aa;padding:8px 13px;border-top:1px solid #16232b;display:flex;justify-content:space-between;align-items:center}
+ #zapId a{color:#25d366;cursor:pointer}`;
+ document.head.appendChild(st);
+ const d = document.createElement('div'); d.id = 'zap'; d.innerHTML = `<div id="zapCx">
+   <div id="zapTopo"><span id="zapVolta">‹</span><div><b id="zapTit">Zap</b> <small id="zapSub">mensagens e ligações</small></div><span style="flex:1"></span><span id="zapFechar" style="cursor:pointer;font-size:20px">✕</span></div>
+   <div id="zapAbas"><button data-ab="amigos" class="on">💬 Conversas</button><button data-ab="online">🌎 Pessoas online</button></div>
+   <div id="zapLista"></div>
+   <div id="zapChat"><div id="zapMsgs"></div><div id="zapEnvia"><input id="zapTxt" maxlength="300" placeholder="Mensagem"><button id="zapSend">➤</button></div></div>
+   <div id="zapId"></div></div>`;
+ document.body.appendChild(d);
+ const c = document.createElement('div'); c.id = 'zapCall'; c.innerHTML = `<div class="ava" id="zcAva">📞</div><h2 id="zcNome">—</h2><div class="st" id="zcStatus">chamando…</div><audio id="zcAudio" autoplay></audio><div class="acoes" id="zcAcoes"></div>`;
+ document.body.appendChild(c);
+})();
+function zapAvatar(nome) { return (nome || '?').trim()[0]?.toUpperCase() || '?'; }
+function zapToque(tocar) { // toque de telefone (WebAudio)
+  if (tocar) { if (ZAP.tocando) return; try { const ac = ZAP.ac = ZAP.ac || new (window.AudioContext || window.webkitAudioContext)();
+    const bip = () => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 480; o.connect(g); g.connect(ac.destination); g.gain.setValueAtTime(.0001, ac.currentTime); g.gain.linearRampToValueAtTime(.2, ac.currentTime + .05); g.gain.linearRampToValueAtTime(.0001, ac.currentTime + .5); o.start(); o.stop(ac.currentTime + .5); };
+    bip(); ZAP.tocando = setInterval(bip, 1400); } catch (e) {} }
+  else { clearInterval(ZAP.tocando); ZAP.tocando = null; }
+}
+async function zapConectar() {
+  if (ZAP.mq) return; if (!window.crypto?.subtle) return;
+  let c = await REDE.carregarConta(); if (!c) { const nome = (meuNick() || prompt('Seu nome no Zap:', '') || '').trim().slice(0, 16); if (!nome) return; c = await REDE.criarConta(nome); }
+  ZAP.conta = c; ZAP.id = c.id; ZAP.nome = c.nome;
+  const mq = ZAP.mq = new REDE.MQ(); mq.ligar();
+  mq.ouvir('zap/on/+', (t, txt, ret) => { try { const id = t.slice(7), d = JSON.parse(txt); if (id !== ZAP.id) { ZAP.online.set(id, { nome: d.n, t: Date.now() }); if (ZAP.aberto) zapRender(); } } catch (e) {} });
+  mq.ouvir('zap/to/' + ZAP.id, (t, txt) => { try { zapReceber(JSON.parse(txt)); } catch (e) {} });
+  mq.ouvir('zap/call/' + ZAP.id, (t, txt) => { try { zapSinal(JSON.parse(txt)); } catch (e) {} });
+  const anunciar = () => mq.pub('zap/on/' + ZAP.id, { n: ZAP.nome, t: Date.now() }, true);
+  setTimeout(anunciar, 800); clearInterval(ZAP._an); ZAP._an = setInterval(anunciar, 25000);
+  addEventListener('beforeunload', () => { try { ZAP.mq.apagar('zap/on/' + ZAP.id); } catch (e) {} });
+}
+function zapAbrir() { ZAP.aberto = true; $('#zap').classList.add('on'); zapConectar().then(() => { $('#zapId').innerHTML = ZAP.id ? `você: <b style="color:#e9edef">${escH(ZAP.nome)}</b> ${tag4(ZAP.id)}<a id="zapNome">trocar nome</a>` : 'conectando…'; const nn = $('#zapNome'); if (nn) nn.onclick = zapTrocarNome; zapRender(); }); }
+function zapFechar() { ZAP.aberto = false; $('#zap').classList.remove('on'); zapVoltaLista(); }
+function zapTrocarNome() { const n = (prompt('Novo nome:', ZAP.nome) || '').trim().slice(0, 16); if (!n) return; REDE.renomearConta(n); ZAP.nome = n; try { localStorage.setItem('cidadeia_nome', n); } catch (e) {} zapAbrir(); }
+let zapAba = 'amigos';
+function zapRender() {
+  const L = $('#zapLista'); if (!L) return; const agora = Date.now();
+  for (const [id, o] of ZAP.online) if (agora - o.t > 80000) ZAP.online.delete(id);
+  let html = '';
+  if (zapAba === 'amigos') {
+    const ids = Object.keys(ZAP.amigos);
+    if (!ids.length) html = `<div id="zapVazio">Você ainda não tem contatos.<br>Toque em <b>🌎 Pessoas online</b> pra conhecer gente que joga agora e fazer amizade!</div>`;
+    for (const id of ids) { const on = ZAP.online.has(id); const ult = (ZAP.convs[id] || []).slice(-1)[0]; html += zapLinha(id, ZAP.amigos[id], on, ult ? (ult.eu ? 'Você: ' : '') + ult.txt : (on ? 'online' : 'offline')); }
+  } else {
+    const gente = [...ZAP.online.entries()].filter(([id]) => !ZAP.amigos[id]);
+    if (!gente.length) html = `<div id="zapVazio">Ninguém novo online agora.<br>Chame um amigo pra abrir o jogo!</div>`;
+    for (const [id, o] of gente) html += zapLinha(id, o.nome, true, 'online agora · toque pra conversar ou ligar', true);
+  }
+  L.innerHTML = html;
+  L.querySelectorAll('.zc').forEach(el => { const id = el.dataset.id;
+    el.querySelector('.abrir').onclick = () => zapAbrirChat(id, el.dataset.nome);
+    const bl = el.querySelector('.lig'); if (bl) bl.onclick = (e) => { e.stopPropagation(); zapLigar(id, el.dataset.nome); };
+    const ba = el.querySelector('.add'); if (ba) ba.onclick = (e) => { e.stopPropagation(); ZAP.amigos[id] = el.dataset.nome; zapSalvar(); zapRender(); };
+  });
+}
+function zapLinha(id, nome, on, sub, novo) {
+  return `<div class="zc" data-id="${id}" data-nome="${escH(nome)}"><div class="av abrir">${zapAvatar(nome)}</div>
+   <div class="nm abrir"><b>${escH(nome)}</b> <small>${escH(sub)}${on ? ' 🟢' : ''}</small></div>
+   <div class="bt"><button class="lig" title="ligar">📞</button>${novo ? '<button class="add" title="adicionar">➕</button>' : ''}</div></div>`;
+}
+function zapAbrirChat(id, nome) {
+  ZAP.chatCom = id; if (!ZAP.amigos[id] && ZAP.online.get(id)) { ZAP.amigos[id] = nome; zapSalvar(); }
+  $('#zapLista').style.display = 'none'; $('#zapAbas').style.display = 'none'; $('#zapId').style.display = 'none';
+  $('#zapChat').style.display = 'flex'; $('#zapVolta').style.display = 'inline'; $('#zapTit').textContent = nome; $('#zapSub').textContent = ZAP.online.has(id) ? 'online' : 'offline';
+  zapMsgs(); $('#zapTxt').focus();
+}
+function zapVoltaLista() { ZAP.chatCom = null; $('#zapChat').style.display = 'none'; $('#zapVolta').style.display = 'none';
+  $('#zapLista').style.display = 'block'; $('#zapAbas').style.display = 'flex'; $('#zapId').style.display = 'flex'; $('#zapTit').textContent = 'Zap'; $('#zapSub').textContent = 'mensagens e ligações'; zapRender(); }
+function zapMsgs() { const m = $('#zapMsgs'), lista = ZAP.convs[ZAP.chatCom] || []; m.innerHTML = lista.map(x => `<div class="zm ${x.eu ? 'eu' : 'ele'}">${escH(x.txt)}</div>`).join(''); m.scrollTop = m.scrollHeight; }
+function zapEnviar() { const t = $('#zapTxt').value.trim(); if (!t || !ZAP.chatCom) return; $('#zapTxt').value = '';
+  (ZAP.convs[ZAP.chatCom] = ZAP.convs[ZAP.chatCom] || []).push({ eu: true, txt: t, t: Date.now() }); zapSalvar(); zapMsgs();
+  ZAP.mq.pub('zap/to/' + ZAP.chatCom, { de: ZAP.id, nome: ZAP.nome, txt: t, t: Date.now() }); }
+function zapReceber(m) { if (!m || !m.de) return; const id = m.de; if (!ZAP.amigos[id]) ZAP.online.set(id, { nome: m.nome, t: Date.now() });
+  (ZAP.convs[id] = ZAP.convs[id] || []).push({ eu: false, txt: String(m.txt || '').slice(0, 300), t: Date.now() }); zapSalvar();
+  if (ZAP.aberto && ZAP.chatCom === id) zapMsgs(); else { try { zapBip(); } catch (e) {} if (ZAP.aberto) zapRender(); if (!ZAP.aberto) notificarZap(m.nome); } }
+function zapBip() { const ac = ZAP.ac = ZAP.ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 660; o.connect(g); g.connect(ac.destination); g.gain.setValueAtTime(.15, ac.currentTime); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + .25); o.start(); o.stop(ac.currentTime + .25); }
+function notificarZap(nome) { const b = $('#zapBtn'); if (b) { b.classList.add('piscaZap'); } }
+
+// ---------- LIGAÇÃO (voz por WebRTC, sinalização por MQTT)
+function zapSinalEnviar(dest, o) { o.de = ZAP.id; o.nome = ZAP.nome; ZAP.mq.pub('zap/call/' + dest, o); }
+async function zapLigar(id, nome) {
+  if (ZAP.call) return; ZAP.call = { com: id, nome, papel: 'origem', pc: null };
+  zapMostrarCall(nome, 'chamando…', 'cancelar');
+  zapSinalEnviar(id, { k: 'ring' });
+  ZAP.call.timeout = setTimeout(() => { if (ZAP.call && !ZAP.call.pc) zapEncerrar('sem resposta'); }, 30000);
+}
+function zapMostrarCall(nome, status, modo) {
+  $('#zapCall').classList.add('on'); $('#zcNome').textContent = nome; $('#zcStatus').textContent = status; $('#zcAva').textContent = '📞';
+  const A = $('#zcAcoes'); A.innerHTML = '';
+  if (modo === 'receber') { const a = btnCall('btAtende', '📞', () => zapAtender()); const r = btnCall('btRecusa', '✕', () => { zapSinalEnviar(ZAP.call.com, { k: 'no' }); zapEncerrar('recusada'); }); A.append(a, r); }
+  else { const r = btnCall('btRecusa', '✕', () => { if (ZAP.call) zapSinalEnviar(ZAP.call.com, { k: 'bye' }); zapEncerrar('encerrada'); }); A.append(r); }
+}
+function btnCall(cls, txt, fn) { const b = document.createElement('button'); b.className = cls; b.textContent = txt; b.onclick = fn; return b; }
+async function zapNovaPc(dest) {
+  let mic; try { mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { zapEncerrar('sem microfone'); return null; }
+  const pc = new RTCPeerConnection({ iceServers: ICE }); mic.getTracks().forEach(t => pc.addTrack(t, mic));
+  pc.onicecandidate = e => { if (e.candidate) zapSinalEnviar(dest, { k: 'ice', c: e.candidate }); };
+  pc.ontrack = e => { $('#zcAudio').srcObject = e.streams[0]; $('#zcStatus').textContent = 'ligado 🔊'; };
+  pc.onconnectionstatechange = () => { if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) zapEncerrar('caiu'); };
+  if (ZAP.call) { ZAP.call.pc = pc; ZAP.call.mic = mic; } return pc;
+}
+async function zapAtender() {
+  zapToque(false); $('#zcStatus').textContent = 'conectando…'; zapMostrarCall(ZAP.call.nome, 'conectando…', 'ligado');
+  zapSinalEnviar(ZAP.call.com, { k: 'ok' }); // avisa a origem pra mandar a oferta
+}
+async function zapSinal(s) {
+  if (!s || !s.de) return; const id = s.de;
+  if (s.k === 'ring') { if (ZAP.call) { zapSinalEnviar(id, { k: 'no' }); return; } ZAP.call = { com: id, nome: s.nome, papel: 'destino', pc: null }; zapToque(true); zapMostrarCall(s.nome, 'ligando pra você…', 'receber'); return; }
+  if (!ZAP.call || ZAP.call.com !== id) return;
+  if (s.k === 'no') return zapEncerrar('recusada');
+  if (s.k === 'bye') return zapEncerrar('encerrada');
+  if (s.k === 'ok') { const pc = await zapNovaPc(id); if (!pc) return; const of = await pc.createOffer(); await pc.setLocalDescription(of); zapSinalEnviar(id, { k: 'offer', sdp: pc.localDescription }); }
+  else if (s.k === 'offer') { const pc = await zapNovaPc(id); if (!pc) return; await pc.setRemoteDescription(s.sdp); const an = await pc.createAnswer(); await pc.setLocalDescription(an); zapSinalEnviar(id, { k: 'answer', sdp: pc.localDescription }); }
+  else if (s.k === 'answer') { if (ZAP.call.pc) await ZAP.call.pc.setRemoteDescription(s.sdp); }
+  else if (s.k === 'ice') { if (ZAP.call.pc && s.c) try { await ZAP.call.pc.addIceCandidate(s.c); } catch (e) {} }
+}
+function zapEncerrar(motivo) {
+  zapToque(false); if (ZAP.call) { clearTimeout(ZAP.call.timeout); try { ZAP.call.pc && ZAP.call.pc.close(); } catch (e) {} try { ZAP.call.mic && ZAP.call.mic.getTracks().forEach(t => t.stop()); } catch (e) {} }
+  ZAP.call = null; $('#zcStatus').textContent = motivo || ''; setTimeout(() => $('#zapCall').classList.remove('on'), 700);
+}
+// --- liga os controles do Zap + botão no menu
+$('#zapFechar').onclick = zapFechar;
+$('#zapVolta').onclick = zapVoltaLista;
+$('#zapSend').onclick = zapEnviar;
+$('#zapTxt').addEventListener('keydown', e => { if (e.key === 'Enter') zapEnviar(); e.stopPropagation(); });
+$('#zapAbas').querySelectorAll('button').forEach(b => b.onclick = () => { zapAba = b.dataset.ab; $('#zapAbas').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); zapRender(); });
+(() => { const b = document.createElement('button'); b.className = 'bm'; b.id = 'zapBtn';
+  b.innerHTML = `<i>💬</i><span><b>Zap — mensagens e ligações</b><small>fale e ligue pra amigos e gente nova</small></span>`;
+  b.onclick = () => { b.classList.remove('piscaZap'); zapAbrir(); };
+  const alvo = $('#mBlocos'); if (alvo) alvo.after(b); else $('#menuInicio .mlist')?.appendChild(b); })();
+if (window.crypto?.subtle) setTimeout(() => { zapConectar(); }, 2500);   // conecta cedo pra receber chamada/mensagem mesmo com o Zap fechado
 $('#mpMic').onclick = async () => {
   if (MP.mic) { pararVoz(); $('#mpMic').classList.remove('on'); addMpMsg('🎤 microfone desligado'); return; }
   try { MP.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
