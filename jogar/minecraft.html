@@ -117,6 +117,7 @@
     <button class="mcbtn modo" id="bModo">Modo: <b>Sobrevivência</b></button>
     <button class="mcbtn" id="bMake">Criar (mundo plano)</button>
     <button class="mcbtn" id="bMods">Definições</button>
+    <button class="mcbtn" id="bSairJogo" style="font-size:16px;background:linear-gradient(#7a5a5a,#6a4a4a)">◀ Sair (voltar à Cidade AI)</button>
   </div>
 </div>
 <div class="rodape"><span>👤 Perfil</span><span id="versao">Cidade AI · Modo Blocos v3</span></div>
@@ -575,6 +576,7 @@ $('#bPlay').onclick = () => comecar(false);
 $('#bMake').onclick = () => comecar(true);
 $('#bModo').onclick = () => { modo = modo === 'criativo' ? 'sobrevivencia' : 'criativo'; $('#bModo').innerHTML = 'Modo: <b>' + (modo === 'criativo' ? 'Criativo' : 'Sobrevivência') + '</b>'; };
 $('#bMods').onclick = () => { montarMods(); $('#modsPanel').style.display = 'flex'; };
+$('#bSairJogo').onclick = () => { location.href = './'; };
 $('#modsFechar').onclick = () => $('#modsPanel').style.display = 'none';
 $('#voltar').onclick = () => $('#pSair').onclick();
 function montarMods() { const defs = [['voar', '🕊️ Voar (criativo, 2x espaço)'], ['velocidade', '⚡ Super velocidade'], ['alcance', '🎯 Alcance longo'], ['noite', '🌙 Noite']]; const L = $('#modsList'); L.innerHTML = '';
