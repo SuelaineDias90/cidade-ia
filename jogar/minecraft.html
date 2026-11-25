@@ -669,7 +669,28 @@ function encher(x0, y0, z0, x1, y1, z1, id, oco) {
   for (let x = ax; x <= bx; x++) for (let y = ay; y <= by; y++) for (let z = az; z <= bz; z++) { if (oco && x > ax && x < bx && y > ay && y < by && z > az && z < bz) continue; set(x, y, z, id); }
   remalhar(ax, az, bx, bz);
 }
-function comandoIA(txt) {
+function executarAcoes(acoes) {
+  const b = { x: Math.floor(player.x), y: Math.floor(player.y), z: Math.floor(player.z) };
+  const bid = nome => nome === 'ar' || nome === 'air' ? 0 : (porNome[nome] != null ? porNome[nome] : porNome['Pedra']);
+  for (const a of (acoes || [])) { try {
+    if (a.t === 'preencher' || a.t === 'fill') { const d = a.de || a.from, e = a.ate || a.to; encher(b.x + d[0], b.y + d[1], b.z + d[2], b.x + e[0], b.y + e[1], b.z + e[2], bid(a.bloco), !!a.oco); }
+    else if (a.t === 'bloco' || a.t === 'set') { const p = a.em || a.at; set(b.x + p[0], b.y + p[1], b.z + p[2], bid(a.bloco)); remalhar(b.x + p[0], b.z + p[2], b.x + p[0], b.z + p[2]); }
+    else if (a.t === 'bicho' || a.t === 'spawn') { if (MOBDEF[a.tipo]) { const q = Math.min(30, a.n || 1); for (let i = 0; i < q; i++) spawnMob(a.tipo, player.x + (Math.random() - .5) * 6, player.z + (Math.random() - .5) * 6); } }
+    else if (a.t === 'dar' || a.t === 'item') { if (a.item) { invent[a.item] = (invent[a.item] || 0) + Math.min(400, a.n || 1); montarHotbar(); } }
+    else if (a.t === 'tp') { const p = a.em; player.x = b.x + p[0]; player.y = b.y + p[1] + 1; player.z = b.z + p[2]; player.vy = 0; atualizarChunks(true); }
+    else if (a.t === 'estado') { const o = a.o; if (o === 'dia') tempoDia = .25; else if (o === 'noite') tempoDia = .75; else if (o === 'voar') { MODS.voar = true; voando = true; } else if (o === 'cura') { vida = 20; fome = 20; desenharVida(); desenharFome(); } else if (o === 'limpar') for (const m of mobs.slice()) removerMob(m); }
+  } catch (e) { } }
+}
+async function comandoIA(txt) {
+  const t = (txt || '').trim(); if (!t) return; aviso('🤖 pensando...');
+  try {
+    const resp = await fetch('/api/blocos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: t }) });
+    const j = await resp.json();
+    if (j && Array.isArray(j.acoes)) { executarAcoes(j.acoes); aviso(j.fala || '✅ Pronto!'); return; }
+  } catch (e) { }
+  comandoLocal(t);   // sem servidor (web/celular): usa os comandos prontos
+}
+function comandoLocal(txt) {
   const t = semAcento((txt || '').toLowerCase().trim()); if (!t) return; const num = (t.match(/\d+/) || [])[0]; const n = num ? Math.min(400, +num) : null;
   const f = frente(6), bid = porNome[blocoDoTexto(t)]; let msg = '';
   if (/\b(me da|me de|dar|quero|ganha|da ai|dame)\b/.test(t)) { const k = itemDoTexto(t); invent[k] = (invent[k] || 0) + (n || 32); msg = 'Te dei ' + (n || 32) + 'x ' + nomeItem(mapKey(k)); montarHotbar(); }
