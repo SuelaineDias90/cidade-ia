@@ -4304,7 +4304,12 @@ function zapSalvar() { try { localStorage.setItem('zap_amigos', JSON.stringify(Z
  #zapCall .acoes button{width:66px;height:66px;border-radius:50%;border:0;font-size:26px;cursor:pointer;color:#fff}
  .btAtende{background:#25d366}.btRecusa{background:#e23b3b}
  #zapId{font-size:12px;color:#8aa;padding:8px 13px;border-top:1px solid #16232b;display:flex;justify-content:space-between;align-items:center}
- #zapId a{color:#25d366;cursor:pointer}`;
+ #zapId a{color:#25d366;cursor:pointer}
+ #zcRemoto{display:none;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:-1}
+ #zcLocal{display:none;position:absolute;right:14px;top:14px;width:120px;height:160px;object-fit:cover;border-radius:10px;border:2px solid #fff6;background:#111;z-index:2}
+ #zapCall.video #zcRemoto,#zapCall.video #zcLocal{display:block}
+ #zapCall.video .ava{display:none}
+ .zc .bt button.vid{background:#3a86ff}`;
  document.head.appendChild(st);
  const d = document.createElement('div'); d.id = 'zap'; d.innerHTML = `<div id="zapCx">
    <div id="zapTopo"><span id="zapVolta">‹</span><div><b id="zapTit">Zap</b> <small id="zapSub">mensagens e ligações</small></div><span style="flex:1"></span><span id="zapFechar" style="cursor:pointer;font-size:20px">✕</span></div>
@@ -4313,7 +4318,7 @@ function zapSalvar() { try { localStorage.setItem('zap_amigos', JSON.stringify(Z
    <div id="zapChat"><div id="zapMsgs"></div><div id="zapEnvia"><input id="zapTxt" maxlength="300" placeholder="Mensagem"><button id="zapSend">➤</button></div></div>
    <div id="zapId"></div></div>`;
  document.body.appendChild(d);
- const c = document.createElement('div'); c.id = 'zapCall'; c.innerHTML = `<div class="ava" id="zcAva">📞</div><h2 id="zcNome">—</h2><div class="st" id="zcStatus">chamando…</div><audio id="zcAudio" autoplay></audio><div class="acoes" id="zcAcoes"></div>`;
+ const c = document.createElement('div'); c.id = 'zapCall'; c.innerHTML = `<video id="zcRemoto" autoplay playsinline></video><video id="zcLocal" autoplay playsinline muted></video><div class="ava" id="zcAva">📞</div><h2 id="zcNome">—</h2><div class="st" id="zcStatus">chamando…</div><audio id="zcAudio" autoplay></audio><div class="acoes" id="zcAcoes"></div>`;
  document.body.appendChild(c);
 })();
 function zapAvatar(nome) { return (nome || '?').trim()[0]?.toUpperCase() || '?'; }
@@ -4355,14 +4360,15 @@ function zapRender() {
   L.innerHTML = html;
   L.querySelectorAll('.zc').forEach(el => { const id = el.dataset.id;
     el.querySelector('.abrir').onclick = () => zapAbrirChat(id, el.dataset.nome);
-    const bl = el.querySelector('.lig'); if (bl) bl.onclick = (e) => { e.stopPropagation(); zapLigar(id, el.dataset.nome); };
+    const bl = el.querySelector('.lig'); if (bl) bl.onclick = (e) => { e.stopPropagation(); zapLigar(id, el.dataset.nome, false); };
+    const bv = el.querySelector('.vid'); if (bv) bv.onclick = (e) => { e.stopPropagation(); zapLigar(id, el.dataset.nome, true); };
     const ba = el.querySelector('.add'); if (ba) ba.onclick = (e) => { e.stopPropagation(); ZAP.amigos[id] = el.dataset.nome; zapSalvar(); zapRender(); };
   });
 }
 function zapLinha(id, nome, on, sub, novo) {
   return `<div class="zc" data-id="${id}" data-nome="${escH(nome)}"><div class="av abrir">${zapAvatar(nome)}</div>
    <div class="nm abrir"><b>${escH(nome)}</b> <small>${escH(sub)}${on ? ' 🟢' : ''}</small></div>
-   <div class="bt"><button class="lig" title="ligar">📞</button>${novo ? '<button class="add" title="adicionar">➕</button>' : ''}</div></div>`;
+   <div class="bt"><button class="lig" title="ligar">📞</button><button class="vid" title="vídeo">📹</button>${novo ? '<button class="add" title="adicionar">➕</button>' : ''}</div></div>`;
 }
 function zapAbrirChat(id, nome) {
   ZAP.chatCom = id; if (!ZAP.amigos[id] && ZAP.online.get(id)) { ZAP.amigos[id] = nome; zapSalvar(); }
@@ -4384,25 +4390,27 @@ function notificarZap(nome) { const b = $('#zapBtn'); if (b) { b.classList.add('
 
 // ---------- LIGAÇÃO (voz por WebRTC, sinalização por MQTT)
 function zapSinalEnviar(dest, o) { o.de = ZAP.id; o.nome = ZAP.nome; ZAP.mq.pub('zap/call/' + dest, o); }
-async function zapLigar(id, nome) {
-  if (ZAP.call) return; ZAP.call = { com: id, nome, papel: 'origem', pc: null };
-  zapMostrarCall(nome, 'chamando…', 'cancelar');
-  zapSinalEnviar(id, { k: 'ring' });
+async function zapLigar(id, nome, video) {
+  if (ZAP.call) return; ZAP.call = { com: id, nome, papel: 'origem', pc: null, video: !!video };
+  zapMostrarCall(nome, video ? 'chamando por vídeo…' : 'chamando…', 'cancelar');
+  zapSinalEnviar(id, { k: 'ring', video: !!video });
   ZAP.call.timeout = setTimeout(() => { if (ZAP.call && !ZAP.call.pc) zapEncerrar('sem resposta'); }, 30000);
 }
 function zapMostrarCall(nome, status, modo) {
-  $('#zapCall').classList.add('on'); $('#zcNome').textContent = nome; $('#zcStatus').textContent = status; $('#zcAva').textContent = '📞';
+  $('#zapCall').classList.add('on'); $('#zapCall').classList.toggle('video', !!(ZAP.call && ZAP.call.video)); $('#zcNome').textContent = nome; $('#zcStatus').textContent = status; $('#zcAva').textContent = ZAP.call && ZAP.call.video ? '📹' : '📞';
   const A = $('#zcAcoes'); A.innerHTML = '';
   if (modo === 'receber') { const a = btnCall('btAtende', '📞', () => zapAtender()); const r = btnCall('btRecusa', '✕', () => { zapSinalEnviar(ZAP.call.com, { k: 'no' }); zapEncerrar('recusada'); }); A.append(a, r); }
   else { const r = btnCall('btRecusa', '✕', () => { if (ZAP.call) zapSinalEnviar(ZAP.call.com, { k: 'bye' }); zapEncerrar('encerrada'); }); A.append(r); }
 }
 function btnCall(cls, txt, fn) { const b = document.createElement('button'); b.className = cls; b.textContent = txt; b.onclick = fn; return b; }
 async function zapNovaPc(dest) {
-  let mic; try { mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
-  catch (e) { zapEncerrar('sem microfone'); return null; }
+  const comVideo = !!(ZAP.call && ZAP.call.video);
+  let mic; try { mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: comVideo ? { facingMode: 'user' } : false }); }
+  catch (e) { zapEncerrar(comVideo ? 'sem câmera/microfone' : 'sem microfone'); return null; }
+  if (comVideo) { const lv = $('#zcLocal'); lv.srcObject = mic; }
   const pc = new RTCPeerConnection({ iceServers: ICE }); mic.getTracks().forEach(t => pc.addTrack(t, mic));
   pc.onicecandidate = e => { if (e.candidate) zapSinalEnviar(dest, { k: 'ice', c: e.candidate }); };
-  pc.ontrack = e => { $('#zcAudio').srcObject = e.streams[0]; $('#zcStatus').textContent = 'ligado 🔊'; };
+  pc.ontrack = e => { if (comVideo) { $('#zcRemoto').srcObject = e.streams[0]; } else { $('#zcAudio').srcObject = e.streams[0]; } $('#zcStatus').textContent = comVideo ? 'em vídeo 🎥' : 'ligado 🔊'; };
   pc.onconnectionstatechange = () => { if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) zapEncerrar('caiu'); };
   if (ZAP.call) { ZAP.call.pc = pc; ZAP.call.mic = mic; } return pc;
 }
@@ -4412,7 +4420,7 @@ async function zapAtender() {
 }
 async function zapSinal(s) {
   if (!s || !s.de) return; const id = s.de;
-  if (s.k === 'ring') { if (ZAP.call) { zapSinalEnviar(id, { k: 'no' }); return; } ZAP.call = { com: id, nome: s.nome, papel: 'destino', pc: null }; zapToque(true); zapMostrarCall(s.nome, 'ligando pra você…', 'receber'); return; }
+  if (s.k === 'ring') { if (ZAP.call) { zapSinalEnviar(id, { k: 'no' }); return; } ZAP.call = { com: id, nome: s.nome, papel: 'destino', pc: null, video: !!s.video }; zapToque(true); zapMostrarCall(s.nome, s.video ? '📹 chamada de vídeo…' : 'ligando pra você…', 'receber'); return; }
   if (!ZAP.call || ZAP.call.com !== id) return;
   if (s.k === 'no') return zapEncerrar('recusada');
   if (s.k === 'bye') return zapEncerrar('encerrada');
@@ -4423,7 +4431,8 @@ async function zapSinal(s) {
 }
 function zapEncerrar(motivo) {
   zapToque(false); if (ZAP.call) { clearTimeout(ZAP.call.timeout); try { ZAP.call.pc && ZAP.call.pc.close(); } catch (e) {} try { ZAP.call.mic && ZAP.call.mic.getTracks().forEach(t => t.stop()); } catch (e) {} }
-  ZAP.call = null; $('#zcStatus').textContent = motivo || ''; setTimeout(() => $('#zapCall').classList.remove('on'), 700);
+  ZAP.call = null; try { $('#zcLocal').srcObject = null; $('#zcRemoto').srcObject = null; $('#zcAudio').srcObject = null; } catch (e) {}
+  $('#zcStatus').textContent = motivo || ''; setTimeout(() => { $('#zapCall').classList.remove('on'); $('#zapCall').classList.remove('video'); }, 700);
 }
 // --- liga os controles do Zap + botão no menu
 $('#zapFechar').onclick = zapFechar;
